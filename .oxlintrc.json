@@ -1,0 +1,27 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "import"],
+  "jsPlugins": [{ "name": "repo", "specifier": "./tooling/oxlint-boundaries.mjs" }],
+  "categories": { "correctness": "error" },
+  "rules": {
+    "repo/boundaries": "error",
+    "typescript/no-explicit-any": "error",
+    "eslint/no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          { "group": ["@repo/*/src/**"], "message": "Use an explicit public package export." }
+        ]
+      }
+    ],
+    "eslint/no-restricted-properties": [
+      "error",
+      {
+        "object": "localStorage",
+        "property": "clear",
+        "message": "Use the app-scoped storage helper."
+      }
+    ]
+  },
+  "ignorePatterns": ["**/dist/**", "**/node_modules/**", ".local/**"]
+}

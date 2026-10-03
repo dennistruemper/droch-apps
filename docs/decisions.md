@@ -1,24 +1,25 @@
 # Decisions
 
-Recorded on 2026-10-02. These capture the planning conversation, not completed work.
+Recorded on 2026-10-02. These capture agreed constraints and implementation choices; milestone status lives
+in the implementation plan.
 
 ## Agreed choices
 
-| Decision | Rationale / consequence |
-| --- | --- |
-| One monorepo, one backend, a frontend per app | Share infrastructure while keeping app features modular. |
-| TypeScript throughout | One application language, with type safety and fast feedback as priorities. |
-| Solid 2 without SolidStart | Interactive apps; Solid 2 prerelease risk is accepted. Landing pages can use another technology later. |
-| Paths on one origin | New apps require no additional DNS or Coolify routing configuration. |
-| One package per app | Earlier contract/domain/server packages per app were excessive. Internal modules are folders with explicit APIs. |
-| pnpm and Node 24 LTS | Preferred over Bun for package management and runtime. |
-| Drizzle and PostgreSQL | Drizzle selected after comparing Kysely, Prisma, and plain SQL. |
-| Custom authentication | User prefers a focused implementation over Better Auth. Passwords and password hashes are excluded. |
-| Email code or link through Mailtrap | Email-based account access; email codes are the current baseline. |
-| Docker Compose includes the database | One deployable stack and a similar local environment. |
-| No Effect library | Use pure functions and explicit dependencies with ordinary TypeScript. |
-| Drochsign CSS starting point | Semantic HTML, minimal classes, two-color themes; themes can differ by app. |
-| Independent worktree development | Multiple apps/branches can be worked on and run concurrently. |
+| Decision                                      | Rationale / consequence                                                                                          |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| One monorepo, one backend, a frontend per app | Share infrastructure while keeping app features modular.                                                         |
+| TypeScript throughout                         | One application language, with type safety and fast feedback as priorities.                                      |
+| Solid 2 without SolidStart                    | Interactive apps; Solid 2 prerelease risk is accepted. Landing pages can use another technology later.           |
+| Paths on one origin                           | New apps require no additional DNS or Coolify routing configuration.                                             |
+| One package per app                           | Earlier contract/domain/server packages per app were excessive. Internal modules are folders with explicit APIs. |
+| pnpm and Node 24 LTS                          | Preferred over Bun for package management and runtime.                                                           |
+| Drizzle and SQLite                            | Drizzle retained; SQLite files per app and shared auth replace the initial PostgreSQL schema plan.               |
+| Custom authentication                         | User prefers a focused implementation over Better Auth. Passwords and password hashes are excluded.              |
+| Email code or link through Mailtrap           | Email-based account access; email codes are the current baseline.                                                |
+| Docker Compose persists SQLite files          | One deployable stack and a similar local environment.                                                            |
+| No Effect library                             | Use pure functions and explicit dependencies with ordinary TypeScript.                                           |
+| Drochsign CSS starting point                  | Semantic HTML, minimal classes, two-color themes; themes can differ by app.                                      |
+| Independent worktree development              | Multiple apps/branches can be worked on and run concurrently.                                                    |
 
 ## Product requirements
 
@@ -56,15 +57,44 @@ not additional fixed product requirements.
 - One shared workspace package with folder modules for auth, mail, database,
   browser storage, and styles; one server composition package.
 - Persist poker rooms across deployments and expire inactive rooms.
-- One backend instance initially, with PostgreSQL as the durable source of truth.
+- One backend instance, with SQLite as the durable source of truth.
+
+## Foundation implementation choices
+
+- Exact dependencies and lockfile are recorded with Node 24.21.0 and pnpm 11.25.0
+  tool pins. Solid 2 RC, the official Vite plugin, and Router 2 are verified together.
+- Hono, Zod, strict TypeScript, Oxlint, Oxfmt, Vitest, and Playwright are implemented.
+- Drochsign uses a reviewed vendored snapshot with integration overrides in a separate
+  file. Updates are explicit; builds never fetch a moving branch.
+- `pnpm dev` generates an ignored Compose override and runtime settings per checkout.
+  Docker dependencies have their own per-checkout volumes to avoid native-binary
+  and dependency-link collisions with host installations.
+- Quality checks run on the host/CI before deployment. Docker builds type check and
+  compile independently because Oxlint JS plugins currently crash in small Linux
+  VMs ([upstream issue](https://github.com/oxc-project/oxc/issues/20331)).
+
+## Persistence revision — 2026-10-03
+
+The user clarified that this is a small hobby project and chose one SQLite file per
+app plus one for auth. This supersedes the initial PostgreSQL process/database/schema
+choice. Keep one backend process: auth exposes ordinary TypeScript functions without
+network calls. Apps receive stable user IDs and own authorization and game state.
+
+- Auth and apps own separate migration histories; shared infrastructure handles files.
+- No cross-file foreign keys or atomic cross-file transactions; do not use ATTACH to
+  bypass ownership. Coordinate account lifecycle explicitly and never reuse user IDs.
+- WAL, short transactions, and a busy timeout fit modest concurrent usage. Do not add
+  multi-instance hosting, service discovery, or queues for hypothetical future scale.
+- One persistent Docker volume holds all files, so adding an app requires no new
+  Coolify storage configuration. Each checkout gets a separate volume.
+- Backups cover all files coherently. The old local PostgreSQL volume is retained,
+  but the container and PostgreSQL dependencies are removed.
 
 ## Still to settle
 
-- Exact dependency versions and confirmed Solid 2 integration compatibility.
-- How Drochsign is consumed and updated: vendored snapshot or versioned dependency.
 - Word-game dictionary language, licensing, board layout, scoring, and player count.
 - Poker voting deck, room expiration policy, and detailed host behavior.
-- Exact code/session lifetimes, account registration policy, and email-change behavior.
+- Exact code/session lifetimes, account registration/deletion policy, and email-change behavior.
 - Backup destination, retention, and operational restore procedure.
 
 ## References

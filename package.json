@@ -1,0 +1,42 @@
+{
+  "name": "droch-apps",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx tooling/dev.ts up",
+    "dev:stop": "tsx tooling/dev.ts stop",
+    "dev:logs": "tsx tooling/dev.ts logs",
+    "dev:server": "tsx watch server/src/main.ts",
+    "build": "tsx tooling/build.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint --threads=1 --deny-warnings .",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
+    "db:generate": "tsx tooling/generate-migrations.ts",
+    "db:migrate": "tsx tooling/migrate.ts",
+    "start": "node dist/server/main.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@repo/server": "workspace:*",
+    "@repo/shared": "workspace:*",
+    "@solidjs/vite-plugin": "3.0.0-next.47",
+    "@types/better-sqlite3": "9.6.0",
+    "@types/node": "24.19.1",
+    "drizzle-kit": "0.31.11",
+    "esbuild": "0.28.2",
+    "oxfmt": "0.71.0",
+    "oxlint": "1.86.0",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vite": "8.3.2",
+    "vitest": "5.0.3"
+  },
+  "engines": {
+    "node": ">=24.21.0 <25"
+  },
+  "packageManager": "pnpm@11.25.0"
+}

@@ -1,10 +1,10 @@
 # Implementation plan
 
-All milestones are pending. This is a sequence of work, not a promise that scripts
-or infrastructure already exist. See [architecture](architecture.md) and
+Milestones 1–2 are implemented; verification details are recorded below.
+Gameplay, auth, and deployment operations remain pending. See [architecture](architecture.md) and
 [decisions](decisions.md).
 
-## 1. Foundation
+## 1. Foundation — implemented
 
 - Add mise pins for Node and pnpm, workspace manifests, and the lockfile.
 - Create one package per app plus server composition and shared modules.
@@ -16,11 +16,11 @@ or infrastructure already exist. See [architecture](architecture.md) and
 Acceptance: type checking and builds pass; forbidden import fixtures fail, including
 cross-module relative imports and client-to-server imports within an app package.
 
-## 2. Runnable shells and isolated development
+## 2. Runnable shells and isolated development — implemented
 
 - Build frontend shells at `/poker/` and `/words/` with a shared typed registry.
 - Create the Hono composition server, static serving, and scoped SPA fallbacks.
-- Add PostgreSQL/Drizzle, migration execution, production Compose, and dev overrides.
+- Add SQLite/Drizzle per app and auth, migration execution, production Compose, and dev overrides.
 - Add worktree-specific resource IDs, port allocation, cookies, and startup URLs.
 - Match tool versions between development, CI, and Docker.
 
@@ -28,6 +28,18 @@ Acceptance: production image and local hot reload work. Two worktrees run at onc
 without sharing databases, sessions, ports, outputs, or cleanup scope. Restarting
 one leaves the other functional. Failed migrations block startup. API and asset
 404s are not converted into SPA HTML.
+
+Verification: strict type checking, Oxlint, formatting, and 35 tests pass, including SQLite file isolation, persistence, foreign keys,
+transaction rollback, migration reruns, and readiness. The
+forbidden-import tests run the actual Oxlint rule, including type-only imports,
+re-exports, dynamic imports, require, relative bypasses, and client/server boundaries.
+The production image bundles the backend and includes its platform-specific SQLite native driver. Playwright
+checks both development and production shells, app-specific themes, navigation,
+and API/asset 404s. Frontend/backend reload and concurrent-checkout isolation are
+verified manually. A deliberately failed migration leaves the application unstarted;
+reapplying the production migration is safe. CI configuration is added; the hosted run has not happened yet.
+Auth/session isolation currently verifies distinct configured cookie names; real
+session behavior must be tested when auth is implemented.
 
 ## 3. Poker vertical slice
 
@@ -45,6 +57,8 @@ or reset a round.
 - Implement Mailtrap sending and development Sandbox configuration.
 - Add focused auth APIs, verification records, accounts, and server-side sessions.
 - Implement code expiry, keyed digests, atomic consumption, throttling, and revocation.
+- Keep auth queries in the auth module and use stable user IDs through its public API.
+- Settle account deletion and app-data cleanup across independent SQLite files.
 - Document environment setup without committing credentials.
 
 Acceptance: login works end to end; expiry, attempt limits, resend behavior,
@@ -65,7 +79,7 @@ Restart and reconnect preserve the authoritative match.
 
 ## 6. Deployment verification and future-app workflow
 
-- Add scoped CI checks and multiplayer Playwright tests.
+- Extend foundation CI and browser checks with scoped checks and multiplayer tests.
 - Document the one-time Coolify/domain/Mailtrap setup, backups, and restore procedure.
 - Add a small app scaffold command using the chosen package layout and registry.
 - Verify a temporary third app builds and mounts without Compose, DNS, or Coolify edits.

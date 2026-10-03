@@ -1,0 +1,14 @@
+.git
+**/node_modules
+**/dist
+.local
+.env
+.env.*
+coverage
+playwright-report
+test-results
+
+.pnpm-store/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm

@@ -1,0 +1,19 @@
+{
+  "name": "@repo/poker",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./contracts": "./src/contracts/index.ts",
+    "./server": "./src/server/index.ts",
+    "./domain": "./src/domain/index.ts"
+  },
+  "dependencies": {
+    "@repo/shared": "workspace:*",
+    "@solidjs/router": "2.0.0-next.34",
+    "@solidjs/web": "2.0.0-rc.13",
+    "drizzle-orm": "0.45.3",
+    "hono": "4.13.12",
+    "solid-js": "2.0.0-rc.13",
+    "zod": "4.6.5"
+  }
+}

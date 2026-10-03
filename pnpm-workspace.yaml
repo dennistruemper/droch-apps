@@ -1,0 +1,14 @@
+packages:
+  - apps/*
+  - server
+  - shared
+
+# Dependency links belong to this checkout, including outside CI.
+enableGlobalVirtualStore: false
+
+allowBuilds:
+  esbuild: true
+  better-sqlite3: true
+
+minimumReleaseAgeExclude:
+  - "@types/node@24.19.1"

@@ -12,8 +12,11 @@ to understand the intended order of work.
 - One workspace package per app; use folders for internal modularity.
 - One shared backend and path-based app URLs on one origin.
 - Adding an app must not require DNS or Coolify configuration changes.
-- Docker Compose includes the application and PostgreSQL, including local development.
-- Drizzle for database access and migrations.
+- Docker Compose runs the application and migrations with a persistent SQLite volume.
+- Drizzle with one SQLite file per app and one for shared auth. Each owner has its
+  own tables and migration history. Auth is an in-process module, not a microservice.
+- Optimize for a small hobby project and one backend instance; do not add infrastructure
+  for hypothetical large scale.
 - Custom email-code authentication through Mailtrap. Do not introduce Better Auth,
   password authentication, or password-hash storage.
 - No Effect library. Make effects explicit through ordinary functions and dependencies.
@@ -27,6 +30,8 @@ to understand the intended order of work.
 - Forbid frontend imports of server code, including inside the same app package.
 - Approved public subpaths such as an app's `server` or `contracts` are allowed;
   arbitrary internal subpaths are not.
+- Apps use the public auth API and stable user IDs; do not query the auth file
+  directly or attach another module's database. Authorization remains app-specific.
 - Keep domain logic pure. Inject database, mail, time, randomness, and other effects
   where needed. Do not perform side effects during module import.
 - Validate external data at runtime. Do not treat TypeScript types as validation.
@@ -36,6 +41,8 @@ to understand the intended order of work.
 
 ## Worktrees and checks
 
+- The owner's macOS Docker engine is Colima. Use the existing Docker context;
+  do not assume Docker Desktop or change Colima settings without a task requiring it.
 - Derive development resource identity from the current checkout, not a fixed path.
 - Isolate database volumes, networks, ports, cookies, outputs, and local configuration.
 - Never share a mutable database or dependency links between worktrees.

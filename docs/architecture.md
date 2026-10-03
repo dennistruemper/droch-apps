@@ -1,25 +1,33 @@
 # Architecture
 
-Target architecture; nothing described here has been implemented yet.
+The foundation and runnable shells are implemented. Auth, gameplay, and SSE below
+describe the remaining target behavior.
 See [decisions](decisions.md) for fixed choices versus proposed defaults.
 
 ## Stack
 
-| Area | Target |
-| --- | --- |
-| Tools | mise, Node 24 LTS, pnpm workspaces |
-| Frontend | Solid 2, Vite, official Solid 2 plugin, Solid Router 2 |
-| Styling | Drochsign plus app themes and small app-specific CSS |
-| Backend | Hono on Node, one modular server |
-| Contracts | Zod schemas and inferred TypeScript types |
-| Persistence | PostgreSQL, Drizzle, committed SQL migrations |
-| Accounts | Custom email-code auth, Mailtrap, database-backed sessions |
-| Live updates | HTTP commands and SSE |
-| Quality | Strict TypeScript, Oxlint, Oxfmt, Vitest, Playwright |
-| Deployment | Docker Compose in Coolify |
+| Area         | Target                                                     |
+| ------------ | ---------------------------------------------------------- |
+| Tools        | mise, Node 24 LTS, pnpm workspaces                         |
+| Frontend     | Solid 2, Vite, official Solid 2 plugin, Solid Router 2     |
+| Styling      | Drochsign plus app themes and small app-specific CSS       |
+| Backend      | Hono on Node, one modular server                           |
+| Contracts    | Zod schemas and inferred TypeScript types                  |
+| Persistence  | SQLite per app/auth, Drizzle, per-file SQL migrations      |
+| Accounts     | Custom email-code auth, Mailtrap, database-backed sessions |
+| Live updates | HTTP commands and SSE                                      |
+| Quality      | Strict TypeScript, Oxlint, Oxfmt, Vitest, Playwright       |
+| Deployment   | Docker Compose in Coolify                                  |
 
-Pin exact compatible versions during setup. Compilation and type checking are
-separate; deployment verification requires both.
+Exact versions are pinned in manifests and the lockfile. Node 24.21.0 and pnpm
+11.25.0 are pinned in mise and Docker; CI reads the Node version from mise.
+Solid 2.0.0-rc.13, its official plugin, and Router 2 compile and run together.
+Compilation and type checking are separate; deployment verification requires both.
+
+Host/CI `pnpm check` enforces the custom Oxlint boundary rule and its rejection
+fixtures. The image build runs type checking and compilation. Oxlint JS plugins
+hit [a Linux allocator bug](https://github.com/oxc-project/oxc/issues/20331) on the
+small local Docker VM; do not remove boundary enforcement to work around it.
 
 ## Layout and dependency direction
 
@@ -33,8 +41,8 @@ apps/
   words/                 # same internal structure
 server/                  # backend entry point, app registration, composition
 shared/
-  src/auth/
-  src/mail/
+  src/auth/              # schema location; API implementation planned
+  src/mail/              # planned
   src/database/
   src/storage/
   src/styles/
@@ -85,7 +93,23 @@ authorized snapshots and versioned updates. Reconnection reloads authoritative s
 version gaps trigger resynchronization. Account or room access must be checked on
 event streams as well as commands.
 
-PostgreSQL holds durable state. Connections and presence can be transient. Online
+One backend process owns `auth.sqlite`, `poker.sqlite`, and `words.sqlite` under
+`DATA_DIRECTORY`. Every app and auth owns its table declarations, queries, and
+migration history (`migrations/<id>/`). Shared database infrastructure opens files
+through better-sqlite3/Drizzle, enables WAL and foreign keys, sets a busy timeout,
+and applies migrations. Native-driver binaries are built for the image platform.
+Empty initial histories initialize the files without inventing application tables.
+
+App code does not open or attach another module's file. The backend will resolve
+sessions through the public in-process auth API and pass stable user IDs to app
+services. Apps check their own room/match permissions. User IDs are never reused;
+cross-file references cannot use foreign keys. Account deletion must preserve
+coherent game history through an explicit policy, settled before auth implementation.
+There are no distributed transactions: each game command commits in its own file.
+Cross-file operations require explicit coordination when needed, not a generic
+service framework. The database boundaries are ownership conventions, not a sandbox.
+
+SQLite holds durable state. Connections and presence can be transient. Online
 notifications are not the durable record of a move. Handle subscription/snapshot
 races and missed notifications with version checks and reconciliation.
 
@@ -117,7 +141,9 @@ Poker has a separate guest flow with no registration requirement.
 
 ## Styles and browser storage
 
-Use Drochsign's semantic styles and two-color theme variables. Each app has its own
+Drochsign is vendored as an unmodified snapshot in `shared/src/styles/drochsign.css`;
+its revision and update process are recorded in `UPSTREAM.md`. Integration overrides
+are separate in `index.css`. Use its semantic styles and two-color theme variables. Each app has its own
 default theme and may add theme definitions and styles for specialized UI.
 
 Adapt direct-body layout selectors to the Solid mount structure, scope field-specific
@@ -130,15 +156,25 @@ Prefixes prevent collisions but do not isolate same-origin apps from each other.
 
 ## Compose, production, and migrations
 
-One Compose stack has PostgreSQL, a migration step, and one application container.
-The application image includes the shared backend and all compiled frontends.
-Only the application ingress is public; PostgreSQL communicates on the stack network.
+One Compose stack has a migration step and one application container, sharing a
+persistent `sqlite-data` volume at `/data`. The image includes the shared backend,
+all compiled frontends, and its native SQLite driver. No database service, password,
+or connection pool is needed. Adding an app creates another file within this volume.
 
-Use a persistent database volume, health checks, graceful shutdown, and migration
-completion before readiness. Failed migrations must prevent application startup.
-Commit and review SQL migrations; do not use automatic schema push in production.
-Prefer compatible migration sequencing; rolling back an image does not roll back data.
-Backups require a documented and tested restore process.
+Successful migration completion gates startup. The server opens only existing
+files, and readiness checks every file against its own migration history. Failed
+migrations block startup; each file's SQL migrations are transactional. Commit and
+review SQL migrations; never use automatic schema push in production. Compatible
+migration sequencing still matters; rolling back an image does not roll back data.
+
+Run one backend instance with local persistent storage. Keep transactions short;
+SQLite serializes writers per file while WAL lets reads proceed alongside writes.
+The application database folder is owned by the same non-root user in development
+and production. Development startup repairs ownership on container volumes only.
+
+Backup/restore must cover auth and all app files coherently. Stop the stack for an
+offline backup of the whole volume; copying a live main file alone can omit WAL data.
+A documented and tested automated backup/restore procedure remains a later milestone.
 
 ## Worktree development
 
@@ -150,11 +186,12 @@ prints its URL. Local runtime settings are ignored, never committed.
 - No fixed container names or globally named volumes.
 - Isolated node_modules links, build outputs, caches, test state, and configuration.
 - The package manager's immutable dependency store may be shared.
-- PostgreSQL stays internal; containers can use identical internal ports.
+- SQLite files stay on a per-checkout Docker volume, separate from source bind mounts.
 - Different host ports isolate browser storage; cookies need distinct worktree names
   because cookies are not port-scoped.
 - Pass the runtime origin into auth and development proxy/HMR configuration.
-- Support focusing frontend hot reload on a selected app while running the shared backend.
+- Both app frontends reload through Vite middleware on the backend port; backend
+  imports are watched by tsx. Polling supports Docker bind mounts on macOS.
 - Stop commands affect only the current checkout and preserve its database.
 
 Use the same migrations and database conventions locally and in production. The
