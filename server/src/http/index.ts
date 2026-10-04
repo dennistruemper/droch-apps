@@ -49,7 +49,7 @@ export function createApplication(options: {
     context.html(`<!doctype html>
 <html lang="en" data-theme="paper"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Droch apps</title><link rel="stylesheet" href="/styles/index.css"></head>
 <body><header><strong>Droch apps</strong><small>A little collection of hobby apps</small></header>
-<main><h1>Pick something to play.</h1>${applications.map((application) => `<article><h2><a href="/${application.id}/">${application.title}</a></h2><p>${application.description}</p></article>`).join("")}</main></body></html>`),
+<main><h1>Explore the apps.</h1>${applications.map((application) => `<article><h2><a href="/${application.id}/">${application.title}</a></h2><p>${application.description}</p></article>`).join("")}</main></body></html>`),
   );
   app.get("/styles/*", async (context) => {
     const stylesheet = await options.readFrontend("styles", context.req.path);
