@@ -85,6 +85,11 @@ the Dockerfile is built by Compose rather than selected as a separate deployment
 | Runtime `APP_ORIGIN`          | `https://apps.example.com` (no port suffix or trailing slash) |
 | Runtime `SESSION_COOKIE_NAME` | Optional; defaults to `droch_session`                         |
 
+Open the application's **Configuration > Environment Variables** to set `APP_ORIGIN`;
+ensure Runtime Variable is enabled. Save and redeploy to apply it. If an existing
+Coolify configuration contains the literal value `Set APP_ORIGIN`, replace it with
+the public origin: reloading Compose preserves previously saved variable values.
+
 Keep Raw Compose Deployment disabled so Coolify configures its proxy. The domain's
 `:3000` suffix selects the internal container port; visitors use normal HTTPS.
 Point the hostname's DNS at the Coolify server. Only `application` needs a domain.
