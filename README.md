@@ -63,6 +63,8 @@ For browser tests, first run `pnpm exec playwright install chromium`, or use
 to test another running deployment. The GitHub workflow runs checks, builds the
 production image, and tests the local Compose stack. `jdx/mise-action` installs and
 caches the Node and pnpm versions declared in `mise.toml`.
+Each PR update runs the workflow once. Push checks run only on `main`, including
+merges; a newer run cancels an unfinished run for the same PR or branch.
 
 Oxlint's custom boundary rule currently triggers an [upstream Linux allocator
 bug](https://github.com/oxc-project/oxc/issues/20331) on small Docker VMs. Run
