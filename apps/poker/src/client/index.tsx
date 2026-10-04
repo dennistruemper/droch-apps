@@ -8,7 +8,6 @@ import {
   deck,
   roomInfoSchema,
   roomSnapshotSchema,
-  statusSchema,
   type RoomSnapshot,
   type RoomInfo,
   type Vote,
@@ -86,19 +85,11 @@ function Home() {
   let defaultTitle = true;
   const [busy, setBusy] = createSignal(false),
     [error, setError] = createSignal("");
-  const [status, setStatus] = createSignal("Connecting…");
   const controller = new AbortController();
   onCleanup(() => controller.abort());
-  void request("/status", undefined, controller.signal)
-    .then((data) => {
-      statusSchema.parse(data);
-      setStatus("Backend connected");
-    })
-    .catch(() => setStatus("Backend unavailable"));
   return (
     <main>
       <section>
-        <small>{status()}</small>
         <h1>A shared estimate starts here.</h1>
         <p>{appDefinition.description}</p>
       </section>
