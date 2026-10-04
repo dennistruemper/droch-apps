@@ -20,7 +20,8 @@ See [decisions](decisions.md) for fixed choices versus proposed defaults.
 | Deployment   | Docker Compose in Coolify                                  |
 
 Exact versions are pinned in manifests and the lockfile. Node 24.21.0 and pnpm
-11.25.0 are pinned in mise and Docker; CI reads the Node version from mise.
+11.25.0 are pinned in mise and Docker. CI uses `jdx/mise-action` to install both
+tools from `mise.toml` and add them to PATH.
 Solid 2.0.0-rc.13, its official plugin, and Router 2 compile and run together.
 Compilation and type checking are separate; deployment verification requires both.
 
