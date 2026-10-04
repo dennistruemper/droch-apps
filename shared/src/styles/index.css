@@ -63,3 +63,26 @@ textarea:not([aria-invalid="true"]) + [role="alert"] {
     transition: none !important;
   }
 }
+
+/* Shared app navigation and native settings dialog. */
+#app > header nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+#app > header nav > button {
+  padding: var(--space-xs) var(--space-sm);
+}
+[data-app-settings] {
+  width: min(28rem, calc(100% - 2rem));
+  margin: auto;
+  padding: var(--space-xl);
+  border: var(--border-width) solid var(--color-fg);
+  border-radius: var(--radius-md, 0.25rem);
+  background: var(--color-bg);
+  color: var(--color-fg);
+}
+[data-app-settings]::backdrop {
+  background: rgb(0 0 0 / 50%);
+}

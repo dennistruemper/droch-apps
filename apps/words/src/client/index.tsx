@@ -1,17 +1,14 @@
 import { render } from "@solidjs/web";
 import { createRouter } from "@solidjs/router";
 import { createSignal, onCleanup } from "solid-js";
-import { createAppStorage } from "@repo/shared/storage";
+import { AppSettings } from "@repo/shared/settings";
 import { appDefinition, statusSchema } from "../contracts/index.ts";
 import "@repo/shared/styles";
 
 function Home() {
-  const storage = createAppStorage(appDefinition.id, localStorage);
-  const [theme, setTheme] = createSignal(storage.get("theme") ?? appDefinition.theme);
   const [status, setStatus] = createSignal("Connecting…");
   const controller = new AbortController();
   onCleanup(() => controller.abort());
-  document.documentElement.dataset.theme = theme();
   void fetch(`/api/${appDefinition.id}/status`, { signal: controller.signal })
     .then(async (response) => {
       if (!response.ok) throw new Error("API unavailable");
@@ -23,46 +20,17 @@ function Home() {
     });
 
   return (
-    <>
-      <header>
-        <strong>{appDefinition.title}</strong>
-        <a href="/">All apps</a>
-      </header>
-      <main>
-        <section>
-          <small>{status()}</small>
-          <h1>Your next word can wait.</h1>
-          <p>{appDefinition.description}</p>
-        </section>
-        <article>
-          <h2>Play together, or days apart</h2>
-          <p>
-            Durable matches and email-code accounts are planned. No turn deadline, no passwords.
-          </p>
-        </article>
-        <section>
-          <label for="theme">Your theme</label>
-          <select
-            id="theme"
-            value={theme()}
-            onChange={(event) => {
-              const nextTheme = event.currentTarget.value;
-              setTheme(nextTheme);
-              storage.set("theme", nextTheme);
-              document.documentElement.dataset.theme = nextTheme;
-            }}
-          >
-            <option value="paper">Paper</option>
-            <option value="ink">Ink</option>
-            <option value="gamegirl">Gamegirl</option>
-            <option value="ocean">Ocean</option>
-          </select>
-        </section>
-      </main>
-      <footer>
-        <small>Droch apps · Foundation preview</small>
-      </footer>
-    </>
+    <main>
+      <section>
+        <small>{status()}</small>
+        <h1>Your next word can wait.</h1>
+        <p>{appDefinition.description}</p>
+      </section>
+      <article>
+        <h2>Play together, or days apart</h2>
+        <p>Durable matches and email-code accounts are planned. No turn deadline, no passwords.</p>
+      </article>
+    </main>
   );
 }
 
@@ -84,4 +52,21 @@ const Router = createRouter({
     { path: "*404", component: NotFound },
   ],
 });
-render(() => <Router />, element);
+render(
+  () => (
+    <>
+      <header>
+        <strong>{appDefinition.title}</strong>
+        <nav aria-label="App navigation">
+          <a href="/">All apps</a>
+          <AppSettings appId={appDefinition.id} defaultTheme={appDefinition.theme} />
+        </nav>
+      </header>
+      <Router />
+      <footer>
+        <small>Droch apps · Foundation preview</small>
+      </footer>
+    </>
+  ),
+  element,
+);

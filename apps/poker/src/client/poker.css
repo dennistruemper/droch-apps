@@ -1,0 +1,25 @@
+.voting-deck,
+.round-controls,
+.room-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  align-items: center;
+}
+.voting-deck button {
+  min-width: 3rem;
+  min-height: 4rem;
+  font-size: 1.3rem;
+  background: var(--color-bg);
+  color: var(--color-fg);
+}
+.voting-deck button[aria-pressed="true"] {
+  background: var(--color-fg);
+  color: var(--color-bg);
+}
+.round-controls {
+  flex-direction: row;
+}
+.room-heading {
+  justify-content: space-between;
+}

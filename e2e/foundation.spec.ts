@@ -8,11 +8,20 @@ test("both app shells connect and keep their themes separate", async ({ page }) 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "A shared estimate starts here.",
   );
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page.getByLabel("Your theme").selectOption("ink");
+  await page.getByRole("button", { name: "Close settings" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "ink");
   await page.goto("/words/");
   await expect(page.getByText("Backend connected")).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "gamegirl");
+  await expect(page.getByLabel("Your theme")).toBeHidden();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Settings" })).toBeVisible();
+  await page.getByLabel("Your theme").selectOption("ocean");
+  await page.getByRole("button", { name: "Close settings" }).click();
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "ocean");
   await page.goto("/poker/");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "ink");
   await page.goto("/poker/missing-page");

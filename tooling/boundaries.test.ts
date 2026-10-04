@@ -14,6 +14,7 @@ describe("module boundaries", () => {
   it("allows contracts and browser-safe public exports", () => {
     expect(checkImport(client, "../contracts/index.ts")).toBeNull();
     expect(checkImport(client, "@repo/shared/storage")).toBeNull();
+    expect(checkImport(client, "@repo/shared/settings")).toBeNull();
     expect(checkImport(server, "@repo/poker/server")).toBeNull();
   });
   it.each([
@@ -34,6 +35,12 @@ describe("module boundaries", () => {
     expect(
       checkImport(resolve(root, "server/src/frontend/index.ts"), "../config/secret.ts"),
     ).toMatch(/index API/);
+  });
+  it("keeps shared settings browser-safe and prevents its deep imports", () => {
+    const settings = resolve(root, "shared/src/settings/index.tsx");
+    expect(checkImport(settings, "node:crypto")).toMatch(/server libraries/);
+    expect(checkImport(settings, "../database/index.ts")).toMatch(/server or unclassified/);
+    expect(checkImport(client, "@repo/shared/settings/internal.ts")).toMatch(/public export/);
   });
   it("rejects app-to-app coupling", () => {
     expect(checkImport(client, "@repo/words/contracts")).toMatch(/other apps/);

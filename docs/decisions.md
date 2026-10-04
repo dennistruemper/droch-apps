@@ -25,8 +25,8 @@ in the implementation plan.
 
 ### Scrum poker
 
-No accounts. Participants join rooms anonymously. Guest identity and host permissions
-still need server enforcement; no registration should be required.
+No accounts. Participants join rooms anonymously. Guest identity and room membership
+need server enforcement; no registration should be required.
 
 ### Word game
 
@@ -90,10 +90,35 @@ network calls. Apps receive stable user IDs and own authorization and game state
 - Backups cover all files coherently. The old local PostgreSQL volume is retained,
   but the container and PostgreSQL dependencies are removed.
 
+## Poker implementation — 2026-10-03
+
+- The user chose expiry after **30 days of inactivity**. Joining (including rejoining),
+  voting/clearing, revealing, and starting a round refresh activity. Viewing a room
+  or keeping an SSE connection open does not. Expired rooms are removed on subsequent
+  poker requests, including their participant records.
+- The deck is `0, 1, 2, 3, 5, 8, 13, 21, ?, ☕`. The user requested the coffee
+  symbol for a break vote on 2026-10-04; it follows normal vote privacy and reveal rules. The numeric deck and a 50-participant room limit are implementation defaults.
+- The user chose collaborative control: **every room member can reveal or start the
+  next round**. Reveal requires at least one vote, without waiting for everyone.
+  Revealed votes cannot change. Reset clears all votes and increments the round.
+  Creator disconnection cannot block play, so host takeover/heartbeat leases are not needed.
+  The creator label is informational and grants no extra permissions.
+- Anonymous membership uses a random HttpOnly cookie scoped to `/api/poker`, with
+  its digest stored in each membership row. The same browser can belong to multiple
+  rooms. There is no guest account recovery in this slice.
+- Commands include their round number. Transactions serialize voting and revealing;
+  stale votes and repeated resets cannot change the following round.
+- SSE sends full, viewer-specific, versioned snapshots immediately on subscription,
+  after accepted commands, and every 10 seconds for reconciliation. Queues are
+  bounded; skipped updates are recovered from a later snapshot. No event log is needed.
+- Unrevealed participant vote fields are null for everyone; the viewer's own vote
+  is available only in `you`. The server applies this to both HTTP and SSE.
+- User-facing errors explain recovery. Unexpected errors include a reference linked
+  to redacted server logs; request bodies and guest credentials are not logged.
+
 ## Still to settle
 
 - Word-game dictionary language, licensing, board layout, scoring, and player count.
-- Poker voting deck, room expiration policy, and detailed host behavior.
 - Exact code/session lifetimes, account registration/deletion policy, and email-change behavior.
 - Backup destination, retention, and operational restore procedure.
 

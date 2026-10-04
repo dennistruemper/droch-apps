@@ -1,7 +1,7 @@
 # Implementation plan
 
-Milestones 1–2 are implemented; verification details are recorded below.
-Gameplay, auth, and deployment operations remain pending. See [architecture](architecture.md) and
+Milestones 1–3 are implemented; verification details are recorded below.
+Auth, the word game, and deployment operations remain pending. See [architecture](architecture.md) and
 [decisions](decisions.md).
 
 ## 1. Foundation — implemented
@@ -41,7 +41,7 @@ reapplying the production migration is safe. CI configuration is added; the host
 Auth/session isolation currently verifies distinct configured cookie names; real
 session behavior must be tested when auth is implemented.
 
-## 3. Poker vertical slice
+## 3. Poker vertical slice — implemented
 
 - Implement room creation, invite links, anonymous membership, voting, reveal, and reset.
 - Separate pure rules from server persistence and participant authorization.
@@ -49,8 +49,19 @@ session behavior must be tested when auth is implemented.
 - Add SSE, snapshots, versioning, reconnect, and missed-update reconciliation.
 
 Acceptance: two browser contexts complete rounds, recover after restart, and never
-receive another player's unrevealed vote. Unauthorized participants cannot reveal
-or reset a round.
+receive another player's unrevealed vote. People outside a room cannot reveal or reset a round. Every joined participant
+can control rounds even when the creator disconnects.
+
+Verification: 42 unit/integration tests pass across the project. Poker tests use the
+actual SQL migration and cover HTTP/SSE vote privacy, membership, collaborative round control,
+origin checks, body limits, stale votes, concurrent/repeated resets, empty reveals,
+30-day expiry and cascading deletion, repeated joins, useful failures, and reopening
+the database after restart. Five Playwright checks pass in development, including
+two independent browser contexts completing rounds, reload, offline reconnect, and
+error/retry behavior, shared Settings accessibility and independent app themes, and default room names. A real development-container restart preserves guest identity,
+private votes, and room controls. Desktop/mobile views are inspected. Production
+image build and local browser checks verify the bundled slice; streaming through
+Coolify's external proxy remains part of milestone 6.
 
 ## 4. Custom email-code accounts
 

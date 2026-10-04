@@ -16,10 +16,14 @@ without a turn deadline.
 
 ## Status
 
-The foundation and runnable app shells are implemented. Both Solid 2 frontends
-connect to the shared Hono backend. Persistence uses `auth.sqlite`, `poker.sqlite`,
-and `words.sqlite`, each with its own Drizzle migration history. Gameplay, live updates,
-and email-code accounts are the next milestones.
+The foundation and scrum poker are implemented. Create a room, share its invite link,
+and vote anonymously. Votes stay private until someone reveals them. Anyone
+in the room can reveal votes or start the next round. Rooms and guest identities survive backend restarts, and live
+updates reconnect automatically. Rooms expire after 30 days without activity.
+
+Persistence uses `auth.sqlite`, `poker.sqlite`, and `words.sqlite`, each with its own
+Drizzle migration history. The word frontend remains a shell. Email-code accounts
+and the word game are the next milestones.
 
 ## Local development
 
@@ -50,7 +54,7 @@ the current checkout and preserves its database files. `pnpm dev:logs` follows i
 | `pnpm check`       | Type check, lint including import boundaries, format check, unit/integration tests |
 | `pnpm format`      | Format repository sources and docs                                                 |
 | `pnpm build`       | Build both frontends and bundle the backend and migration runner                   |
-| `pnpm test:e2e`    | Browser smoke tests against the current development URL                            |
+| `pnpm test:e2e`    | Browser checks, including two-player poker, against the current URL                |
 | `pnpm db:generate` | Generate SQL migrations for all databases; optionally pass an app ID               |
 | `pnpm db:migrate`  | Apply each database’s migrations under `DATA_DIRECTORY`                            |
 

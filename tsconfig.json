@@ -23,6 +23,7 @@
     "apps/**/*.ts",
     "apps/**/*.tsx",
     "shared/**/*.ts",
+    "shared/**/*.tsx",
     "server/**/*.ts",
     "tooling/**/*.ts",
     "e2e/**/*.ts",

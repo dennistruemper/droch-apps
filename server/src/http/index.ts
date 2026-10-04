@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { applications, validateApplications } from "../registry/index.ts";
+import { applications, validateApplications, type ApplicationOptions } from "../registry/index.ts";
 
 export type FrontendResponse = { body: Uint8Array | string; contentType: string };
 export type FrontendReader = (appId: string, pathname: string) => Promise<FrontendResponse | null>;
@@ -7,6 +7,7 @@ export type FrontendReader = (appId: string, pathname: string) => Promise<Fronte
 export function createApplication(options: {
   ready: () => Promise<boolean>;
   readFrontend: FrontendReader;
+  applicationOptions?: (id: string) => ApplicationOptions;
 }) {
   validateApplications(applications);
   const app = new Hono();
@@ -24,7 +25,10 @@ export function createApplication(options: {
     }
   });
   for (const application of applications) {
-    app.route(`/api/${application.id}`, application.createRoutes());
+    app.route(
+      `/api/${application.id}`,
+      application.createRoutes(options.applicationOptions?.(application.id)),
+    );
     app.get(`/${application.id}`, (context) => context.redirect(`/${application.id}/`, 308));
     app.get(`/${application.id}/*`, async (context) => {
       const frontend = await options.readFrontend(application.id, context.req.path);

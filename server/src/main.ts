@@ -8,7 +8,9 @@ import { applications, databaseDefinitions } from "./registry/index.ts";
 
 const configuration = readConfiguration(process.env);
 const root = process.cwd();
+const cleanupHandlers = new Set<() => void>();
 const databases = databaseDefinitions.map(({ id }) => ({
+  id,
   connection: connectDatabase(configuration.DATA_DIRECTORY, id, { mustExist: true }),
   migrationsFolder: `${root}/migrations/${id}`,
 }));
@@ -59,6 +61,20 @@ const app = createApplication({
   ready: async () =>
     databases.every(({ connection, migrationsFolder }) => connection.ready(migrationsFolder)),
   readFrontend,
+  applicationOptions: (id) => {
+    const database = databases.find((entry) => entry.id === id);
+    if (!database) throw new Error(`Missing database for ${id}`);
+    return {
+      db: database.connection.db,
+      ready: () => database.connection.ready(database.migrationsFolder),
+      origin: configuration.APP_ORIGIN,
+      cookieName: configuration.SESSION_COOKIE_NAME,
+      secureCookies: configuration.NODE_ENV === "production",
+      registerCleanup: (cleanup) => {
+        cleanupHandlers.add(cleanup);
+      },
+    };
+  },
 });
 const listener = getRequestListener(app.fetch);
 server.on("request", (request, response) => {
@@ -80,6 +96,7 @@ let stopping = false;
 async function shutdown() {
   if (stopping) return;
   stopping = true;
+  for (const cleanup of cleanupHandlers) cleanup();
   const deadline = setTimeout(() => {
     server.closeAllConnections();
   }, 5000);

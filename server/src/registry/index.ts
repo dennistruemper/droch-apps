@@ -22,3 +22,5 @@ export const databaseDefinitions = [
   { id: "auth", schema: "./shared/src/auth/schema.ts" },
   ...applications.map((app) => ({ id: app.id, schema: `./apps/${app.id}/src/server/schema.ts` })),
 ] as const;
+
+export type { PokerOptions as ApplicationOptions } from "@repo/poker/server";

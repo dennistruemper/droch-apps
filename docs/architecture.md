@@ -1,7 +1,7 @@
 # Architecture
 
-The foundation and runnable shells are implemented. Auth, gameplay, and SSE below
-describe the remaining target behavior.
+The foundation and poker gameplay with SSE are implemented. Auth and the word game
+below describe the remaining target behavior.
 See [decisions](decisions.md) for fixed choices versus proposed defaults.
 
 ## Stack
@@ -46,6 +46,7 @@ shared/
   src/database/
   src/storage/
   src/styles/
+  src/settings/          # shared browser-only Settings component
 tooling/
 migrations/
 ```
@@ -90,7 +91,8 @@ No extra DNS, domains, Coolify resources, or per-app ingress rules.
 Clients submit commands over HTTP. The server authorizes and validates them, commits
 the resulting state, and then notifies connected clients over SSE. Connections carry
 authorized snapshots and versioned updates. Reconnection reloads authoritative state;
-version gaps trigger resynchronization. Account or room access must be checked on
+Poker updates carry full snapshots, so version gaps are safe; older snapshots are ignored.
+Periodic snapshots and browser visibility changes reconcile missed updates. Account or room access must be checked on
 event streams as well as commands.
 
 One backend process owns `auth.sqlite`, `poker.sqlite`, and `words.sqlite` under
@@ -98,7 +100,8 @@ One backend process owns `auth.sqlite`, `poker.sqlite`, and `words.sqlite` under
 migration history (`migrations/<id>/`). Shared database infrastructure opens files
 through better-sqlite3/Drizzle, enables WAL and foreign keys, sets a busy timeout,
 and applies migrations. Native-driver binaries are built for the image platform.
-Empty initial histories initialize the files without inventing application tables.
+Poker migrations create rooms and participants. Empty auth/word histories initialize
+the files without inventing application tables.
 
 App code does not open or attach another module's file. The backend will resolve
 sessions through the public in-process auth API and pass stable user IDs to app
@@ -119,7 +122,25 @@ a move or overwrite another turn. A move history and current match state are sto
 this does not require a general event-sourcing framework.
 
 Unrevealed votes and opponents' tile racks are filtered by the server, not merely
-hidden by UI. Poker room membership and host control use anonymous credentials.
+hidden by UI. Poker room membership uses anonymous credentials. A worktree-specific,
+HttpOnly guest cookie is scoped to `/api/poker`, SameSite Lax, and Secure in production.
+POST requests require the configured origin. Room membership authorizes both reads
+and SSE, and every member can reveal/reset the round. Invite links permit joining,
+not reading existing votes without membership. Guest identity lasts 30 days from its
+last accepted command; clearing cookies loses membership; the participant may rejoin.
+
+Room commands include the expected round. Synchronous SQLite transactions apply
+votes, reveal, and reset together with monotonically increasing snapshot versions.
+Rooms expire after 30 days without joining, voting, revealing, or resetting. Requests
+lazily remove expired rooms and their memberships; views/streams do not extend expiry.
+The 50-participant limit and 4 KiB request-body limit bound individual room requests.
+SSE subscriptions authorize before opening, subscribe before the initial snapshot,
+and use bounded queues with 10-second full-snapshot reconciliation. Shutdown closes
+streams before database connections. Expired streams notify clients and close.
+
+Storage readiness blocks poker requests during pending migrations. Expected failures
+have actionable messages; unexpected failures return a reference and log error names
+and codes without SQL parameters, request bodies, or credentials.
 
 ## Custom auth and mail
 
@@ -151,7 +172,8 @@ alert visibility rules, and extend reduced-motion handling to all animations. Pr
 the semantic design approach; avoid introducing a CSS framework by default.
 
 Shared storage helpers automatically prefix app keys and implement app-only deletion.
-Theme choices are app-specific. Direct `localStorage.clear()` is forbidden in app code.
+Theme choices are app-specific. Poker and Words keep their theme pickers in a shared, header-accessible
+native Settings dialog, with keyboard focus management and Escape dismissal. Direct `localStorage.clear()` is forbidden in app code.
 Prefixes prevent collisions but do not isolate same-origin apps from each other.
 
 ## Compose, production, and migrations

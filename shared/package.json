@@ -8,11 +8,14 @@
     "./styles": {
       "types": "./src/styles/types.d.ts",
       "default": "./src/styles/index.css"
-    }
+    },
+    "./settings": "./src/settings/index.tsx"
   },
   "dependencies": {
+    "@solidjs/web": "2.0.0-rc.13",
     "better-sqlite3": "13.0.3",
     "drizzle-orm": "0.45.3",
+    "solid-js": "2.0.0-rc.13",
     "zod": "4.6.5"
   }
 }
