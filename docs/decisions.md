@@ -145,8 +145,13 @@ ownership and keep the runtime non-root. Adding an app needs no Dockerfile packa
 Build production once and run browser tests against that artifact with production
 migrations and isolated disposable data. Keep development worktree identity tests;
 verify actual development startup/hot reload when changing its tooling. Retain the
-Playwright-managed browser, sequential checks and one CI job. Persistent CI Docker
-caching and parallel execution remain options to evaluate with measurements.
+Playwright-managed browser, sequential quality checks and one CI job. The production
+image build and browser/system-dependency installation run in a native parallel step
+group, then both must succeed before the test stack starts. This overlaps independent
+setup without duplicating runner/tool/dependency setup. The prior hosted run spent
+40 seconds building and 26 seconds installing the browser; actual savings depend on
+runner contention and must be measured on the next hosted run. Persistent CI Docker
+caching remains an option to evaluate.
 
 ## Still to settle
 

@@ -35,8 +35,10 @@ source files, then installs offline. Files are created as the non-root user inst
 of recursively changing ownership after installation. The fetched store stays in
 build/development layers and is excluded from the production image.
 
-CI browser checks run against the built production image and the production Compose
-migration gate. `pnpm test:stack` publishes an allocated loopback port with a distinct
+CI builds the production image and installs the Playwright browser in a native
+parallel step group within one job. The group waits for both steps and propagates
+failures before starting the test stack. Browser checks run against the built image
+and the production Compose migration gate. `pnpm test:stack` publishes an allocated loopback port with a distinct
 per-checkout project, cookie and disposable SQLite volume; cleanup does not affect
 development stacks. Worktree identity coverage remains in the ordinary unit tests.
 

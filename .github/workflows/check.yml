@@ -23,9 +23,11 @@ jobs:
         uses: jdx/mise-action@v4
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
-      - name: Build production image
-        run: pnpm test:image
-      - run: pnpm exec playwright install --with-deps chromium
+      - parallel:
+          - name: Build production image
+            run: pnpm test:image
+          - name: Install browser and system dependencies
+            run: pnpm exec playwright install --with-deps chromium
       - name: Start production test stack
         run: |
           pnpm test:stack
