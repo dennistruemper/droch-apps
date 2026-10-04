@@ -126,8 +126,45 @@ A local production check needs an override that publishes the application port,
 for example `ports: ["127.0.0.1:3000:3000"]` under `services.application`.
 Run `docker compose --project-name droch-production-check --env-file <production-env> -f compose.yaml -f <local-override> up --build -d`.
 Use a separate Compose project and volume for that check; do not reuse development data.
-Coolify configuration, email delivery, backups, and restore verification remain to
-be completed before using real accounts or production data.
+Email delivery, backups, and restore verification remain to be completed before
+using real accounts or production data.
+
+## Preview deployments
+
+Enable previews in Coolify for the GitHub repository. The default URL template,
+`{{pr_id}}.{{domain}}`, creates `1.apps.droch.dev`, `2.apps.droch.dev`, and so on
+when the production hostname is `apps.droch.dev`.
+
+Create wildcard DNS once so future previews need no new records. For the
+`droch.dev` zone in Cloudflare, use:
+
+| Type | Name     | Content                      | Proxy status |
+| ---- | -------- | ---------------------------- | ------------ |
+| A    | `*.apps` | Coolify server's public IPv4 | DNS only     |
+
+Set any explicit preview records, such as `1.apps`, to DNS only as well; explicit
+records take precedence over the wildcard. Coolify handles HTTPS certificates for
+each preview. Cloudflare's standard Universal SSL for a full DNS setup covers the
+zone root and first-level subdomains, but not deeper names such as
+`1.apps.droch.dev`. Keeping preview records DNS only avoids that certificate
+coverage issue. See [Cloudflare's SSL limitations](https://developers.cloudflare.com/ssl/edge-certificates/universal-ssl/limitations/).
+
+Open the application's **Preview Deployment Environment Variables** and set:
+
+```dotenv
+APP_ORIGIN=$SERVICE_URL_APPLICATION
+```
+
+Enable **Runtime Variable** and disable **Literal** so the reference expands.
+Coolify generates `SERVICE_URL_APPLICATION` from the application service's preview
+domain, without the internal port. PR 1 therefore gets `https://1.apps.droch.dev`
+and PR 2 gets `https://2.apps.droch.dev` automatically. Do not hardcode a PR number
+in the shared preview variables. Keep the application service's internal port at
+3000, save, and redeploy the preview after configuration changes.
+
+These values belong to the preview variable group, which is separate from
+production. The existing production `APP_ORIGIN` remains its public origin.
+See [Coolify's preview deployment documentation](https://coolify.io/docs/applications/deployments/preview-deployments).
 
 ## Priorities
 
