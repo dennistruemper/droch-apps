@@ -133,6 +133,21 @@ color-only preferences keep their colors and default to system sans-serif; unkno
 stored font values also fall back to this default. Preset selection removes the custom
 font override. Spacing, rounding, border, and motion tokens remain developer-controlled; exposing more controls is a future product choice.
 
+## Build and CI efficiency — 2026-10-04
+
+Measurements showed compilation was already fast: 2.6 seconds for the GitHub Docker
+build's type check and complete compilation. Dependency installation and recursive
+ownership changes dominated local source rebuilds. Fetch dependencies before copying
+source, using the lockfile and workspace settings as the cache boundary; install
+offline with copy imports from the image-layer store. Create files with their intended
+ownership and keep the runtime non-root. Adding an app needs no Dockerfile package list.
+
+Build production once and run browser tests against that artifact with production
+migrations and isolated disposable data. Keep development worktree identity tests;
+verify actual development startup/hot reload when changing its tooling. Retain the
+Playwright-managed browser, sequential checks and one CI job. Persistent CI Docker
+caching and parallel execution remain options to evaluate with measurements.
+
 ## Still to settle
 
 - Word-game dictionary language, licensing, board layout, scoring, and player count.

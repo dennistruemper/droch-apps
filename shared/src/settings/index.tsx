@@ -99,8 +99,14 @@ export function AppSettings(props: { appId: string; defaultTheme: string }) {
   function chooseTheme(next: string) {
     if (next === "custom" && !savedCustomTheme) {
       const style = getComputedStyle(root);
-      const background = style.getPropertyValue("--color-bg").trim();
-      const foreground = style.getPropertyValue("--color-fg").trim();
+      // Production CSS minification shortens hex colors; color inputs need six digits.
+      const presetColor = (property: string) =>
+        style
+          .getPropertyValue(property)
+          .trim()
+          .replace(/^#([a-f\d])([a-f\d])([a-f\d])$/i, "#$1$1$2$2$3$3");
+      const background = presetColor("--color-bg");
+      const foreground = presetColor("--color-fg");
       const currentFont = style.fontFamily;
       const font: Font = currentFont.includes("monospace")
         ? "mono"

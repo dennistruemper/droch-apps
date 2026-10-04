@@ -3,11 +3,14 @@ FROM node:24.21.0-bookworm-slim AS development
 WORKDIR /workspace
 RUN npm install --global pnpm@11.25.0
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/*
-COPY . .
-RUN --mount=type=cache,target=/pnpm/store pnpm install --frozen-lockfile --store-dir /pnpm/store
-
-RUN mkdir -p /data /pnpm/store && chown -R node:node /workspace /data /pnpm
+RUN mkdir -p /data /pnpm/store && chown node:node /workspace /data /pnpm /pnpm/store
 USER node
+# Fetch only changes with dependency configuration; adding apps needs no COPY list.
+COPY --chown=node:node pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm fetch --frozen-lockfile --store-dir /pnpm/store
+COPY --chown=node:node . .
+# Copy avoids overlayfs hardlink copy-up from the fetched store's image layer.
+RUN pnpm install --offline --frozen-lockfile --store-dir /pnpm/store --package-import-method=copy
 
 FROM development AS build
 # Quality checks run before image builds in CI. Keep the runtime build independent

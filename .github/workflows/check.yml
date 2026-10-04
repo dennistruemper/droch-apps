@@ -23,9 +23,13 @@ jobs:
         uses: jdx/mise-action@v4
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
-      - run: docker build --target production -t droch-apps:check .
+      - name: Build production image
+        run: pnpm test:image
       - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm dev
+      - name: Start production test stack
+        run: |
+          pnpm test:stack
+          cat .local/test/browser.env >> "$GITHUB_ENV"
       - run: pnpm test:e2e
       - if: always()
-        run: pnpm dev:stop
+        run: pnpm test:stack:stop

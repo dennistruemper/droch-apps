@@ -30,6 +30,16 @@ fixtures. The image build runs type checking and compilation. Oxlint JS plugins
 hit [a Linux allocator bug](https://github.com/oxc-project/oxc/issues/20331) on the
 small local Docker VM; do not remove boundary enforcement to work around it.
 
+Docker fetches dependencies in a lockfile/workspace-configuration layer before copying
+source files, then installs offline. Files are created as the non-root user instead
+of recursively changing ownership after installation. The fetched store stays in
+build/development layers and is excluded from the production image.
+
+CI browser checks run against the built production image and the production Compose
+migration gate. `pnpm test:stack` publishes an allocated loopback port with a distinct
+per-checkout project, cookie and disposable SQLite volume; cleanup does not affect
+development stacks. Worktree identity coverage remains in the ordinary unit tests.
+
 ## Layout and dependency direction
 
 ```text
@@ -177,7 +187,8 @@ Theme choices are app-specific. Poker and Words keep their theme pickers in a sh
 native Settings dialog, with keyboard focus management and Escape dismissal.
 The Custom option edits background/foreground colors and selects a local font stack
 (system sans-serif, serif, or monospace). Changes preview immediately and save as
-validated preferences under the app storage prefix. Older color-only preferences
+validated preferences under the app storage prefix. Preset hex shorthand from production
+CSS minification is expanded to six digits when initializing the color inputs. Older color-only preferences
 keep their colors and use system sans-serif. Foreground covers text,
 borders, and button fills; button text uses the background color. Native controls get
 a light/dark color scheme derived from the custom background. Preset selection removes

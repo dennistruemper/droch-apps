@@ -17,7 +17,11 @@
     "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
     "db:generate": "tsx tooling/generate-migrations.ts",
     "db:migrate": "tsx tooling/migrate.ts",
-    "start": "node dist/server/main.mjs"
+    "start": "node dist/server/main.mjs",
+    "test:image": "tsx tooling/test-stack.ts build",
+    "test:stack": "tsx tooling/test-stack.ts up",
+    "test:stack:stop": "tsx tooling/test-stack.ts stop",
+    "test:stack:logs": "tsx tooling/test-stack.ts logs"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

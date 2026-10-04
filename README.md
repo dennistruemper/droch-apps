@@ -61,7 +61,9 @@ the current checkout and preserves its database files. `pnpm dev:logs` follows i
 For browser tests, first run `pnpm exec playwright install chromium`, or use
 `PLAYWRIGHT_CHANNEL=chrome pnpm test:e2e` with installed Chrome. Set `TEST_BASE_URL`
 to test another running deployment. The GitHub workflow runs checks, builds the
-production image, and tests the local Compose stack. `jdx/mise-action` installs and
+production image, and runs browser checks against that image using the production
+Compose migration gate and a disposable test database. The existing worktree identity
+tests remain part of `pnpm check`. `jdx/mise-action` installs and
 caches the Node and pnpm versions declared in `mise.toml`.
 Each PR update runs the workflow once. Push checks run only on `main`, including
 merges; a newer run cancels an unfinished run for the same PR or branch.
@@ -124,10 +126,28 @@ WAL data. Automated backup destination and restore verification remain pending.
 The former local PostgreSQL container is removed; its volume is preserved. No
 application data existed in the scaffold, so no data conversion is needed.
 
-A local production check needs an override that publishes the application port,
-for example `ports: ["127.0.0.1:3000:3000"]` under `services.application`.
-Run `docker compose --project-name droch-production-check --env-file <production-env> -f compose.yaml -f <local-override> up --build -d`.
-Use a separate Compose project and volume for that check; do not reuse development data.
+For a local check of the production image:
+
+```sh
+pnpm test:image
+pnpm test:stack
+# Load the allocated test URL:
+set -a
+. .local/test/browser.env
+set +a
+pnpm test:e2e
+pnpm test:stack:stop
+```
+
+Use the installed Playwright Chromium or add `PLAYWRIGHT_CHANNEL=chrome` for local
+Chrome. Test images, Compose projects, cookies and ports are scoped to the checkout,
+separately from development. `test:stack` starts the already-built image without a
+source mount or dependency installation; successful migrations gate startup.
+`test:stack:logs` prints migration and application logs. `test:stack:stop` removes
+only this checkout's disposable test stack and its SQLite volume. Development data
+is preserved. Run `pnpm dev` when changing development tooling to verify startup
+and hot reload as well.
+
 Email delivery, backups, and restore verification remain to be completed before
 using real accounts or production data.
 
