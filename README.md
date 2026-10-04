@@ -61,7 +61,8 @@ the current checkout and preserves its database files. `pnpm dev:logs` follows i
 For browser tests, first run `pnpm exec playwright install chromium`, or use
 `PLAYWRIGHT_CHANNEL=chrome pnpm test:e2e` with installed Chrome. Set `TEST_BASE_URL`
 to test another running deployment. The GitHub workflow runs checks, builds the
-production image, and tests the local Compose stack; its first hosted run is pending.
+production image, and tests the local Compose stack. `jdx/mise-action` installs and
+caches the Node and pnpm versions declared in `mise.toml`.
 
 Oxlint's custom boundary rule currently triggers an [upstream Linux allocator
 bug](https://github.com/oxc-project/oxc/issues/20331) on small Docker VMs. Run
