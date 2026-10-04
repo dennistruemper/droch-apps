@@ -22,8 +22,6 @@ services:
       SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-droch_session}
     volumes:
       - sqlite-data:/data
-    ports:
-      - "127.0.0.1:${APP_PORT:-3000}:3000"
     expose:
       - "3000"
     depends_on:

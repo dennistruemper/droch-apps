@@ -73,9 +73,35 @@ checking and compilation separately. The rule is enforced by host/CI checks.
 `compose.yaml` builds one application image and runs a one-shot migration service
 before starting the backend. Both use one persistent `sqlite-data` volume mounted
 at `/data`; each module owns a separate file inside it. No database server or database
-password is needed. Set `APP_ORIGIN` and optional `SESSION_COOKIE_NAME` in Coolify.
-Assign the domain to the `application` service on port 3000. New app paths and
-files require repository changes and a redeploy, with no DNS or volume configuration.
+password is needed. Use the Git repository's **Docker Compose** build pack in Coolify;
+the Dockerfile is built by Compose rather than selected as a separate deployment.
+
+| Coolify setting               | Value                                                         |
+| ----------------------------- | ------------------------------------------------------------- |
+| Branch                        | `main`                                                        |
+| Base Directory                | `/`                                                           |
+| Docker Compose Location       | `/compose.yaml`                                               |
+| Domains for `application`     | `https://apps.example.com:3000` (replace the hostname)        |
+| Runtime `APP_ORIGIN`          | `https://apps.example.com` (no port suffix or trailing slash) |
+| Runtime `SESSION_COOKIE_NAME` | Optional; defaults to `droch_session`                         |
+
+Keep Raw Compose Deployment disabled so Coolify configures its proxy. The domain's
+`:3000` suffix selects the internal container port; visitors use normal HTTPS.
+Point the hostname's DNS at the Coolify server. Only `application` needs a domain.
+Use HTTPS because production guest cookies are Secure. Origin checks use the exact
+`APP_ORIGIN` value, so it must match the public browser origin.
+
+The production definition exposes port 3000 inside Docker without publishing a
+server port. The generated development override adds its own loopback port binding.
+The named SQLite volume is already declared in Compose; no manual per-app storage
+entry is needed. Save the settings and deploy. Check that `migrate` exits with code
+0, `application` becomes healthy, and `/health/ready`, `/poker/`, and `/words/` load
+over HTTPS. A stopped migration container is expected after successful completion.
+Test a room with two browsers to verify streaming through the actual proxy.
+These settings follow [Coolify's Docker Compose documentation](https://coolify.io/docs/applications/builds/docker-compose).
+
+New app paths and files require repository changes and a redeploy, with no DNS or
+volume configuration.
 Only one backend instance is intended. SQLite files live on the server's local volume,
 never on a network filesystem or the repository bind mount.
 
@@ -90,7 +116,10 @@ WAL data. Automated backup destination and restore verification remain pending.
 The former local PostgreSQL container is removed; its volume is preserved. No
 application data existed in the scaffold, so no data conversion is needed.
 
-A local production check is `docker compose --env-file <production-env> up --build -d`.
+A local production check needs an override that publishes the application port,
+for example `ports: ["127.0.0.1:3000:3000"]` under `services.application`.
+Run `docker compose --project-name droch-production-check --env-file <production-env> -f compose.yaml -f <local-override> up --build -d`.
+Use a separate Compose project and volume for that check; do not reuse development data.
 Coolify configuration, email delivery, backups, and restore verification remain to
 be completed before using real accounts or production data.
 

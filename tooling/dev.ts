@@ -84,6 +84,7 @@ if (command === "up") {
         services: {
           application: {
             ...developmentService,
+            ports: [`127.0.0.1:${port}:3000`],
             command: [
               "sh",
               "-c",

@@ -190,6 +190,12 @@ persistent `sqlite-data` volume at `/data`. The image includes the shared backen
 all compiled frontends, and its native SQLite driver. No database service, password,
 or connection pool is needed. Adding an app creates another file within this volume.
 
+Coolify uses the Git repository's Docker Compose build pack with `compose.yaml`.
+Its proxy routes one HTTPS domain to `application` on internal port 3000; the
+production definition does not publish a host port. The public `APP_ORIGIN` must
+match the browser origin exactly. The development override publishes an allocated
+loopback port. See the README for the one-time Coolify configuration.
+
 Successful migration completion gates startup. The server opens only existing
 files, and readiness checks every file against its own migration history. Failed
 migrations block startup; each file's SQL migrations are transactional. Commit and
