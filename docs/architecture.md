@@ -173,7 +173,14 @@ the semantic design approach; avoid introducing a CSS framework by default.
 
 Shared storage helpers automatically prefix app keys and implement app-only deletion.
 Theme choices are app-specific. Poker and Words keep their theme pickers in a shared, header-accessible
-native Settings dialog, with keyboard focus management and Escape dismissal. Direct `localStorage.clear()` is forbidden in app code.
+native Settings dialog, with keyboard focus management and Escape dismissal.
+The Custom option edits background/foreground colors and selects a local font stack
+(system sans-serif, serif, or monospace). Changes preview immediately and save as
+validated preferences under the app storage prefix. Older color-only preferences
+keep their colors and use system sans-serif. Foreground covers text,
+borders, and button fills; button text uses the background color. Native controls get
+a light/dark color scheme derived from the custom background. Preset selection removes
+custom color/font inline overrides; saved customization remains available for later use. Direct `localStorage.clear()` is forbidden in app code.
 Prefixes prevent collisions but do not isolate same-origin apps from each other.
 
 ## Compose, production, and migrations

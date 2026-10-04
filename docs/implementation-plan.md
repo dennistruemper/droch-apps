@@ -56,9 +56,9 @@ Verification: 42 unit/integration tests pass across the project. Poker tests use
 actual SQL migration and cover HTTP/SSE vote privacy, membership, collaborative round control,
 origin checks, body limits, stale votes, concurrent/repeated resets, empty reveals,
 30-day expiry and cascading deletion, repeated joins, useful failures, and reopening
-the database after restart. Five Playwright checks pass in development, including
+the database after restart. Seven Playwright checks pass in development, including
 two independent browser contexts completing rounds, reload, offline reconnect, and
-error/retry behavior, shared Settings accessibility and independent app themes, and default room names. A real development-container restart preserves guest identity,
+error/retry behavior, shared Settings accessibility, independent custom app colors/fonts, old preference compatibility, preset restoration, and default room names. A real development-container restart preserves guest identity,
 private votes, and room controls. Desktop/mobile views are inspected. Production
 image build and local browser checks verify the bundled slice; streaming through
 Coolify's external proxy remains part of milestone 6.

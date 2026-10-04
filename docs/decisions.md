@@ -116,6 +116,23 @@ network calls. Apps receive stable user IDs and own authorization and game state
 - User-facing errors explain recovery. Unexpected errors include a reference linked
   to redacted server logs; request bodies and guest credentials are not logged.
 
+## Custom themes — 2026-10-04
+
+The shared Settings picker includes a Custom option for Poker and Words. The initial
+editor exposes background and foreground colors to match Drochsign's two-color design.
+The first Custom selection copies the active preset's colors and font family. Edits preview immediately
+and persist per app in browser storage; switching presets keeps the customization saved.
+A Use app default button restores each app's default theme. Stored colors must be six-digit
+hex values; malformed preferences fall back to white/near-black. Native controls follow
+the background's light/dark scheme.
+
+The user requested font customization on 2026-10-04. Custom themes offer system
+sans-serif, serif, and monospace using local font stacks, with no font downloads.
+Font choice is saved alongside colors and applies to app text and controls. Existing
+color-only preferences keep their colors and default to system sans-serif; unknown
+stored font values also fall back to this default. Preset selection removes the custom
+font override. Spacing, rounding, border, and motion tokens remain developer-controlled; exposing more controls is a future product choice.
+
 ## Still to settle
 
 - Word-game dictionary language, licensing, board layout, scoring, and player count.
