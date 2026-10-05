@@ -115,7 +115,11 @@ export function TileEditor(props: { sets: SavedSet[]; saved: () => Promise<void>
           tiles so four players can receive seven each.
         </p>
         <div class="tile-editor-rows">
-          <div aria-hidden="true">Letter · Quantity · Points</div>
+          <div class="tile-editor-head" aria-hidden="true">
+            <span>Letter</span>
+            <span>Quantity</span>
+            <span>Points</span>
+          </div>
           <For each={rows()}>
             {(row, index) => (
               <div class="tile-editor-row">

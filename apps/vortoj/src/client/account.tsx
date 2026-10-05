@@ -92,21 +92,23 @@ export function Account(props: { children: (user: User) => JSX.Element }) {
                   Your display name is shared with room members. Your email stays private.
                 </small>
               </Show>
-              <button disabled={busy()}>
-                {busy() ? "Please wait…" : sent() ? "Sign in" : "Send sign-in code"}
-              </button>
-              <Show when={sent()}>
-                <button
-                  type="button"
-                  disabled={busy()}
-                  onClick={() => {
-                    setSent(false);
-                    setError("");
-                  }}
-                >
-                  Request another code
+              <div class="account-actions">
+                <button disabled={busy()}>
+                  {busy() ? "Please wait…" : sent() ? "Sign in" : "Send sign-in code"}
                 </button>
-              </Show>
+                <Show when={sent()}>
+                  <button
+                    type="button"
+                    disabled={busy()}
+                    onClick={() => {
+                      setSent(false);
+                      setError("");
+                    }}
+                  >
+                    Request another code
+                  </button>
+                </Show>
+              </div>
             </form>
             <Show when={error()}>
               <p role="alert">{error()}</p>

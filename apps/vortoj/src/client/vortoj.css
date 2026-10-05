@@ -1,4 +1,5 @@
 .account-bar,
+.account-actions,
 .game-actions,
 .tile-editor-actions {
   display: flex;
@@ -12,10 +13,21 @@
 .account-bar button {
   padding: 0.3rem 0.7rem;
 }
+.tile-editor-rows {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  column-gap: 0.4rem;
+}
+.tile-editor-head,
 .tile-editor-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr auto;
-  gap: 0.4rem;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+}
+.tile-editor-head {
+  font-size: 0.875rem;
+}
+.tile-editor-row {
   margin-block: 0.4rem;
 }
 .tile-editor-row input {
