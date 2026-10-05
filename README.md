@@ -182,6 +182,16 @@ test mode sends nothing. On localhost, a missing token automatically selects tes
 On a public origin, production mode requires mail credentials; otherwise account sign-in
 is unavailable while poker keeps working. A token also requires `MAIL_FROM`.
 
+If delivery fails, the application container logs `Mailtrap delivery failed` with
+`transport` (`sending` or `sandbox`) and the HTTP `status`, or a `timeout`/`connection`
+reason. Provider response bodies, tokens, recipient addresses, and codes are not logged.
+A sending token needs Domain Admin permissions for the verified domain used in
+`MAIL_FROM`; read-only access cannot send email. Get the domain's sending token from
+Sending Domains > Integration > Transactional Stream > Integrate > API, or edit
+its permissions under Settings > API Tokens. A Sandbox token needs the matching
+`MAILTRAP_SANDBOX_ID`. Sandbox messages appear in Mailtrap,
+not in the recipient's real inbox.
+
 Test mode does not verify ownership of email addresses. Use separate preview data;
 keep `AUTH_MODE=production` for the real application. `NODE_ENV` stays `production` in
 both deployment stages and does not select the code behavior.
