@@ -85,25 +85,29 @@ at `/data`; each module owns a separate file inside it. No database server or da
 password is needed. Use the Git repository's **Docker Compose** build pack in Coolify;
 the Dockerfile is built by Compose rather than selected as a separate deployment.
 
-| Coolify setting               | Value                                                         |
-| ----------------------------- | ------------------------------------------------------------- |
-| Branch                        | `main`                                                        |
-| Base Directory                | `/`                                                           |
-| Docker Compose Location       | `/compose.yaml`                                               |
-| Domains for `application`     | `https://apps.example.com:3000` (replace the hostname)        |
-| Runtime `APP_ORIGIN`          | `https://apps.example.com` (no port suffix or trailing slash) |
-| Runtime `SESSION_COOKIE_NAME` | Optional; defaults to `droch_session`                         |
+| Coolify setting               | Value                                                  |
+| ----------------------------- | ------------------------------------------------------ |
+| Branch                        | `main`                                                 |
+| Base Directory                | `/`                                                    |
+| Docker Compose Location       | `/compose.yaml`                                        |
+| Domains for `application`     | `https://apps.example.com:3000` (replace the hostname) |
+| Runtime `APP_ORIGIN`          | Optional in Coolify; required for manual deployments   |
+| Runtime `SESSION_COOKIE_NAME` | Optional; defaults to `droch_session`                  |
 
-Open the application's **Configuration > Environment Variables** to set `APP_ORIGIN`;
-ensure Runtime Variable is enabled. Save and redeploy to apply it. If an existing
-Coolify configuration contains the literal value `Set APP_ORIGIN`, replace it with
-the public origin: reloading Compose preserves previously saved variable values.
+Coolify supplies the runtime `SERVICE_URL_APPLICATION` from the domain configured
+for `application`; the backend reads it directly. Outside Coolify, set `APP_ORIGIN`
+to the public origin before starting Compose. If an old Coolify configuration still
+contains `Set APP_ORIGIN`, that value can be removed: reloading Compose preserves
+previously saved variables.
 
 Keep Raw Compose Deployment disabled so Coolify configures its proxy. The domain's
 `:3000` suffix selects the internal container port; visitors use normal HTTPS.
 Point the hostname's DNS at the Coolify server. Only `application` needs a domain.
 Use HTTPS because production guest cookies are Secure. Origin checks use the exact
-`APP_ORIGIN` value, so it must match the public browser origin.
+configured origin, so it must match the public browser origin. In Coolify, the backend
+uses the generated runtime `SERVICE_URL_APPLICATION` as its canonical origin;
+`APP_ORIGIN` is the fallback for local and manual deployments. The selected value
+must be a single HTTP(S) origin without a path, trailing slash, or credentials.
 
 The production definition exposes port 3000 inside Docker without publishing a
 server port. The generated development override adds its own loopback port binding.
@@ -213,16 +217,22 @@ coverage issue. See [Cloudflare's SSL limitations](https://developers.cloudflare
 Open the application's **Preview Deployment Environment Variables** and set:
 
 ```dotenv
-APP_ORIGIN=$SERVICE_URL_APPLICATION
 AUTH_MODE=test
 ```
 
-Enable **Runtime Variable** and disable **Literal** so the reference expands.
-Coolify generates `SERVICE_URL_APPLICATION` from the application service's preview
-domain, without the internal port. PR 1 therefore gets `https://1.apps.droch.dev`
-and PR 2 gets `https://2.apps.droch.dev` automatically. Do not hardcode a PR number
-in the shared preview variables. Keep the application service's internal port at
-3000, save, and redeploy the preview after configuration changes.
+Enable **Runtime Variable**. The backend reads Coolify's generated
+`SERVICE_URL_APPLICATION` directly at startup, rather than asking Coolify to expand
+an `APP_ORIGIN` alias. That alias can retain the production URL in a preview.
+PR 1 therefore gets `https://1.apps.droch.dev` and PR 2 gets
+`https://2.apps.droch.dev` automatically. No preview-specific `APP_ORIGIN` override
+is needed. Remove any old
+`APP_ORIGIN=$SERVICE_URL_APPLICATION` preview override. Keep the application
+service's internal port at 3000, save, and redeploy after configuration changes.
+
+If requests report `Invalid request origin`, inspect `SERVICE_URL_APPLICATION` in
+the application container: it must match the browser's origin exactly. The backend
+validates that single URL and does not use the comma-separated `COOLIFY_URL` list,
+request headers, or wildcard domains to determine which origin to trust.
 
 These values belong to the preview variable group, which is separate from
 production. The existing production `APP_ORIGIN` remains its public origin.

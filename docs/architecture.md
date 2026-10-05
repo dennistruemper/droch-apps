@@ -263,9 +263,13 @@ or connection pool is needed. Adding an app creates another file within this vol
 
 Coolify uses the Git repository's Docker Compose build pack with `compose.yaml`.
 Its proxy routes one HTTPS domain to `application` on internal port 3000; the
-production definition does not publish a host port. The public `APP_ORIGIN` must
-match the browser origin exactly. The development override publishes an allocated
-loopback port. See the README for the one-time Coolify configuration.
+production definition does not publish a host port. The backend uses the runtime
+`SERVICE_URL_APPLICATION` supplied by Coolify as its canonical origin; outside
+Coolify it uses `APP_ORIGIN`. This avoids an alias resolving to the production URL
+in a preview. The selected value must be one HTTP(S) origin matching the browser
+exactly; malformed generated URLs fail startup rather than falling back. Request
+headers and Coolify's comma-separated domain list do not set the trusted origin.
+The development override publishes an allocated loopback port. See the README for the one-time Coolify configuration.
 
 Successful migration completion gates startup. The server opens only existing
 files, and readiness checks every file against its own migration history. Failed

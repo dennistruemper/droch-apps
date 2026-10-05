@@ -33,11 +33,16 @@ const configurationSchema = z.object({
 });
 
 export function readConfiguration(environment: Record<string, string | undefined>) {
-  const parsed = configurationSchema.safeParse(environment);
+  // Coolify supplies the service's canonical URL at runtime. Resolving an
+  // APP_ORIGIN alias during Compose parsing can retain the production URL in previews.
+  const parsed = configurationSchema.safeParse({
+    ...environment,
+    APP_ORIGIN: environment.SERVICE_URL_APPLICATION ?? environment.APP_ORIGIN,
+  });
   if (!parsed.success) {
     // Report field names, never values containing credentials.
     const originHint = parsed.error.issues.some((issue) => issue.path[0] === "APP_ORIGIN")
-      ? ". APP_ORIGIN must be an HTTP(S) origin, for example https://apps.example.com, without a path, trailing slash, or credentials"
+      ? ". APP_ORIGIN must be an HTTP(S) origin, for example https://apps.example.com, without a path, trailing slash, or credentials. In Coolify, check SERVICE_URL_APPLICATION as well"
       : "";
     throw new Error(
       `Invalid configuration: ${parsed.error.issues.map((issue) => issue.path.join(".")).join(", ")}${originHint}`,

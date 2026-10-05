@@ -22,7 +22,7 @@ services:
       MAILTRAP_SANDBOX_ID: ${MAILTRAP_SANDBOX_ID:-}
       NODE_ENV: production
       PORT: 3000
-      APP_ORIGIN: ${APP_ORIGIN:?}
+      APP_ORIGIN: ${APP_ORIGIN:-}
       DATA_DIRECTORY: /data
       SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-droch_session}
     volumes:

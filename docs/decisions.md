@@ -201,6 +201,16 @@ directly and omit zoom controls. Mouse pointers use a 32-pixel minimum; touch us
 Scores, history, passing, exchanges and word voting remain available through dialogs.
 The alternative mobile concepts and their standalone exploration files are removed.
 
+## Coolify runtime origin — 2026-10-05
+
+Use Coolify's runtime `SERVICE_URL_APPLICATION` as the canonical public origin when
+present, otherwise use `APP_ORIGIN`. The preview container had the correct generated
+URL while an `APP_ORIGIN=$SERVICE_URL_APPLICATION` alias retained the production URL.
+Reading the generated value at startup avoids that expansion dependency and follows
+future preview numbers automatically. Validate the selected URL strictly and fail
+closed for malformed values; do not infer trusted origins from request headers or
+accept every preview subdomain.
+
 ## Still to settle
 
 - Account deletion, email-change behavior, and app-data cleanup across independent files.
