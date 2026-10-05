@@ -3,8 +3,8 @@
 A greenfield monorepo for hobby apps: independent Solid frontends, one modular
 TypeScript backend, and one Docker Compose deployment in Coolify.
 
-The first apps are account-free scrum poker and an account-based, Scrabble-like
-word game. The word game supports playing together or taking turns days apart,
+The first apps are account-free scrum poker and Vortoj, an account-based word board
+game. Vortoj supports playing together or taking turns days apart,
 without a turn deadline.
 
 ## Project documentation
@@ -21,9 +21,13 @@ and vote anonymously. Votes stay private until someone reveals them. Anyone
 in the room can reveal votes or start the next round. Rooms and guest identities survive backend restarts, and live
 updates reconnect automatically. Rooms expire after 30 days without activity.
 
-Persistence uses `auth.sqlite`, `poker.sqlite`, and `words.sqlite`, each with its own
-Drizzle migration history. The word frontend remains a shell. Email-code accounts
-and the word game are the next milestones.
+Persistence uses `auth.sqlite`, `poker.sqlite`, and `vortoj.sqlite`, each with its own
+Drizzle migration history. Vortoj supports two to four signed-in players, room invitations,
+private seven-tile racks, a 15×15 board, bonuses, jokers, passing, exchanges, and final scores.
+Every word formed by a move needs approval from at least half the opponents (rounded up).
+There is no dictionary lookup or turn deadline. Rejected moves return the tiles and end
+that turn. English and German tile sets are included; each user can save named custom
+sets for future games. Games keep the set selected at room creation.
 
 ## Local development
 
@@ -39,12 +43,12 @@ mise exec -- pnpm dev
 
 `pnpm dev` builds the application image, initializes/migrates the SQLite files, and starts the backend with
 frontend hot reload, waits for readiness, and prints the URL. Visit `/poker/` or
-`/words/`. All apps use one backend and port. Generated configuration
-stay in ignored `.local/dev/`; nothing needs copying from `.env.example` locally.
+`/vortoj/`. All apps use one backend and port. Generated configuration
+stays in ignored `.local/dev/`; nothing needs copying from `.env.example` locally.
 With mise shell activation, the `mise exec --` prefix is unnecessary.
 
 Run the same commands in another Git worktree for an independent stack. Checkout
-paths determine Compose projects, volumes, networks, and future session-cookie
+paths determine Compose projects, volumes, networks, and session-cookie
 names; host ports are allocated at startup. Container dependency volumes are
 separate from host dependencies and from other checkouts. `pnpm dev:stop` stops only
 the current checkout and preserves its database files. `pnpm dev:logs` follows its logs.
@@ -54,7 +58,7 @@ the current checkout and preserves its database files. `pnpm dev:logs` follows i
 | `pnpm check`       | Type check, lint including import boundaries, format check, unit/integration tests |
 | `pnpm format`      | Format repository sources and docs                                                 |
 | `pnpm build`       | Build both frontends and bundle the backend and migration runner                   |
-| `pnpm test:e2e`    | Browser checks, including two-player poker, against the current URL                |
+| `pnpm test:e2e`    | Browser checks, including two-player poker and Vortoj, against the current URL     |
 | `pnpm db:generate` | Generate SQL migrations for all databases; optionally pass an app ID               |
 | `pnpm db:migrate`  | Apply each database’s migrations under `DATA_DIRECTORY`                            |
 
@@ -105,7 +109,7 @@ The production definition exposes port 3000 inside Docker without publishing a
 server port. The generated development override adds its own loopback port binding.
 The named SQLite volume is already declared in Compose; no manual per-app storage
 entry is needed. Save the settings and deploy. Check that `migrate` exits with code
-0, `application` becomes healthy, and `/health/ready`, `/poker/`, and `/words/` load
+0, `application` becomes healthy, and `/health/ready`, `/poker/`, and `/vortoj/` load
 over HTTPS. A stopped migration container is expected after successful completion.
 Test a room with two browsers to verify streaming through the actual proxy.
 These settings follow [Coolify's Docker Compose documentation](https://coolify.io/docs/applications/builds/docker-compose).
@@ -115,7 +119,7 @@ volume configuration.
 Only one backend instance is intended. SQLite files live on the server's local volume,
 never on a network filesystem or the repository bind mount.
 
-`pnpm db:generate words` generates only the word-game migration history. Without
+`pnpm db:generate vortoj` generates only the word-game migration history. Without
 an argument, it processes auth and every registered app. To migrate outside Docker,
 use `DATA_DIRECTORY=.local/data pnpm db:migrate`. Production includes the compiled
 SQLite native driver; development images include the tools needed to build it.
@@ -148,8 +152,43 @@ only this checkout's disposable test stack and its SQLite volume. Development da
 is preserved. Run `pnpm dev` when changing development tooling to verify startup
 and hot reload as well.
 
-Email delivery, backups, and restore verification remain to be completed before
-using real accounts or production data.
+Mailtrap delivery needs your credentials and a verified sender. Automated backups and
+operational restore verification remain pending.
+
+## Accounts and mail
+
+Local development and the disposable browser-test stack use the second mail implementation:
+`AUTH_MODE=local` performs no I/O and sends no email, even if a token is present. Request a sign-in code, then enter **9999**. The UI
+explains this test mode. Codes still expire after ten minutes and can be used once.
+
+Set these **runtime** environment variables in Coolify:
+
+| Variable              | Production                            | Preview / test deployment                      |
+| --------------------- | ------------------------------------- | ---------------------------------------------- |
+| `AUTH_MODE`           | `production` (default)                | `test`                                         |
+| `AUTH_SECRET`         | Random secret, at least 32 characters | Separate random secret, at least 32 characters |
+| `MAILTRAP_TOKEN`      | Your sending API token                | Your sending API token, or a Sandbox token     |
+| `MAIL_FROM`           | Verified sender email address         | Verified sender, or the Sandbox sender         |
+| `MAILTRAP_SANDBOX_ID` | Leave unset                           | Optional numeric inbox ID when using Sandbox   |
+
+Generate a secret with `openssl rand -hex 32`. Keep secrets in Coolify, never in Git.
+Production sends random six-digit codes through Mailtrap. With `AUTH_MODE=test`, the
+code is always **9999**; with a token it is still sent through Mailtrap. Without a token,
+test mode sends nothing. On localhost, a missing token automatically selects test mode.
+On a public origin, production mode requires mail credentials; otherwise account sign-in
+is unavailable while poker keeps working. A token also requires `MAIL_FROM`.
+
+Test mode does not verify ownership of email addresses. Use separate preview data;
+keep `AUTH_MODE=production` for the real application. `NODE_ENV` stays `production` in
+both deployment stages and does not select the code behavior.
+
+First verification creates an account. Display names are visible in rooms; email addresses
+stay private. Sessions last 30 days and can be revoked by signing out. Account deletion,
+email changes, and account recovery beyond requesting another code are not implemented.
+
+The former `/words/` frontend redirects to `/vortoj/`. The previous `words.sqlite` file
+was an empty scaffold: it is left on existing volumes, while migrations create
+`vortoj.sqlite`. There is no gameplay data to convert.
 
 ## Preview deployments
 
@@ -175,6 +214,7 @@ Open the application's **Preview Deployment Environment Variables** and set:
 
 ```dotenv
 APP_ORIGIN=$SERVICE_URL_APPLICATION
+AUTH_MODE=test
 ```
 
 Enable **Runtime Variable** and disable **Literal** so the reference expands.

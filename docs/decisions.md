@@ -118,7 +118,7 @@ network calls. Apps receive stable user IDs and own authorization and game state
 
 ## Custom themes — 2026-10-04
 
-The shared Settings picker includes a Custom option for Poker and Words. The initial
+The shared Settings picker includes a Custom option for Poker and Vortoj. The initial
 editor exposes background and foreground colors to match Drochsign's two-color design.
 The first Custom selection copies the active preset's colors and font family. Edits preview immediately
 and persist per app in browser storage; switching presets keeps the customization saved.
@@ -153,10 +153,57 @@ setup without duplicating runner/tool/dependency setup. The prior hosted run spe
 runner contention and must be measured on the next hosted run. Persistent CI Docker
 caching remains an option to evaluate.
 
+## Vortoj and accounts — 2026-10-04
+
+User decisions:
+
+- The word game is named **Vortoj**, with `/vortoj/` as its path.
+- Two to four logged-in players join a room link. Any logged-in user can create rooms.
+- Familiar board, scoring, rack, exchange, and joker rules; no deadline per turn.
+- No dictionary service. Opponents vote on words, and at least half must approve.
+- German and English tile sets plus an editor for named, per-user reusable custom sets.
+  Unicode letters and `*` jokers are supported.
+- Local tests always use **9999** without sending mail. Coolify test/preview stages use
+  **9999** and send through Mailtrap. Production sends random codes through Mailtrap.
+
+Implementation defaults (adjustable, not additional user decisions):
+
+- Vote on each newly formed word, including cross-words. Round the threshold up,
+  resolve early when accepted/impossible, and keep votes immutable. Rejected moves end
+  the turn while preserving the player's tiles. Unanswered votes have no deadline.
+- Creator starts and takes the first turn. No spectators or late joining after start.
+- Fifteen-square board, seven-tile racks, zero-point jokers, 50-point seven-tile bonus.
+  Two consecutive scoreless rounds end a match; deduct remaining tiles and award their
+  points only to a player who actually emptied their rack with the bag empty.
+- Freeze the selected tile set at room creation. Users keep up to 50 custom sets, with
+  28–500 total tiles, at most 80 different letters, quantities 1–100 and points 0–20.
+- Six-digit random production codes expire after ten minutes, with five attempts,
+  one-minute resend throttling, five requests per hour per address and thirty active
+  addresses per minute across the service. Sessions expire after 30 days; logout revokes.
+- `AUTH_MODE` explicitly distinguishes local (`local`), preview (`test`) and production
+  (`production`) builds. Local mode never sends, even if a token is present. A missing token
+  on localhost selects no-mail test behavior. Public production without mail credentials
+  has account sign-in disabled. Test mode uses isolated data and does not prove email ownership.
+- The old empty word-game SQLite scaffold is retained on existing volumes; Vortoj gets
+  a new migration history and file. Old frontend links redirect to the renamed app.
+
+## Vortoj board interaction — 2026-10-05
+
+Choose concept A from the mobile exploration: the board stays visible above the rack
+and move controls. Begin with the whole board; tap an area or use the zoom controls to
+reach 44-pixel squares, then pan and place tiles. Keep the close view throughout a
+placement and word approval; return to the overview after an accepted move, rather
+than after each tile. Resizing preserves an unfinished placement.
+
+Use the same interaction on desktop. When the board fits at a comfortable size, place
+directly and omit zoom controls. Mouse pointers use a 32-pixel minimum; touch uses
+44 pixels. Wider desktop and short landscape layouts put the rack beside the board.
+Scores, history, passing, exchanges and word voting remain available through dialogs.
+The alternative mobile concepts and their standalone exploration files are removed.
+
 ## Still to settle
 
-- Word-game dictionary language, licensing, board layout, scoring, and player count.
-- Exact code/session lifetimes, account registration/deletion policy, and email-change behavior.
+- Account deletion, email-change behavior, and app-data cleanup across independent files.
 - Backup destination, retention, and operational restore procedure.
 
 ## References

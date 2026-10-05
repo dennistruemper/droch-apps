@@ -9,12 +9,16 @@
       "types": "./src/styles/types.d.ts",
       "default": "./src/styles/index.css"
     },
-    "./settings": "./src/settings/index.tsx"
+    "./settings": "./src/settings/index.tsx",
+    "./auth": "./src/auth/index.ts",
+    "./contracts/auth": "./src/contracts/auth/index.ts",
+    "./mail": "./src/mail/index.ts"
   },
   "dependencies": {
     "@solidjs/web": "2.0.0-rc.13",
     "better-sqlite3": "13.0.3",
     "drizzle-orm": "0.45.3",
+    "hono": "4.13.12",
     "solid-js": "2.0.0-rc.13",
     "zod": "4.6.5"
   }

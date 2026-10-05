@@ -15,6 +15,7 @@ describe("module boundaries", () => {
     expect(checkImport(client, "../contracts/index.ts")).toBeNull();
     expect(checkImport(client, "@repo/shared/storage")).toBeNull();
     expect(checkImport(client, "@repo/shared/settings")).toBeNull();
+    expect(checkImport(client, "@repo/shared/contracts/auth")).toBeNull();
     expect(checkImport(server, "@repo/poker/server")).toBeNull();
   });
   it.each([
@@ -22,6 +23,8 @@ describe("module boundaries", () => {
     "../server/schema.ts",
     "@repo/poker/server",
     "@repo/shared/database",
+    "@repo/shared/auth",
+    "@repo/shared/mail",
     "pg",
     "better-sqlite3",
     "node:sqlite",
@@ -43,7 +46,7 @@ describe("module boundaries", () => {
     expect(checkImport(client, "@repo/shared/settings/internal.ts")).toMatch(/public export/);
   });
   it("rejects app-to-app coupling", () => {
-    expect(checkImport(client, "@repo/words/contracts")).toMatch(/other apps/);
+    expect(checkImport(client, "@repo/vortoj/contracts")).toMatch(/other apps/);
   });
   it.each([
     'import "../server/schema.ts";',

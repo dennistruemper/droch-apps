@@ -1,7 +1,6 @@
 # Architecture
 
-The foundation and poker gameplay with SSE are implemented. Auth and the word game
-below describe the remaining target behavior.
+The foundation, poker, email-code accounts, and Vortoj gameplay with SSE are implemented.
 See [decisions](decisions.md) for fixed choices versus proposed defaults.
 
 ## Stack
@@ -51,11 +50,12 @@ apps/
     src/server/
     src/contracts/
     src/domain/
-  words/                 # same internal structure
+  vortoj/                # same internal structure
 server/                  # backend entry point, app registration, composition
 shared/
-  src/auth/              # schema location; API implementation planned
-  src/mail/              # planned
+  src/auth/              # server-only account API and schema
+  src/mail/              # Mailtrap and no-op test implementations
+  src/contracts/auth/    # browser-safe account contracts
   src/database/
   src/storage/
   src/styles/
@@ -75,16 +75,16 @@ mix server exports into a browser-safe barrel file.
 
 Pure domain functions handle rules and transitions. Services wrap those functions
 with explicit persistence, clock, randomness, and external service dependencies.
-Expected failures use discriminated unions; runtime schemas validate external data.
+Expected rule failures are handled at the HTTP boundary; runtime schemas validate external data.
 
 ## Routing and adding apps
 
 ```text
 /poker/          poker frontend
-/words/          word-game frontend
+/vortoj/          word-game frontend
 /api/auth/       shared account API
 /api/poker/      poker commands, queries, and event stream
-/api/words/      word-game commands, queries, and event stream
+/api/vortoj/      word-game commands, queries, and event stream
 ```
 
 One domain and one application ingress. A typed registry supplies app IDs, URL
@@ -108,19 +108,20 @@ Poker updates carry full snapshots, so version gaps are safe; older snapshots ar
 Periodic snapshots and browser visibility changes reconcile missed updates. Account or room access must be checked on
 event streams as well as commands.
 
-One backend process owns `auth.sqlite`, `poker.sqlite`, and `words.sqlite` under
+One backend process owns `auth.sqlite`, `poker.sqlite`, and `vortoj.sqlite` under
 `DATA_DIRECTORY`. Every app and auth owns its table declarations, queries, and
 migration history (`migrations/<id>/`). Shared database infrastructure opens files
 through better-sqlite3/Drizzle, enables WAL and foreign keys, sets a busy timeout,
 and applies migrations. Native-driver binaries are built for the image platform.
-Poker migrations create rooms and participants. Empty auth/word histories initialize
-the files without inventing application tables.
+Poker owns rooms and participants. Auth owns users, verification codes, and sessions.
+Vortoj owns rooms, members, saved tile sets, and command receipts. Its room record holds
+an immutable tile-set copy and durable game state; private JSON is never sent directly.
 
-App code does not open or attach another module's file. The backend will resolve
+App code does not open or attach another module's file. The backend resolves
 sessions through the public in-process auth API and pass stable user IDs to app
 services. Apps check their own room/match permissions. User IDs are never reused;
 cross-file references cannot use foreign keys. Account deletion must preserve
-coherent game history through an explicit policy, settled before auth implementation.
+coherent game history through an explicit policy. No account-deletion API exists yet.
 There are no distributed transactions: each game command commits in its own file.
 Cross-file operations require explicit coordination when needed, not a generic
 service framework. The database boundaries are ownership conventions, not a sandbox.
@@ -167,11 +168,67 @@ verification internals.
 - Secure random session tokens, protected token storage, expiry, and revocation.
 - HttpOnly cookies, Secure in production, SameSite policy, and request-origin protection.
 - Never log codes, session credentials, or API secrets.
-- Runtime-validated configuration; Mailtrap Sandbox in development and sending API in production.
+- Runtime-validated configuration; `AUTH_MODE=local` uses a separate no-op mail implementation
+  even if a token is present. Development and disposable test stacks select this mode.
+- `AUTH_MODE=test` uses `9999`; a configured token enables Mailtrap delivery even in test mode.
+- Public production mode sends random six-digit codes and requires Mailtrap credentials.
+- Missing tokens on localhost select test mode without sending. Sandbox delivery is optional
+  using a numeric inbox ID. `NODE_ENV` controls runtime/cookie behavior, not auth mode.
 
-Account creation on first verification is the proposed baseline. Shared identity
+Account creation happens on first verification. Shared identity
 does not imply access to every app or match; app authorization remains explicit.
 Poker has a separate guest flow with no registration requirement.
+
+Codes have ten-minute expiry, five verification attempts, a one-minute resend interval,
+and five requests per address per hour. Thirty active addresses per minute bound mail
+requests across addresses. Consumption and attempt tracking commit synchronously.
+The auth cookie is scoped to `/api`; sessions expire after 30 days and logout revokes
+the digest. Auth APIs, game reads and game streams require active sessions; streams
+recheck them before sending. Emails never appear in game snapshots.
+
+## Vortoj rules and data
+
+Two to four players join through a room link after sign-in. Membership closes when the
+creator starts the game. The creator plays first. Seven tiles are dealt per player on
+an empty 15×15 board. Moves must form a connected line, cover the centre on the first
+turn, and create words of at least two tiles. New tiles activate letter/word premiums;
+playing seven tiles adds 50 points. `*` is a zero-point joker assigned to a letter in
+the selected set, fixed when accepted.
+
+All words formed by a move, including cross-words, receive independent opponent votes.
+The author cannot vote. Each word needs `ceil(opponents / 2)` approvals: one approval
+with two or three players, two with four. A move commits when every word meets its
+threshold; it is rejected as soon as any word can no longer meet its threshold.
+Rejected moves leave the rack and board unchanged and end the turn. There is no
+external word validation, vote timeout, or turn deadline.
+
+Exchanges require seven tiles left in the bag, draw before returned tiles re-enter,
+and end the turn. Games end when the bag is empty and a player empties their rack,
+or after twice the player count in consecutive scoreless turns. Remaining tile points
+are deducted; a player who goes out receives opponents' remaining points.
+
+English/German presets and per-user named custom sets define letters, quantities, and
+points. Unicode letters (with combining marks) are normalised to NFC uppercase; `ß`
+becomes `ẞ`. Symbols, digits, duplicate letters, and multi-letter tiles are rejected,
+except `*` for jokers. Custom sets contain 28–500 tiles, at most 80 different letters,
+1–100 copies per letter and 0–20 points per tile; jokers score zero. Users can keep
+50 saved sets. Editing/deleting a saved set leaves existing rooms' copies intact.
+
+Synchronous SQLite transactions apply commands with a request ID and expected version.
+Repeated IDs with the same body return the current snapshot without applying the action
+again. Changed bodies or stale versions are rejected. HTTP/SSE project a viewer's own
+rack and opponents' counts; the bag and internal state are private. Game history retains
+the latest 100 entries. Streams reconcile every five seconds; client queries/visibility
+changes recover missed updates. Pending votes and state persist across backend restarts.
+
+The active room uses a viewport-sized board workspace with a persistent private rack
+and move controls. Small screens begin in overview, then zoom to 44-pixel squares for
+panning and placement. Accepted moves restore overview. A `ResizeObserver` sizes the
+board from the available space; sufficiently large screens support direct placement
+without zoom controls. Wider screens place the rack beside the board. Camera changes
+are client-only and preserve draft placements. Scores/history, extra actions, joker
+letters and word approval use native dialogs; opponents can dismiss approval to
+inspect the board and reopen it from the rack area.
 
 ## Styles and browser storage
 
@@ -185,7 +242,7 @@ alert visibility rules, and extend reduced-motion handling to all animations. Pr
 the semantic design approach; avoid introducing a CSS framework by default.
 
 Shared storage helpers automatically prefix app keys and implement app-only deletion.
-Theme choices are app-specific. Poker and Words keep their theme pickers in a shared, header-accessible
+Theme choices are app-specific. Poker and Vortoj keep their theme pickers in a shared, header-accessible
 native Settings dialog, with keyboard focus management and Escape dismissal.
 The Custom option edits background/foreground colors and selects a local font stack
 (system sans-serif, serif, or monospace). Changes preview immediately and save as

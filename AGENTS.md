@@ -23,6 +23,17 @@ to understand the intended order of work.
 - Use Drochsign as the CSS starting point, with independent app themes.
 - Development must support multiple independent Git worktrees concurrently.
 
+## Vortoj product rules
+
+- The word app is Vortoj, at `/vortoj/`, with two to four authenticated room members.
+- Keep racks private in HTTP and event-stream payloads; filtering is server-side.
+- No external dictionary: opponents approve every newly formed word. At least half
+  the opponents, rounded up, must approve. Turns and votes have no deadline.
+- Include English/German presets and per-user named reusable custom tile sets.
+- Local tests use the no-op mail implementation and code `9999`, even with a token.
+  Coolify previews use `AUTH_MODE=test` (`9999` plus Mailtrap delivery); production
+  uses random codes. Keep preview data separate from real accounts.
+
 ## Boundaries and implementation
 
 - Public APIs are explicit exports. An `index.ts` is an API convention, not enforcement.

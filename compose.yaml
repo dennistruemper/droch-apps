@@ -15,6 +15,11 @@ services:
       context: .
       target: production
     environment:
+      AUTH_SECRET: ${AUTH_SECRET:-}
+      AUTH_MODE: ${AUTH_MODE:-production}
+      MAILTRAP_TOKEN: ${MAILTRAP_TOKEN:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      MAILTRAP_SANDBOX_ID: ${MAILTRAP_SANDBOX_ID:-}
       NODE_ENV: production
       PORT: 3000
       APP_ORIGIN: ${APP_ORIGIN:?}

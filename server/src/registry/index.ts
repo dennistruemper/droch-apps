@@ -1,5 +1,5 @@
 import { appDefinition as poker, createRoutes as createPokerRoutes } from "@repo/poker/server";
-import { appDefinition as words, createRoutes as createWordsRoutes } from "@repo/words/server";
+import { appDefinition as words, createRoutes as createWordsRoutes } from "@repo/vortoj/server";
 
 // The only application registration list. Build, development, and HTTP mounting use it.
 export const applications = [
@@ -23,4 +23,6 @@ export const databaseDefinitions = [
   ...applications.map((app) => ({ id: app.id, schema: `./apps/${app.id}/src/server/schema.ts` })),
 ] as const;
 
-export type { PokerOptions as ApplicationOptions } from "@repo/poker/server";
+import type { PokerOptions } from "@repo/poker/server";
+import type { VortojOptions } from "@repo/vortoj/server";
+export type ApplicationOptions = PokerOptions & Pick<VortojOptions, "resolveUser">;

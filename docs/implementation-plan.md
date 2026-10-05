@@ -1,7 +1,7 @@
 # Implementation plan
 
-Milestones 1–3 are implemented; verification details are recorded below.
-Auth, the word game, and deployment operations remain pending. See [architecture](architecture.md) and
+Milestones 1–5 have implemented gameplay/account slices; verification details are recorded below.
+Account lifecycle operations and deployment recovery work remain pending. See [architecture](architecture.md) and
 [decisions](decisions.md).
 
 ## 1. Foundation — implemented
@@ -18,7 +18,7 @@ cross-module relative imports and client-to-server imports within an app package
 
 ## 2. Runnable shells and isolated development — implemented
 
-- Build frontend shells at `/poker/` and `/words/` with a shared typed registry.
+- Build frontend shells at `/poker/` and `/vortoj/` with a shared typed registry.
 - Create the Hono composition server, static serving, and scoped SPA fallbacks.
 - Add SQLite/Drizzle per app and auth, migration execution, production Compose, and dev overrides.
 - Add worktree-specific resource IDs, port allocation, cookies, and startup URLs.
@@ -38,8 +38,7 @@ checks both development and production shells, app-specific themes, navigation,
 and API/asset 404s. Frontend/backend reload and concurrent-checkout isolation are
 verified manually. A deliberately failed migration leaves the application unstarted;
 reapplying the production migration is safe. CI configuration is added; the hosted run has not happened yet.
-Auth/session isolation currently verifies distinct configured cookie names; real
-session behavior must be tested when auth is implemented.
+Auth/session isolation is covered with real server-side sessions and independently named cookies.
 
 ## 3. Poker vertical slice — implemented
 
@@ -63,34 +62,55 @@ private votes, and room controls. Desktop/mobile views are inspected. Production
 image build and local browser checks verify the bundled slice; streaming through
 Coolify's external proxy remains part of milestone 6.
 
-## 4. Custom email-code accounts
+## 4. Custom email-code accounts — implemented
 
-- Implement Mailtrap sending and development Sandbox configuration.
-- Add focused auth APIs, verification records, accounts, and server-side sessions.
-- Implement code expiry, keyed digests, atomic consumption, throttling, and revocation.
-- Keep auth queries in the auth module and use stable user IDs through its public API.
-- Settle account deletion and app-data cleanup across independent SQLite files.
-- Document environment setup without committing credentials.
+- Shared in-process auth API: request, verify, session lookup, and logout.
+- Keyed code digests, atomic one-use consumption, expiry, attempt/resend limits;
+  hashed random session credentials and origin-protected HttpOnly cookies.
+- Separate no-op local mail implementation; local/test code `9999`. Preview Mailtrap
+  delivery still uses `9999`; production delivers random six-digit codes.
+- Explicit runtime auth mode, sender/token configuration and optional Mailtrap Sandbox.
+- Accounts are created on first successful verification. No password functionality.
 
-Acceptance: login works end to end; expiry, attempt limits, resend behavior,
-concurrent verification, code reuse, logout, origin protection, and worktree session
-separation are tested. No password functionality exists.
+Remaining: account deletion/email-change policy and coordinated app-data cleanup.
+Real Mailtrap delivery needs credentials and sender verification in Coolify.
 
-## 5. Word-game slice
+## 5. Vortoj gameplay — implemented
 
-- Settle dictionary language/licensing and rules before implementation.
-- Implement invitations, membership, racks, board, validation, and scoring.
-- Add passing, exchanging, match completion, durable history, and no turn deadline.
-- Use transactional command IDs and match versions for duplicate/stale submissions.
-- Reuse live-update infrastructure while keeping domain and authorization rules app-specific.
+- Two to four authenticated players, room links, durable membership and private racks.
+- Fifteen-square board, bonuses, scoring, jokers, passing, exchanges and game completion.
+- Every formed word receives opponent votes; no dictionary dependency or turn deadline.
+- German/English presets and per-user saved custom tile sets, copied into each room.
+- Atomic command IDs and expected versions; viewer-specific HTTP/SSE snapshots,
+  periodic reconciliation, restart persistence and game history.
+- Browser account flow, room lobby, tile editor, interactive board, rack, word approval,
+  final scores, reconnect messages and shared theme Settings.
 
-Acceptance: players can play together or resume after days. Concurrent and retried
-commands cannot apply duplicate turns. Opponents' private rack data is never sent.
-Restart and reconnect preserve the authoritative match.
+Verification: unit/integration coverage exercises scoring and premiums, connected
+placements, cross-words, Unicode sets and joker restrictions, approval thresholds for
+all player counts, rejection/turn changes, stale and duplicate commands, rollback,
+set ownership/copying, session expiry/revocation and HTTP/SSE rack privacy. Tests use
+real SQLite migrations and reopening durable files.
+
+Verification completed: `pnpm check` passes strict type checking, import-boundary lint,
+formatting and **92 tests** across 12 files. All **nine Playwright checks** pass against
+both the development stack and the production Docker image. The new two-context flow
+covers local `9999` sign-in, saving/using a custom set, room invitations, private racks,
+accepted/rejected words, reload recovery and logout. A scoped production-container
+restart also preserves both sessions, private racks and pending word votes; repeated
+command IDs remain safe after recovery. The desktop browser's full game view is inspected.
+The chosen mobile board design keeps the rack visible, supports overview/zoom/panning,
+returns to overview after accepted words, and places directly when the whole board
+fits. A phone regression covers 375×667, 320×568 and 667×375 layouts, joker selection,
+private racks, approval, exchange/pass dialogs, final scores and preserving drafts across desktop
+resizing. That flow also passes with WebKit against the development stack.
+Local production testing uses HTTP; WebKit does not accept its Secure session cookie,
+so the production WebKit account flow requires an HTTPS test origin. The standalone explorations are removed.
+Real Mailtrap delivery and streaming through Coolify still need deployment verification.
 
 ## 6. Deployment verification and future-app workflow
 
-- Extend foundation CI and browser checks with scoped checks and multiplayer tests.
+- Keep extending the implemented scoped CI/browser checks as apps grow.
 - Document the one-time Coolify/domain/Mailtrap setup, backups, and restore procedure.
 - Add a small app scaffold command using the chosen package layout and registry.
 - Verify a temporary third app builds and mounts without Compose, DNS, or Coolify edits.

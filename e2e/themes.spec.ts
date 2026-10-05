@@ -45,7 +45,7 @@ test("custom colors and fonts preview, persist per app, and leave presets intact
     .poll(palette)
     .toEqual({ background: "#102030", foreground: "#f2e8cf", scheme: "dark" });
   await expect.poll(bodyFont).toContain("Georgia");
-  await page.goto("/words/");
+  await page.goto("/vortoj/");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "gamegirl");
   await settings.click();
   await theme.selectOption("custom");

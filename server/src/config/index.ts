@@ -1,6 +1,20 @@
 import { z } from "zod";
 
 const configurationSchema = z.object({
+  AUTH_SECRET: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z.string().min(32).max(256).optional(),
+  ),
+  AUTH_MODE: z.enum(["local", "test", "production"]).default("production"),
+  MAILTRAP_TOKEN: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z.string().optional(),
+  ),
+  MAIL_FROM: z.preprocess((value) => (value === "" ? undefined : value), z.email().optional()),
+  MAILTRAP_SANDBOX_ID: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z.string().regex(/^\d+$/).optional(),
+  ),
   DATA_DIRECTORY: z.string().min(1),
   APP_ORIGIN: z.string().refine((value) => {
     try {
@@ -30,4 +44,16 @@ export function readConfiguration(environment: Record<string, string | undefined
     );
   }
   return parsed.data;
+}
+
+export function accountPolicy(configuration: ReturnType<typeof readConfiguration>) {
+  const local = ["localhost", "127.0.0.1"].includes(new URL(configuration.APP_ORIGIN).hostname);
+  const localMode = configuration.AUTH_MODE === "local" || (local && !configuration.MAILTRAP_TOKEN);
+  const sendMail = !localMode && Boolean(configuration.MAILTRAP_TOKEN);
+  const testMode = localMode || configuration.AUTH_MODE === "test";
+  return {
+    testMode,
+    sendMail,
+    ready: (testMode || sendMail) && (!sendMail || Boolean(configuration.MAIL_FROM)),
+  };
 }
