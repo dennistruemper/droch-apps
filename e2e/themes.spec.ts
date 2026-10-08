@@ -46,10 +46,10 @@ test("custom colors and fonts preview, persist per app, and leave presets intact
     .toEqual({ background: "#102030", foreground: "#f2e8cf", scheme: "dark" });
   await expect.poll(bodyFont).toContain("Georgia");
   await page.goto("/vortoj/");
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "gamegirl");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "antique-paper");
   await settings.click();
   await theme.selectOption("custom");
-  await expect(font).toHaveValue("mono");
+  await expect(font).toHaveValue("sans");
   await font.selectOption("sans");
   await color("Background color", "#faf6f0");
   await color("Text and border color", "#29313a");

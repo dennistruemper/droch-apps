@@ -78,18 +78,7 @@ body:has(.game-shell) {
   flex-direction: column;
 }
 #app:has(.game-shell) > header {
-  width: 100%;
-  max-width: 1000px;
-  padding: 6px 12px;
-  gap: 8px;
-  flex: none;
-}
-#app:has(.game-shell) > header nav {
-  gap: 10px;
-  font-size: 14px;
-}
-#app:has(.game-shell) > header button {
-  min-height: 44px;
+  display: none;
 }
 #app:has(.game-shell) > footer {
   display: none;
@@ -97,18 +86,13 @@ body:has(.game-shell) {
 #app > main.room-page:has(.game-shell) {
   padding: 0;
   gap: 0;
-  max-width: 1000px;
+  max-width: 1440px;
   width: 100%;
   flex: 1;
   min-height: 0;
 }
 .room-page:has(.game-shell) > .account-bar {
-  padding: 3px 12px;
-  flex: none;
-  font-size: 12px;
-}
-.room-page:has(.game-shell) > .account-bar button {
-  min-height: 36px;
+  display: none;
 }
 .game-shell {
   flex: 1;
@@ -565,4 +549,14 @@ body:has(.game-shell) {
 .game-actions button[aria-label="More game actions"] {
   min-width: 44px;
   flex: none;
+}
+
+.game-heading .game-player {
+  display: block;
+  font-size: 12px;
+}
+.game-heading [data-panel-trigger] {
+  padding: 0;
+  width: 44px;
+  border: 1px solid var(--color-fg);
 }

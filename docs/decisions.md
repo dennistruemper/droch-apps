@@ -238,3 +238,33 @@ accept every preview subdomain.
 - [Coolify Compose](https://coolify.io/docs/applications/builds/docker-compose)
 - [Drizzle migrations](https://orm.drizzle.team/docs/migrations)
 - [mise](https://mise.jdx.dev/)
+
+## Vortoj Antique paper default — 2026-10-08
+
+The user chose Antique paper after comparing three aged-paper palettes. Add it to
+the shared theme picker and use it as Vortoj’s default: `#f3e8c8` background with
+`#231f18` foreground, using the standard system sans-serif font. Keep existing
+per-app saved choices; changing the default does not reset user preferences.
+The initial HTML uses the same theme so first paint matches the app default.
+
+## Shared side panel — 2026-10-08
+
+The user selected the side-panel navigation design for Vortoj. Keep room name,
+player identity, turn status and personal score visible, replacing the repeated
+app/account header rows during active games. Use an outlined burger on the left.
+Rules belongs in the panel alongside scores, rooms, settings and sign-out; All
+apps is a separate return link. The panel is extracted as a browser-safe public
+shared module; apps own its navigation content. At 1280px or wider, display it as
+an expanded column by default and remember explicit desktop collapse per app.
+Below that width, overlay it as a native modal drawer, closed initially, to preserve
+board space and keyboard focus behavior. Poker can adopt the component later.
+
+## Elm-style account flow trial — 2026-10-08
+
+The user asked to implement the proposed typed model/message/update/command pattern,
+starting with the account component, and preserve the old file for comparison.
+After comparing the result, the user chose to keep the rewrite and remove the
+local backup. Use ordinary TypeScript and one Solid model signal;
+no new state-management dependency. Keep I/O separate from pure transitions and
+retain feature-local ownership. Evaluate this example before expanding the pattern
+to gameplay; small independent UI controls can continue to use signals.

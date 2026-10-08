@@ -19,14 +19,16 @@ function Home() {
     </main>
   );
 }
-function RoomRoute() {
+function RoomRoute(props: { openSettings: () => void }) {
   const params = useParams<{ id: string }>();
   return (
     <main class="room-page">
       <Account>
-        {(user) => (
+        {(user, signOut) => (
           <Show when={params.id} keyed>
-            {(id) => <Room id={id} user={user} />}
+            {(id) => (
+              <Room id={id} user={user} signOut={signOut} openSettings={props.openSettings} />
+            )}
           </Show>
         )}
       </Account>
@@ -41,24 +43,36 @@ function NotFound() {
     </main>
   );
 }
-const Router = createRouter({
-  base: "/vortoj",
-  routes: [
-    { path: "/", component: Home },
-    { path: "/room/:id", component: RoomRoute },
-    { path: "*404", component: NotFound },
-  ],
-});
 function App() {
+  let openSettings = () => {};
+  const Router = createRouter({
+    base: "/vortoj",
+    routes: [
+      { path: "/", component: Home },
+      { path: "/room/:id", component: () => <RoomRoute openSettings={() => openSettings()} /> },
+      { path: "*404", component: NotFound },
+    ],
+  });
   return (
     <>
-      <header>
-        <strong>Vortoj</strong>
-        <nav aria-label="App navigation">
-          <a href="/">All apps</a>
-          <AppSettings appId="vortoj" defaultTheme={appDefinition.theme} />
-        </nav>
-      </header>
+      <AppSettings
+        appId="vortoj"
+        defaultTheme={appDefinition.theme}
+        trigger={(open) => {
+          openSettings = open;
+          return (
+            <header>
+              <strong>Vortoj</strong>
+              <nav aria-label="App navigation">
+                <a href="/">All apps</a>
+                <button type="button" onClick={open}>
+                  Settings
+                </button>
+              </nav>
+            </header>
+          );
+        }}
+      />
       <Router />
       <footer>
         <small>Droch apps · Vortoj</small>

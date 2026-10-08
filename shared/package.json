@@ -12,7 +12,8 @@
     "./settings": "./src/settings/index.tsx",
     "./auth": "./src/auth/index.ts",
     "./contracts/auth": "./src/contracts/auth/index.ts",
-    "./mail": "./src/mail/index.ts"
+    "./mail": "./src/mail/index.ts",
+    "./navigation": "./src/navigation/index.tsx"
   },
   "dependencies": {
     "@solidjs/web": "2.0.0-rc.13",

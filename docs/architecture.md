@@ -246,6 +246,9 @@ Drochsign is vendored as an unmodified snapshot in `shared/src/styles/drochsign.
 its revision and update process are recorded in `UPSTREAM.md`. Integration overrides
 are separate in `index.css`. Use its semantic styles and two-color theme variables. Each app has its own
 default theme and may add theme definitions and styles for specialized UI.
+Antique paper is available in the shared picker and is Vortoj’s default: warm
+aged-paper background `#f3e8c8`, near-black ink `#231f18`, and system sans-serif.
+Saved per-app theme choices take precedence over the default.
 
 Adapt direct-body layout selectors to the Solid mount structure, scope field-specific
 alert visibility rules, and extend reduced-motion handling to all animations. Preserve
@@ -254,6 +257,18 @@ the semantic design approach; avoid introducing a CSS framework by default.
 Shared storage helpers automatically prefix app keys and implement app-only deletion.
 Theme choices are app-specific. Poker and Vortoj keep their theme pickers in a shared, header-accessible
 native Settings dialog, with keyboard focus management and Escape dismissal.
+Active Vortoj games replace the app header and account row with a compact room
+header showing room name, player identity, turn status, personal score, and an
+outlined burger button. The shared `@repo/shared/navigation` SidePanel accepts
+app-owned menu and main-content render functions. Its native dialog is a modal
+left drawer below 1280px and a nonmodal 240px column at wider widths. The desktop
+column starts expanded unless the app-prefixed `side-panel` preference records
+collapse; mobile always starts closed. Rules, players/scores, rooms, settings and
+sign-out are Vortoj-owned menu items. A separated All apps link sits at the bottom.
+Native modal focus containment, Escape and backdrop dismissal restore focus to the
+burger. Resizing switches modes without saving a mobile open state. The shared
+Settings component accepts an optional trigger renderer so its single dialog can
+be opened from either the lobby header or the game menu.
 The Custom option edits background/foreground colors and selects a local font stack
 (system sans-serif, serif, or monospace). Changes preview immediately and save as
 validated preferences under the app storage prefix. Preset hex shorthand from production
@@ -316,3 +331,15 @@ prints its URL. Local runtime settings are ignored, never committed.
 
 Use the same migrations and database conventions locally and in production. The
 development Compose override adds source mounts and hot reload.
+
+## Account UI state
+
+Vortoj's account flow uses a local typed model (`account-model.ts`), messages and
+pure `init`/`update` functions that return the next model and explicit commands.
+The component holds one model signal; synchronous dispatch keeps transitions ordered
+independently of Solid's deferred rendering. `account-commands.ts` executes HTTP
+commands and validates responses. Requests carry IDs, duplicate submissions are
+ignored while pending, and component cleanup aborts requests and ignores late results.
+Email entry, code entry and signed-in screens are discriminated states. Resending
+keeps code entry available if delivery fails. This is a feature-local example, not
+a global store requirement or a framework for every small UI control.

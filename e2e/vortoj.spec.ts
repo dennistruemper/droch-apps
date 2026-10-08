@@ -304,3 +304,108 @@ test("small-phone board camera, joker placement, approvals and desktop resizing"
     await b.close();
   }
 });
+
+test("game side panel adapts, restores focus, persists desktop choice and signs out", async ({
+  browser,
+  baseURL,
+}) => {
+  test.skip(!stackMode(baseURL ?? ""), "Account checks require the isolated local test auth mode");
+  const a = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const b = await browser.newContext();
+  const owner = await a.newPage(),
+    guest = await b.newPage();
+  const errors: string[] = [];
+  owner.on("pageerror", (error) => errors.push(error.message));
+  try {
+    await signIn(owner, `${baseURL}/vortoj/`, "PanelAlice");
+    const response = await owner.request.post(`${baseURL}/api/vortoj/rooms`, {
+      data: { title: "Panel word night", tileSetId: "english" },
+      headers: { Origin: baseURL! },
+    });
+    await expect(response).toBeOK();
+    const room = snapshotSchema.parse(await response.json());
+    const url = `${baseURL}/vortoj/room/${room.id}`;
+    await owner.goto(url);
+    await signIn(guest, url, "PanelBob");
+    await guest.getByRole("button", { name: "Join room", exact: true }).click();
+    await owner.getByRole("button", { name: "Start game", exact: true }).click();
+    const menu = owner.getByRole("dialog", { name: "Game menu", exact: true });
+    const open = () => owner.getByRole("button", { name: "Open game menu", exact: true });
+    const close = () => owner.getByRole("button", { name: "Close game menu", exact: true });
+    await expect(menu).toBeVisible();
+    await expect(owner.locator(".game-player")).toHaveText("Playing as PanelAlice");
+    await expect(menu).not.toContainText("Panel word night");
+    await expect(menu).not.toContainText("Playing as");
+    await owner.getByRole("button", { name: "Players, scores and game details" }).focus();
+    await expect(
+      owner.getByRole("button", { name: "Players, scores and game details" }),
+    ).toBeFocused();
+    await close().click();
+    await expect(menu).not.toBeVisible();
+    await owner.reload();
+    await expect(open()).toBeVisible();
+    await expect(menu).not.toBeVisible();
+    await open().click();
+    await expect(menu).toBeVisible();
+    await menu.getByRole("button", { name: "Rules", exact: true }).focus();
+    await owner.keyboard.press("Escape");
+    await expect(menu).not.toBeVisible();
+    await expect(open()).toBeFocused();
+    await open().click();
+    await expect(menu).toBeVisible();
+    await owner.setViewportSize({ width: 375, height: 667 });
+    await expect(menu).not.toBeVisible();
+    await expect(
+      owner.getByRole("heading", { name: "Panel word night", exact: true }),
+    ).toBeVisible();
+    await expect(owner.locator(".game-player")).toBeVisible();
+    await open().focus();
+    await owner.keyboard.press("Enter");
+    await expect(menu).toBeVisible();
+    for (let index = 0; index < 12; index++) {
+      await owner.keyboard.press("Tab");
+      // Native dialogs allow the browser chrome in the tab cycle, but keep game controls inert.
+      expect(
+        await menu.evaluate(
+          (element) =>
+            element.contains(document.activeElement) || document.activeElement === document.body,
+        ),
+      ).toBe(true);
+      expect(await menu.evaluate((element) => element.matches(":modal"))).toBe(true);
+    }
+    await menu.getByRole("button", { name: "Close menu panel", exact: true }).focus();
+    await owner.keyboard.press("Escape");
+    await expect(menu).not.toBeVisible();
+    await expect(open()).toBeFocused();
+    await open().click();
+    await owner.mouse.click(370, 300);
+    await expect(menu).not.toBeVisible();
+    await expect(open()).toBeFocused();
+    await open().click();
+    await menu.getByRole("button", { name: "Rules", exact: true }).click();
+    await expect(menu).not.toBeVisible();
+    await expect(owner.getByRole("dialog", { name: "Game rules", exact: true })).toBeVisible();
+    await owner.getByRole("button", { name: "Close game rules", exact: true }).click();
+    await expect(open()).toBeFocused();
+    await open().click();
+    await menu.getByRole("button", { name: "Settings", exact: true }).click();
+    await expect(owner.getByLabel("Your theme")).toHaveValue("antique-paper");
+    await expect(owner.locator("#vortoj-theme")).toHaveCount(1);
+    await owner.getByRole("button", { name: "Close settings", exact: true }).click();
+    await expect(open()).toBeFocused();
+    await expect
+      .poll(() => owner.evaluate(() => document.documentElement.scrollWidth))
+      .toBeLessThanOrEqual(375);
+    await owner.setViewportSize({ width: 1440, height: 900 });
+    await expect(menu).toBeVisible();
+    await owner.setViewportSize({ width: 375, height: 667 });
+    await expect(menu).not.toBeVisible();
+    await open().click();
+    await menu.getByRole("button", { name: "Sign out", exact: true }).click();
+    await expect(owner.getByLabel("Email address")).toBeVisible();
+    expect(errors).toEqual([]);
+  } finally {
+    await a.close();
+    await b.close();
+  }
+});

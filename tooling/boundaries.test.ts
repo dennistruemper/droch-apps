@@ -15,6 +15,7 @@ describe("module boundaries", () => {
     expect(checkImport(client, "../contracts/index.ts")).toBeNull();
     expect(checkImport(client, "@repo/shared/storage")).toBeNull();
     expect(checkImport(client, "@repo/shared/settings")).toBeNull();
+    expect(checkImport(client, "@repo/shared/navigation")).toBeNull();
     expect(checkImport(client, "@repo/shared/contracts/auth")).toBeNull();
     expect(checkImport(server, "@repo/poker/server")).toBeNull();
   });
@@ -44,6 +45,12 @@ describe("module boundaries", () => {
     expect(checkImport(settings, "node:crypto")).toMatch(/server libraries/);
     expect(checkImport(settings, "../database/index.ts")).toMatch(/server or unclassified/);
     expect(checkImport(client, "@repo/shared/settings/internal.ts")).toMatch(/public export/);
+  });
+  it("keeps shared navigation browser-safe with an explicit public API", () => {
+    const navigation = resolve(root, "shared/src/navigation/index.tsx");
+    expect(checkImport(navigation, "node:fs")).toMatch(/server libraries/);
+    expect(checkImport(navigation, "../auth/index.ts")).toMatch(/server or unclassified/);
+    expect(checkImport(client, "@repo/shared/navigation/internal.ts")).toMatch(/public export/);
   });
   it("rejects app-to-app coupling", () => {
     expect(checkImport(client, "@repo/vortoj/contracts")).toMatch(/other apps/);

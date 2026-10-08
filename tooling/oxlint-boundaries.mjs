@@ -70,7 +70,8 @@ export function checkImport(filename, specifier) {
     sourcePath[1] === "contracts" ||
     sourcePath[1] === "domain" ||
     sourcePath[1] === "storage" ||
-    sourcePath[1] === "settings";
+    sourcePath[1] === "settings" ||
+    sourcePath[1] === "navigation";
   if (
     browser &&
     (/^node:/.test(specifier) ||
@@ -118,7 +119,9 @@ export function checkImport(filename, specifier) {
     : [];
   if (
     browser &&
-    !["client", "contracts", "domain", "storage", "styles", "settings"].includes(destinationPath[1])
+    !["client", "contracts", "domain", "storage", "styles", "settings", "navigation"].includes(
+      destinationPath[1],
+    )
   )
     return "Browser-safe modules cannot import server or unclassified modules.";
   if (

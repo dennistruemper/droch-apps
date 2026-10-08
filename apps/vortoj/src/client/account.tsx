@@ -1,25 +1,56 @@
-import { createSignal, onCleanup, Show } from "solid-js";
+import { createSignal, onSettled, Show } from "solid-js";
 import type { JSX } from "@solidjs/web";
-import { sessionSchema, codeInstructionsSchema, type User } from "@repo/shared/contracts/auth";
-import { request, message } from "./api.ts";
-export function Account(props: { children: (user: User) => JSX.Element }) {
-  const [user, setUser] = createSignal<User | null>(null),
-    [loaded, setLoaded] = createSignal(false),
-    [email, setEmail] = createSignal(""),
-    [sent, setSent] = createSignal(false),
-    [instructions, setInstructions] = createSignal({ codeLength: 6, message: "" }),
-    [busy, setBusy] = createSignal(false),
-    [error, setError] = createSignal("");
+import type { User } from "@repo/shared/contracts/auth";
+import { init, update, type Message, type Transition } from "./account-model.ts";
+import { execute } from "./account-commands.ts";
+import { message } from "./api.ts";
+export function Account(props: {
+  children: (user: User, signOut: () => Promise<void>) => JSX.Element;
+}) {
+  const initial = init();
+  let current = initial.model;
+  const [model, setModel] = createSignal(current);
   const controller = new AbortController();
-  onCleanup(() => controller.abort());
-  void request("/api/auth/session", undefined, "GET", controller.signal)
-    .then((data) => setUser(sessionSchema.parse(data).user))
-    .catch((error) => {
-      if (!controller.signal.aborted) setError(message(error));
-    })
-    .finally(() => setLoaded(true));
+
+  function dispatch(event: Message): Promise<void> {
+    if (controller.signal.aborted) return Promise.resolve();
+    return apply(update(current, event));
+  }
+  async function apply(transition: Transition): Promise<void> {
+    // Keep transition ordering synchronous even when Solid batches rendering.
+    current = transition.model;
+    setModel(current);
+    for (const command of transition.commands) {
+      try {
+        await dispatch(await execute(command, controller.signal));
+      } catch (error) {
+        await dispatch({ kind: "failed", id: command.id, error: message(error) });
+      }
+    }
+  }
+  const screen = () => model().screen;
+  const user = () => {
+    const value = screen();
+    return value.kind === "signed-in" ? value.user : null;
+  };
+  const email = () => {
+    const value = screen();
+    return value.kind === "email" || value.kind === "code" ? value.email : "";
+  };
+  const sent = () => screen().kind === "code";
+  const instructions = () => {
+    const value = screen();
+    return value.kind === "code" ? value.instructions : { codeLength: 6, message: "" };
+  };
+  const busy = () => model().pending !== null;
+  const error = () => model().error;
+  const signOut = () => dispatch({ kind: "sign-out" });
+  onSettled(() => {
+    void apply(initial);
+    return () => controller.abort();
+  });
   return (
-    <Show when={loaded()} fallback={<p>Loading your account…</p>}>
+    <Show when={screen().kind !== "loading"} fallback={<p>Loading your account…</p>}>
       <Show
         when={user()}
         keyed
@@ -30,32 +61,13 @@ export function Account(props: { children: (user: User) => JSX.Element }) {
             <form
               onSubmit={async (event) => {
                 event.preventDefault();
-                setBusy(true);
-                setError("");
                 const form = new FormData(event.currentTarget);
-                try {
-                  const address = String(form.get("email") ?? email()).trim();
-                  setEmail(address);
-                  if (sent()) {
-                    const data = await request("/api/auth/verify", {
-                      email: address,
-                      code: String(form.get("code") ?? ""),
-                      name: String(form.get("name") ?? ""),
-                    });
-                    setUser(sessionSchema.parse(data).user);
-                  } else {
-                    setInstructions(
-                      codeInstructionsSchema.parse(
-                        await request("/api/auth/code", { email: address }),
-                      ),
-                    );
-                    setSent(true);
-                  }
-                } catch (error) {
-                  setError(message(error));
-                } finally {
-                  setBusy(false);
-                }
+                await dispatch({
+                  kind: "submit",
+                  email: String(form.get("email") ?? email()),
+                  code: String(form.get("code") ?? ""),
+                  name: String(form.get("name") ?? ""),
+                });
               }}
             >
               <label for="email">Email address</label>
@@ -100,10 +112,7 @@ export function Account(props: { children: (user: User) => JSX.Element }) {
                   <button
                     type="button"
                     disabled={busy()}
-                    onClick={() => {
-                      setSent(false);
-                      setError("");
-                    }}
+                    onClick={() => void dispatch({ kind: "resend" })}
                   >
                     Request another code
                   </button>
@@ -120,25 +129,14 @@ export function Account(props: { children: (user: User) => JSX.Element }) {
           <>
             <div class="account-bar">
               <small>Playing as {person.name}</small>
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    await request("/api/auth/logout", {});
-                    setUser(null);
-                    setSent(false);
-                  } catch (error) {
-                    setError(message(error));
-                  }
-                }}
-              >
+              <button type="button" onClick={signOut}>
                 Sign out
               </button>
             </div>
             <Show when={error()}>
               <p role="alert">{error()}</p>
             </Show>
-            {props.children(person)}
+            {props.children(person, signOut)}
           </>
         )}
       </Show>
