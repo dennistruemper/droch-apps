@@ -102,3 +102,11 @@ textarea:not([aria-invalid="true"]) + [role="alert"] {
   max-height: calc(100dvh - 2rem);
   overflow-y: auto;
 }
+
+[data-panel-dialog] [data-panel-navigation] > a:hover,
+[data-panel-dialog] [data-panel-navigation] > button:hover,
+[data-panel-dialog] [data-panel-navigation] > button:active {
+  box-shadow: none;
+  text-decoration: underline;
+  transform: none;
+}
