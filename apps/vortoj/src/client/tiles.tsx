@@ -1,23 +1,33 @@
-import { createSignal, Show, For } from "solid-js";
-import { tileSetSchema, savedTileSetSchema, type TileSet } from "../contracts/index.ts";
-import { api, message } from "./api.ts";
-export type SavedSet = TileSet & { id: string };
+import { createSignal, onSettled, Show, For } from "solid-js";
+import { message } from "./api.ts";
+import { init, update, type Message, type SavedSet } from "./tiles-model.ts";
+import { execute } from "./tiles-commands.ts";
+export type { SavedSet } from "./tiles-model.ts";
 export function TileEditor(props: { sets: SavedSet[]; saved: () => Promise<void> }) {
-  type Row = { id: string; letter: string; count: number; points: number };
-  const [name, setName] = createSignal("My tile set"),
-    [rows, setRows] = createSignal<Row[]>([]),
-    [id, setId] = createSignal<string | undefined>(undefined),
-    [error, setError] = createSignal(""),
-    [notice, setNotice] = createSignal(""),
-    [busy, setBusy] = createSignal(false);
-  let saving = false;
+  let current = init();
+  const [model, setModel] = createSignal(current);
+  const controller = new AbortController();
+  onSettled(() => () => controller.abort());
+  async function dispatch(event: Message): Promise<void> {
+    if (controller.signal.aborted) return;
+    const transition = update(current, event);
+    current = transition.model;
+    setModel(current);
+    for (const command of transition.commands) {
+      try {
+        await dispatch(await execute(command, controller.signal, props.saved));
+      } catch (error) {
+        await dispatch({ kind: "failed", requestId: command.requestId, error: message(error) });
+      }
+    }
+  }
+  const name = () => model().name;
+  const rows = () => model().rows;
+  const busy = () => model().pending !== null;
+  const error = () => model().error;
+  const notice = () => model().notice;
   function edit(set: SavedSet, copy: boolean) {
-    if (saving) return;
-    setName(copy ? `${set.name} copy` : set.name);
-    setId(copy ? undefined : set.id);
-    setRows(set.tiles.map((tile) => ({ ...tile, id: crypto.randomUUID() })));
-    setError("");
-    setNotice("");
+    void dispatch({ kind: "edit", set, copy, rowIds: set.tiles.map(() => crypto.randomUUID()) });
   }
   return (
     <section aria-label="Tile set editor">
@@ -38,22 +48,7 @@ export function TileEditor(props: { sets: SavedSet[]; saved: () => Promise<void>
                 <button
                   type="button"
                   disabled={busy()}
-                  onClick={async () => {
-                    if (
-                      !confirm(
-                        `Remove ${set.name} from your collection? Existing games keep their tiles.`,
-                      )
-                    )
-                      return;
-                    try {
-                      await api(`/tile-sets/${set.id}`, undefined, "DELETE");
-                      await props.saved();
-                      if (id() === set.id) setId(undefined);
-                      setNotice("Tile set removed.");
-                    } catch (error) {
-                      setError(message(error));
-                    }
-                  }}
+                  onClick={() => void dispatch({ kind: "remove", set })}
                 >
                   Remove {set.name}
                 </button>
@@ -61,53 +56,14 @@ export function TileEditor(props: { sets: SavedSet[]; saved: () => Promise<void>
             </span>
           )}
         </For>
-        <button
-          type="button"
-          disabled={busy()}
-          onClick={() => {
-            setRows([]);
-            setId(undefined);
-            setName("My tile set");
-          }}
-        >
+        <button type="button" disabled={busy()} onClick={() => void dispatch({ kind: "new" })}>
           New empty set
         </button>
       </div>
       <form
-        onSubmit={async (event) => {
+        onSubmit={(event) => {
           event.preventDefault();
-          if (saving) return;
-          setError("");
-          setNotice("");
-          const data = new FormData(event.currentTarget);
-          const parsed = tileSetSchema.safeParse({
-            name: name(),
-            tiles: rows().map((row) => ({
-              letter: String(data.get(`letter-${row.id}`) ?? ""),
-              count: Number(data.get(`count-${row.id}`)),
-              points: Number(data.get(`points-${row.id}`)),
-            })),
-          });
-          if (!parsed.success) {
-            setError(parsed.error.issues[0]?.message ?? "Check your tiles");
-            return;
-          }
-          saving = true;
-          setBusy(true);
-          try {
-            const saved = savedTileSetSchema.parse(
-              await api(id() ? `/tile-sets/${id()}` : "/tile-sets", parsed.data),
-            );
-            setId(saved.id);
-            setName(saved.name);
-            setNotice("Tile set saved for your future games.");
-            await props.saved();
-          } catch (error) {
-            setError(message(error));
-          } finally {
-            saving = false;
-            setBusy(false);
-          }
+          void dispatch({ kind: "save" });
         }}
       >
         <label for="set-name">Tile set name</label>
@@ -117,7 +73,9 @@ export function TileEditor(props: { sets: SavedSet[]; saved: () => Promise<void>
           required
           maxlength={48}
           value={name()}
-          onInput={(event) => setName(event.currentTarget.value)}
+          onInput={(event) =>
+            void dispatch({ kind: "name-changed", name: event.currentTarget.value })
+          }
         />
         <p>
           One letter per entry, including accents and umlauts; * is a zero-point joker. Use 28–500
@@ -129,42 +87,66 @@ export function TileEditor(props: { sets: SavedSet[]; saved: () => Promise<void>
             <span>Quantity</span>
             <span>Points</span>
           </div>
-          <For each={rows()}>
+          <For each={rows()} keyed={(row) => row.id}>
             {(row, index) => (
               <div class="tile-editor-row">
                 <input
                   disabled={busy()}
                   aria-label={`Letter ${index() + 1}`}
-                  name={`letter-${row.id}`}
-                  value={row.letter}
+                  name={`letter-${row().id}`}
+                  value={row().letter}
+                  onInput={(event) =>
+                    void dispatch({
+                      kind: "row-changed",
+                      id: row().id,
+                      field: "letter",
+                      value: event.currentTarget.value,
+                    })
+                  }
                   maxlength={16}
                   required
                 />
                 <input
                   disabled={busy()}
                   aria-label={`Quantity ${index() + 1}`}
-                  name={`count-${row.id}`}
+                  name={`count-${row().id}`}
                   type="number"
                   min={1}
                   max={100}
                   required
-                  value={row.count}
+                  value={row().count}
+                  onInput={(event) =>
+                    void dispatch({
+                      kind: "row-changed",
+                      id: row().id,
+                      field: "count",
+                      value: event.currentTarget.value,
+                    })
+                  }
                 />
                 <input
                   disabled={busy()}
                   aria-label={`Points ${index() + 1}`}
-                  name={`points-${row.id}`}
+                  name={`points-${row().id}`}
                   type="number"
                   min={0}
                   max={20}
                   required
-                  value={row.points}
+                  value={row().points}
+                  onInput={(event) =>
+                    void dispatch({
+                      kind: "row-changed",
+                      id: row().id,
+                      field: "points",
+                      value: event.currentTarget.value,
+                    })
+                  }
                 />
                 <button
                   type="button"
                   disabled={busy()}
                   aria-label={`Remove tile ${index() + 1}`}
-                  onClick={() => setRows((value) => value.filter((tile) => tile.id !== row.id))}
+                  onClick={() => void dispatch({ kind: "remove-row", id: row().id })}
                 >
                   ×
                 </button>
@@ -175,16 +157,17 @@ export function TileEditor(props: { sets: SavedSet[]; saved: () => Promise<void>
         <button
           type="button"
           disabled={busy()}
-          onClick={() =>
-            setRows((value) => [
-              ...value,
-              { id: crypto.randomUUID(), letter: "", count: 1, points: 1 },
-            ])
-          }
+          onClick={() => void dispatch({ kind: "add-row", id: crypto.randomUUID() })}
         >
           Add letter
         </button>
-        <button disabled={busy()}>{busy() ? "Saving…" : "Save tile set"}</button>
+        <button disabled={busy()}>
+          {busy()
+            ? model().pending?.kind === "remove"
+              ? "Removing…"
+              : "Saving…"
+            : "Save tile set"}
+        </button>
         <Show when={error()}>
           <p role="alert">{error()}</p>
         </Show>

@@ -292,3 +292,29 @@ room from an expired auth session in event streams; clear its game UI, ignore la
 snapshots and provide a return to Your rooms. Treat HTTP 404 the same way. Add an
 explicit change-email message to the account model, retaining the entered address
 for correction without sending another code until the user submits it.
+
+## Feature-local Elm-style client models — 2026-10-09
+
+Extend the accepted account pattern to the Vortoj tile editor and room. Each feature
+owns a typed model, message union, pure update function and explicit commands.
+Editor inputs belong to its model; string number drafts preserve incomplete edits,
+and keyed rows preserve focus. Pending saves/deletes freeze editor identity.
+Room screens distinguish loading, invitation, active, expired and removed states;
+placement and exchange are separate modes. Request IDs and snapshot versions guard
+late responses, duplicate submissions and terminal removal. Browser measurements,
+scrolling, keyboard focus and native dialogs remain in the view adapter. Keep simple
+lobby filters, settings and navigation controls local; do not introduce a global
+store or generic state framework. Poker can be evaluated separately later.
+
+The user chose this as the default for new client features with coupled state or
+asynchronous workflows, rather than an optional refactor after implementation.
+Use the account, editor and room as concrete examples; keep exceptions for simple
+independent controls and browser layout state. `AGENTS.md` carries the contributor
+instructions so future agents apply the style from the beginning.
+
+The lobby's asynchronous collection loading and room creation also use this pattern.
+Keep its finished-game filter and editor visibility as simple local signals. Loading
+and empty lists are distinct; preserve prior data on refresh failure and propagate
+that failure to callers. Guard pending creation and navigation against duplicate
+submissions. Room updates emit explicit show/close/keep approval-dialog commands;
+the adapter does not decide game policy.

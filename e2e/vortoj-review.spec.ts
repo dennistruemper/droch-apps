@@ -49,7 +49,16 @@ test("deleting another tile set preserves the current edit target and draft", as
   await page.goto("/vortoj/");
   await page.getByRole("button", { name: "Open tile editor", exact: true }).click();
   await page.getByRole("button", { name: "Edit Set A", exact: true }).click();
-  await page.getByLabel("Quantity 1", { exact: true }).fill("30");
+  const quantity = page.getByLabel("Quantity 1", { exact: true });
+  await quantity.fill("");
+  await quantity.pressSequentially("30", { delay: 40 });
+  await expect(quantity).toBeFocused();
+  await expect(quantity).toHaveValue("30");
+  const letter = page.getByLabel("Letter 1", { exact: true });
+  await letter.fill("");
+  await letter.pressSequentially("a");
+  await expect(letter).toBeFocused();
+  await expect(letter).toHaveValue("a");
   await page.getByRole("button", { name: "Remove Set B", exact: true }).click();
   await expect(page.getByText("Tile set removed.", { exact: true })).toBeVisible();
   await expect(page.getByLabel("Quantity 1", { exact: true })).toHaveValue("30");
@@ -337,3 +346,100 @@ for (const transport of ["stream", "http"] as const) {
     await expect(page.getByRole("heading", { name: "Your rooms", exact: true })).toBeVisible();
   });
 }
+
+test("lobby loading failure offers retry without claiming there are no games", async ({ page }) => {
+  let fail = true;
+  await page.route("**/api/**", (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === "/api/auth/session")
+      return route.fulfill({ json: { user: { id: randomUUID(), name: "Review" } } });
+    if (path === "/api/vortoj/rooms" && fail)
+      return route.fulfill({ status: 503, json: { error: "Rooms temporarily unavailable" } });
+    return route.fulfill({ json: [] });
+  });
+  await page.goto("/vortoj/");
+  await expect(page.getByRole("alert")).toContainText("Rooms temporarily unavailable");
+  await expect(page.getByText("No unfinished games.", { exact: false })).toBeHidden();
+  fail = false;
+  await page.getByRole("button", { name: "Try loading again", exact: true }).click();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(page.getByText("No unfinished games.", { exact: false })).toBeVisible();
+});
+
+test("pending room creation ignores duplicate submits and navigates once", async ({ page }) => {
+  const f = fixture(),
+    snapshot = projectGame(f.playing, f.author.id, f.room);
+  let attempts = 0,
+    release = () => {};
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/api/**", async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === "/api/auth/session") return route.fulfill({ json: { user: f.author } });
+    if (path === "/api/vortoj/tile-sets")
+      return route.fulfill({ json: [{ id: "english", ...f.set }] });
+    if (path === "/api/vortoj/rooms" && route.request().method() === "POST") {
+      attempts++;
+      await gate;
+      return route.fulfill({ json: snapshot });
+    }
+    if (path === "/api/vortoj/rooms") return route.fulfill({ json: [] });
+    if (path.endsWith("/events"))
+      return route.fulfill({ contentType: "text/event-stream", body: "" });
+    return route.fulfill({ json: snapshot });
+  });
+  try {
+    await page.goto("/vortoj/");
+    await page.getByRole("button", { name: "Create room", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Creating room…", exact: true })).toBeDisabled();
+    await page.locator("form").evaluate((form) => {
+      (form as HTMLFormElement).requestSubmit();
+      (form as HTMLFormElement).requestSubmit();
+    });
+    await expect.poll(() => attempts).toBe(1);
+    release();
+    await expect(page).toHaveURL(new RegExp(`/vortoj/room/${f.room.id}$`));
+    expect(attempts).toBe(1);
+  } finally {
+    release();
+  }
+});
+
+test("saved tile identity survives a failed collection refresh without a false success notice", async ({
+  page,
+}) => {
+  const id = randomUUID(),
+    preset = { id: "english", name: "English", tiles: [{ letter: "A", count: 28, points: 1 }] };
+  let failRefresh = false;
+  const paths: string[] = [];
+  await page.route("**/api/**", (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === "/api/auth/session")
+      return route.fulfill({ json: { user: { id: randomUUID(), name: "Editor" } } });
+    if (route.request().method() === "POST") {
+      paths.push(path);
+      failRefresh = paths.length === 1;
+      return route.fulfill({ json: { id, ...route.request().postDataJSON() } });
+    }
+    if (path === "/api/vortoj/tile-sets")
+      return failRefresh
+        ? route.fulfill({ status: 503, json: { error: "Collection temporarily unavailable" } })
+        : route.fulfill({ json: [preset] });
+    return route.fulfill({ json: [] });
+  });
+  await page.goto("/vortoj/");
+  await page.getByRole("button", { name: "Open tile editor", exact: true }).click();
+  await page.getByRole("button", { name: "Copy English", exact: true }).click();
+  await page.getByRole("button", { name: "Save tile set", exact: true }).click();
+  const editor = page.getByRole("region", { name: "Tile set editor", exact: true });
+  await expect(editor.getByRole("alert")).toContainText("Collection temporarily unavailable");
+  await expect(
+    page.getByText("Tile set saved for your future games.", { exact: true }),
+  ).toBeHidden();
+  await editor.getByRole("button", { name: "Save tile set", exact: true }).click();
+  await expect(
+    page.getByText("Tile set saved for your future games.", { exact: true }),
+  ).toBeVisible();
+  expect(paths).toEqual(["/api/vortoj/tile-sets", `/api/vortoj/tile-sets/${id}`]);
+});

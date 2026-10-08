@@ -1,42 +1,123 @@
-import { createSignal, onCleanup, Show, For } from "solid-js";
+import { createSignal, onSettled, Show, For } from "solid-js";
 import { SidePanel } from "@repo/shared/navigation";
 import type { User } from "@repo/shared/contracts/auth";
-import {
-  snapshotSchema,
-  roomInfoSchema,
-  letterSchema,
-  type Snapshot,
-  type Placement,
-  type RoomInfo,
-  type GameCommand,
-} from "../contracts/index.ts";
+import { snapshotSchema } from "../contracts/index.ts";
+import { init, update, type Action, type Message } from "./room-model.ts";
+import { execute } from "./room-commands.ts";
 import { premium, evaluateMove } from "../domain/index.ts";
-import { api, message, RequestError } from "./api.ts";
+import { message, RequestError } from "./api.ts";
 export function Room(props: {
   id: string;
   user: User;
   signOut: () => Promise<void>;
   openSettings: () => void;
 }) {
-  const [room, setRoom] = createSignal<Snapshot | null>(null),
-    [info, setInfo] = createSignal<RoomInfo | null>(null),
-    [error, setError] = createSignal(""),
-    [busy, setBusy] = createSignal(false),
-    [selected, setSelected] = createSignal<string | null>(null),
-    [draft, setDraft] = createSignal<Placement[]>([]),
-    [joker, setJoker] = createSignal(""),
-    [exchange, setExchange] = createSignal<string[]>([]),
-    [connection, setConnection] = createSignal(""),
-    [zoomed, setZoomed] = createSignal(false),
+  let state = init();
+  const [model, setModel] = createSignal(state);
+  // Geometry and focus belong to the browser, not the game model.
+  const [zoomed, setZoomed] = createSignal(false),
     [cell, setCell] = createSignal(20),
     [fits, setFits] = createSignal(false),
-    [exchangeMode, setExchangeMode] = createSignal(false),
-    [jokerError, setJokerError] = createSignal(""),
-    [boardFocus, setBoardFocus] = createSignal(112),
-    [removed, setRemoved] = createSignal(false);
+    [boardFocus, setBoardFocus] = createSignal(112);
+  const room = () => {
+    const screen = model().screen;
+    return screen.kind === "active" ? screen.room : null;
+  };
+  const info = () => {
+    const screen = model().screen;
+    return screen.kind === "invite" ? screen.info : null;
+  };
+  const error = () => model().error;
+  const busy = () => model().pending !== null;
+  const connection = () => model().connection;
+  const removed = () => model().screen.kind === "removed";
+  const draft = () => {
+    const move = model().move;
+    return move.kind === "placement" ? move.draft : [];
+  };
+  const selected = () => {
+    const move = model().move;
+    return move.kind === "placement" ? move.selected : null;
+  };
+  const joker = () => {
+    const move = model().move;
+    return move.kind === "placement" ? move.joker : "";
+  };
+  const jokerError = () => {
+    const move = model().move;
+    return move.kind === "placement" ? move.jokerError : "";
+  };
+  const exchange = () => {
+    const move = model().move;
+    return move.kind === "exchange" ? move.tiles : [];
+  };
+  const exchangeMode = () => model().move.kind === "exchange";
   const controller = new AbortController();
   let events: EventSource | null = null;
-  let unavailable = false;
+  const unavailable = () => state.screen.kind === "removed" || state.screen.kind === "expired";
+  async function dispatch(event: Message): Promise<void> {
+    if (controller.signal.aborted) return;
+    const transition = update(state, event, props.user.id);
+    state = transition.model;
+    setModel(state);
+    for (const effect of transition.commands) {
+      switch (effect.kind) {
+        case "load":
+        case "join":
+        case "action":
+          try {
+            await dispatch(await execute(effect, props.id, controller.signal));
+          } catch (error) {
+            await dispatch({
+              kind: "failed",
+              id: effect.id,
+              status: error instanceof RequestError ? error.status : 0,
+              error: message(error),
+            });
+          }
+          break;
+        case "subscribe":
+          subscribe();
+          break;
+        case "close-stream":
+          events?.close();
+          events = null;
+          break;
+        case "close-dialogs":
+          cancelAnimationFrame(approvalFrame);
+          for (const dialog of [
+            approvalDialog,
+            actionsDialog,
+            detailsDialog,
+            rulesDialog,
+            jokerDialog,
+          ])
+            dialog?.close();
+          break;
+        case "overview":
+          overview();
+          break;
+        case "joker-dialog":
+          if (effect.open) {
+            if (jokerDialog?.isConnected && !jokerDialog.open) jokerDialog.showModal();
+          } else jokerDialog?.close();
+          break;
+        case "approval":
+          if (effect.action === "close") approvalDialog?.close();
+          cancelAnimationFrame(approvalFrame);
+          if (effect.action === "show")
+            approvalFrame = requestAnimationFrame(() => {
+              if (state.screen.kind !== "active" || state.screen.room.version !== effect.version)
+                return;
+              detailsDialog?.close();
+              rulesDialog?.close();
+              actionsDialog?.close();
+              if (approvalDialog?.isConnected && !approvalDialog.open) approvalDialog.showModal();
+            });
+          break;
+      }
+    }
+  }
   let viewport: HTMLDivElement | undefined;
   let resizeObserver: ResizeObserver | undefined;
   let detailsDialog: HTMLDialogElement | undefined;
@@ -89,153 +170,53 @@ export function Room(props: {
   }
   const pointerChange = () => measureBoard();
   pointer.addEventListener("change", pointerChange);
-  function receive(data: unknown) {
-    if (unavailable || controller.signal.aborted) return;
-    const next = snapshotSchema.parse(data),
-      old = room();
-    if (old && next.version <= old.version) return;
-    if (!old || next.version !== old.version) {
-      setDraft([]);
-      setSelected(null);
-      setExchange([]);
-      setExchangeMode(false);
-    }
-    if (old && next.board.length > old.board.length) overview();
-    if (!next.pending) approvalDialog?.close();
-    setRoom(next);
-    setInfo(null);
-    cancelAnimationFrame(approvalFrame);
-    approvalFrame = requestAnimationFrame(() => {
-      if (
-        room()?.version === next.version &&
-        next.pending &&
-        next.pending.authorId !== props.user.id &&
-        next.pending.words.some(
-          (word) => next.pending!.votes[word.id]?.[props.user.id] === undefined,
-        )
-      ) {
-        detailsDialog?.close();
-        rulesDialog?.close();
-        actionsDialog?.close();
-        if (approvalDialog?.isConnected && !approvalDialog.open) approvalDialog.showModal();
-      }
-    });
-  }
-  function removeRoom() {
-    unavailable = true;
-    events?.close();
-    events = null;
-    cancelAnimationFrame(approvalFrame);
-    for (const dialog of [approvalDialog, actionsDialog, detailsDialog, rulesDialog, jokerDialog])
-      dialog?.close();
-    setRemoved(true);
-    setRoom(null);
-    setInfo(null);
-    setDraft([]);
-    setSelected(null);
-    setConnection("");
-    setError(
-      "This room is no longer available. Old rooms are automatically removed when their creator reaches the 100-room limit.",
-    );
-  }
   function subscribe() {
-    if (events || unavailable) return;
+    if (events || unavailable()) return;
     events = new EventSource(`/api/vortoj/rooms/${props.id}/events`);
     events.addEventListener("snapshot", (event) => {
       try {
-        receive(JSON.parse((event as MessageEvent<string>).data));
-        setConnection("");
+        void dispatch({
+          kind: "snapshot",
+          room: snapshotSchema.parse(JSON.parse((event as MessageEvent<string>).data)),
+        });
       } catch {
-        setError("Could not read this game update. Refresh to recover.");
+        void dispatch({
+          kind: "error",
+          text: "Could not read this game update. Refresh to recover.",
+        });
       }
     });
-    events.addEventListener("removed", removeRoom);
-    events.addEventListener("expired", () => {
-      events?.close();
-      events = null;
-      setRoom(null);
-      setError("Your session ended. Sign in again to continue.");
-    });
+    events.addEventListener("removed", () => void dispatch({ kind: "removed" }));
+    events.addEventListener("expired", () => void dispatch({ kind: "expired" }));
     events.onerror = () =>
-      setConnection("Connection interrupted. Your game is saved; reconnecting…");
+      void dispatch({
+        kind: "connection",
+        text: "Connection interrupted. Your game is saved; reconnecting…",
+      });
   }
-  async function load() {
-    if (unavailable) return;
-    try {
-      receive(await api(`/rooms/${props.id}`, undefined, "GET", controller.signal));
-      subscribe();
-    } catch (error) {
-      if (controller.signal.aborted || unavailable) return;
-      if (error instanceof RequestError && error.status === 404) {
-        removeRoom();
-        return;
-      }
-      if (error instanceof RequestError && error.status === 403) {
-        try {
-          setInfo(roomInfoSchema.parse(await api(`/rooms/${props.id}/info`)));
-        } catch (error) {
-          setError(message(error));
-        }
-      } else {
-        if (error instanceof RequestError && error.status === 401) {
-          events?.close();
-          events = null;
-          setRoom(null);
-          setDraft([]);
-        }
-        setError(message(error));
-      }
-    }
-  }
-  void load();
-  const timer = setInterval(() => {
-    if (document.visibilityState === "visible" && room()) void load();
-  }, 10000);
-  const visibility = () => {
-    if (document.visibilityState === "visible") void load();
-  };
-  document.addEventListener("visibilitychange", visibility);
-  onCleanup(() => {
-    controller.abort();
-    cancelAnimationFrame(approvalFrame);
-    cancelAnimationFrame(measureFrame);
-    resizeObserver?.disconnect();
-    cancelAnimationFrame(cameraFrame);
-    pointer.removeEventListener("change", pointerChange);
-    events?.close();
-    clearInterval(timer);
-    document.removeEventListener("visibilitychange", visibility);
+  const load = () => dispatch({ kind: "refresh" });
+  const command = (action: Action) => dispatch({ kind: "action", action });
+  onSettled(() => {
+    void load();
+    const timer = setInterval(() => {
+      if (document.visibilityState === "visible" && state.screen.kind === "active") void load();
+    }, 10000);
+    const visibility = () => {
+      if (document.visibilityState === "visible") void load();
+    };
+    document.addEventListener("visibilitychange", visibility);
+    return () => {
+      controller.abort();
+      cancelAnimationFrame(approvalFrame);
+      cancelAnimationFrame(measureFrame);
+      cancelAnimationFrame(cameraFrame);
+      resizeObserver?.disconnect();
+      pointer.removeEventListener("change", pointerChange);
+      events?.close();
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", visibility);
+    };
   });
-  type Action = GameCommand extends infer Command
-    ? Command extends GameCommand
-      ? Omit<Command, "version" | "commandId">
-      : never
-    : never;
-  async function command(action: Action) {
-    const current = room();
-    if (!current || busy()) return;
-    setBusy(true);
-    setError("");
-    try {
-      receive(
-        await api(`/rooms/${props.id}/command`, {
-          ...action,
-          version: current.version,
-          commandId: crypto.randomUUID(),
-        }),
-      );
-    } catch (error) {
-      if (unavailable) return;
-      if (error instanceof RequestError && error.status === 404) {
-        removeRoom();
-        return;
-      }
-      setError(message(error));
-      if (error instanceof RequestError && [401, 409].includes(error.status)) await load();
-    } finally {
-      setBusy(false);
-    }
-  }
   const turn = () => room()?.phase === "playing" && room()?.turnId === props.user.id;
   const invite = `${location.origin}/vortoj/room/${props.id}`;
   const preview = () => {
@@ -255,18 +236,8 @@ export function Room(props: {
       return { move: null, error: message(error) };
     }
   };
-  function selectTile(id: string, letter: string) {
-    setError("");
-    if (exchangeMode()) {
-      setExchange((ids) => (ids.includes(id) ? ids.filter((value) => value !== id) : [...ids, id]));
-      return;
-    }
-    const next = selected() === id ? null : id;
-    setSelected(next);
-    if (letter === "*" && next === id) {
-      setJokerError("");
-      jokerDialog?.showModal();
-    }
+  function selectTile(id: string) {
+    void dispatch({ kind: "select-tile", id });
   }
   function navigateBoard(event: KeyboardEvent, row: number, col: number) {
     let nextRow = row,
@@ -307,43 +278,7 @@ export function Room(props: {
       zoomTo(row, col);
       return;
     }
-    if (room()?.board.some((tile) => tile.row === row && tile.col === col)) return;
-    if (exchangeMode()) return;
-    place(row, col);
-  }
-  function place(row: number, col: number) {
-    const current = room();
-    if (!current || !turn() || busy()) return;
-    const old = draft().find((p) => p.row === row && p.col === col);
-    if (old) {
-      setDraft((value) => value.filter((p) => p !== old));
-      setSelected(old.tileId);
-      return;
-    }
-    const tile = current.you.rack.find((t) => t.id === selected());
-    if (!tile) {
-      setError("Select a tile from your rack, then choose a board square.");
-      return;
-    }
-    let letter: string | undefined;
-    if (tile.letter === "*") {
-      const parsed = letterSchema.safeParse(joker());
-      if (
-        !parsed.success ||
-        parsed.data === "*" ||
-        !current.tileSet.tiles.some((t) => t.letter === parsed.data)
-      ) {
-        setError("Choose a letter from this set for your joker.");
-        return;
-      }
-      letter = parsed.data;
-    }
-    setDraft((value) => [
-      ...value.filter((p) => p.tileId !== tile.id),
-      { tileId: tile.id, row, col, ...(letter ? { letter } : {}) },
-    ]);
-    setSelected(null);
-    setError("");
+    void dispatch({ kind: "place", row, col });
   }
   const current = () => room()!;
   const phaseText = () =>
@@ -369,17 +304,7 @@ export function Room(props: {
             <button
               type="button"
               disabled={busy() || details.phase !== "waiting"}
-              onClick={async () => {
-                setBusy(true);
-                try {
-                  receive(await api(`/rooms/${props.id}/join`, {}));
-                  subscribe();
-                } catch (error) {
-                  setError(message(error));
-                } finally {
-                  setBusy(false);
-                }
-              }}
+              onClick={() => void dispatch({ kind: "join" })}
             >
               Join room
             </button>
@@ -410,9 +335,12 @@ export function Room(props: {
               onClick={async () => {
                 try {
                   await navigator.clipboard.writeText(invite);
-                  setConnection("Invitation copied.");
+                  void dispatch({ kind: "connection", text: "Invitation copied." });
                 } catch {
-                  setConnection("Select and copy the invitation link to share it.");
+                  void dispatch({
+                    kind: "connection",
+                    text: "Select and copy the invitation link to share it.",
+                  });
                 }
               }}
             >
@@ -619,7 +547,7 @@ export function Room(props: {
                             draft().some((place) => place.tileId === tile.id) ? "true" : "false"
                           }
                           disabled={!turn() || busy()}
-                          onClick={() => selectTile(tile.id, tile.letter)}
+                          onClick={() => selectTile(tile.id)}
                         >
                           <strong>{tile.letter}</strong>
                           <small>{tile.points}</small>
@@ -677,12 +605,7 @@ export function Room(props: {
                         type="button"
                         aria-label={exchangeMode() ? "Cancel" : "Clear placement"}
                         disabled={!draft().length && !exchangeMode()}
-                        onClick={() => {
-                          setDraft([]);
-                          setSelected(null);
-                          setExchange([]);
-                          setExchangeMode(false);
-                        }}
+                        onClick={() => void dispatch({ kind: "clear-move" })}
                       >
                         {exchangeMode() ? "Cancel" : "Clear"}
                       </button>
@@ -904,8 +827,7 @@ export function Room(props: {
             disabled={busy() || !turn() || draft().length > 0 || current().bagCount < 7}
             onClick={() => {
               actionsDialog?.close();
-              setSelected(null);
-              setExchangeMode(true);
+              void dispatch({ kind: "exchange" });
             }}
           >
             Exchange tiles
@@ -917,7 +839,7 @@ export function Room(props: {
           ref={(element) => {
             jokerDialog = element;
           }}
-          onCancel={() => setSelected(null)}
+          onCancel={() => void dispatch({ kind: "joker-cancelled" })}
         >
           <div class="dialog-heading">
             <h2>Choose a joker letter</h2>
@@ -925,8 +847,7 @@ export function Room(props: {
               type="button"
               aria-label="Close joker letter"
               onClick={() => {
-                setSelected(null);
-                jokerDialog?.close();
+                void dispatch({ kind: "joker-cancelled" });
               }}
             >
               ×
@@ -938,30 +859,14 @@ export function Room(props: {
             aria-invalid={jokerError() ? "true" : "false"}
             maxlength={16}
             value={joker()}
-            onInput={(event) => {
-              setJoker(event.currentTarget.value);
-              setJokerError("");
-            }}
+            onInput={(event) =>
+              void dispatch({ kind: "joker-changed", letter: event.currentTarget.value })
+            }
           />
           <Show when={jokerError()}>
             <p role="alert">{jokerError()}</p>
           </Show>
-          <button
-            type="button"
-            onClick={() => {
-              const value = letterSchema.safeParse(joker());
-              if (
-                !value.success ||
-                value.data === "*" ||
-                !current().tileSet.tiles.some((tile) => tile.letter === value.data)
-              ) {
-                setJokerError("Choose a letter from this tile set for the joker.");
-                return;
-              }
-              setJoker(value.data);
-              jokerDialog?.close();
-            }}
-          >
+          <button type="button" onClick={() => void dispatch({ kind: "joker-confirmed" })}>
             Use this letter
           </button>
           <p>Jokers score zero.</p>

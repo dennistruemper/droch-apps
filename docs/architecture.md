@@ -77,6 +77,22 @@ Pure domain functions handle rules and transitions. Services wrap those function
 with explicit persistence, clock, randomness, and external service dependencies.
 Expected rule failures are handled at the HTTP boundary; runtime schemas validate external data.
 
+New client features with coupled state or asynchronous workflows use feature-local
+typed models and messages from the beginning. The Vortoj account, lobby, tile editor and
+room provide the reference implementations. They use typed models and message
+unions. Pure update functions return models and commands; explicit adapters execute
+HTTP, confirmation, randomness and browser operations. A synchronous current model
+orders transitions independently of Solid's deferred rendering. Request IDs reject
+stale completions; room snapshot versions protect drafts from outdated updates.
+Removed/expired room states cannot be revived by in-flight responses. Editor rows
+have stable keys to preserve focus while model-owned inputs change. Board geometry
+and focus stay browser-local, and simple independent UI controls retain signals.
+The lobby model handles atomic collection loads and pending room creation; its
+checkbox and editor visibility remain local controls. Failed collection refreshes
+retain previous data and propagate to the tile editor. Creation ignores repeated
+submissions while pending or navigating. Approval commands explicitly describe
+show, close or keep, leaving the room adapter to execute dialog operations.
+
 ## Routing and adding apps
 
 ```text
@@ -354,5 +370,6 @@ independently of Solid's deferred rendering. `account-commands.ts` executes HTTP
 commands and validates responses. Requests carry IDs, duplicate submissions are
 ignored while pending, and component cleanup aborts requests and ignores late results.
 Email entry, code entry and signed-in screens are discriminated states. Resending
-keeps code entry available if delivery fails. This is a feature-local example, not
-a global store requirement or a framework for every small UI control.
+keeps code entry available if delivery fails. This is a reference implementation of the default client style for coupled state
+and asynchronous workflows. Simple independent controls retain local signals;
+models remain feature-local rather than becoming one global store.

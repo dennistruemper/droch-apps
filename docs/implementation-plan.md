@@ -85,6 +85,10 @@ Real Mailtrap delivery needs credentials and sender verification in Coolify.
   periodic reconciliation, restart persistence and game history.
 - Browser account flow, room lobby, tile editor, interactive board, rack, word approval,
   final scores, reconnect messages and shared theme Settings.
+- Feature-local typed model/message/update/command flows for accounts, tile editing
+  and room/lobby interaction; transition and browser tests cover stale responses, pending
+  editor identity, removal, mutually exclusive move modes and input focus. Use this
+  style from the start for future features with coupled or asynchronous state.
 
 Verification: unit/integration coverage exercises scoring and premiums, connected
 placements, cross-words, Unicode sets and joker restrictions, approval thresholds for

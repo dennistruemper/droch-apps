@@ -50,6 +50,32 @@ to understand the intended order of work.
 - Do not add packages or abstraction layers solely to match a theoretical architecture.
 - Do not modify the separate Drochsign repository as part of this project unless asked.
 
+## Client state style
+
+- Start new client features with coupled state or asynchronous workflows using a
+  feature-local typed `Model`, a discriminated `Message` union, and a pure
+  `update(model, message)` returning the next model and explicit commands.
+- Use discriminated states for screens, modes and request phases. Prefer states
+  that exclude impossible combinations over separate booleans and unrelated setters.
+- Keep HTTP, storage, time, randomness, confirmation and DOM operations outside
+  pure updates. Execute commands in an adapter and dispatch typed result messages;
+  validate external responses there before passing them to the model.
+- Keep transition ordering synchronous even though Solid 2 renders writes later.
+  Read the current model when dispatching, not a signal still awaiting a flush.
+  Guard duplicate requests, stale completions and disposal; use request IDs and
+  server versions where relevant. Abort requests on component cleanup.
+- Own each model within its feature. Do not introduce a global store, shared
+  reducer framework or state-management dependency just to implement this style.
+- Simple independent controls, such as a checkbox or open/closed panel, can use
+  local signals. Browser layout measurements, scrolling and focus stay in the
+  view adapter. Use stable keys for editable rows so updates preserve focus.
+- Follow the Vortoj examples: `apps/vortoj/src/client/account-model.ts`,
+  `tiles-model.ts`, `room-model.ts`, `lobby-model.ts`, their command adapters and transition tests.
+  Test meaningful invariants and recovery races, plus affected browser flows;
+  avoid tests that merely restate every switch case.
+- Read the installed Solid 2 `CHEATSHEET.md` when changing reactive or lifecycle
+  code; do not assume Solid 1 APIs or synchronous signal writes.
+
 ## Worktrees and checks
 
 - The owner's macOS Docker engine is Colima. Use the existing Docker context;

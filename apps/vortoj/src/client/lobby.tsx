@@ -1,39 +1,62 @@
-import { createSignal, onCleanup, Show, For } from "solid-js";
+import { createSignal, onSettled, Show, For } from "solid-js";
 import type { User } from "@repo/shared/contracts/auth";
-import { snapshotSchema, roomListSchema, savedTileSetSchema } from "../contracts/index.ts";
-import { TileEditor, type SavedSet } from "./tiles.tsx";
-import { api, message } from "./api.ts";
+import { init, update, type Message } from "./lobby-model.ts";
+import { execute } from "./lobby-commands.ts";
+import { TileEditor } from "./tiles.tsx";
+import { message } from "./api.ts";
 export function Lobby(props: { user: User }) {
-  const [sets, setSets] = createSignal<SavedSet[]>([]),
-    [rooms, setRooms] = createSignal<
-      {
-        id: string;
-        title: string;
-        phase: string;
-        turnId: string;
-        version: number;
-        updatedAt: number;
-      }[]
-    >([]),
-    [error, setError] = createSignal(""),
-    [editing, setEditing] = createSignal(false),
+  let current = init();
+  const [model, setModel] = createSignal(current);
+  const [editing, setEditing] = createSignal(false),
     [showFinished, setShowFinished] = createSignal(false);
   const controller = new AbortController();
-  onCleanup(() => controller.abort());
-  async function load() {
-    try {
-      const [collection, games] = await Promise.all([
-        api("/tile-sets", undefined, "GET", controller.signal),
-        api("/rooms", undefined, "GET", controller.signal),
-      ]);
-      setSets(savedTileSetSchema.array().parse(collection));
-      setRooms(roomListSchema.parse(games));
-    } catch (error) {
-      if (!controller.signal.aborted) setError(message(error));
+  async function dispatch(event: Message, propagateFailure = false): Promise<void> {
+    if (controller.signal.aborted) return;
+    const transition = update(current, event);
+    current = transition.model;
+    setModel(current);
+    for (const command of transition.commands) {
+      if (command.kind === "navigate") {
+        location.href = `/vortoj/room/${command.roomId}`;
+        continue;
+      }
+      try {
+        const result = await execute(command, controller.signal);
+        if (controller.signal.aborted) return;
+        if (
+          result.kind === "loaded" &&
+          (current.collection.kind !== "loading" || current.collection.id !== result.id)
+        ) {
+          if (propagateFailure)
+            throw new Error("A newer collection refresh replaced this request. Please try again.");
+          continue;
+        }
+        await dispatch(result);
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        await dispatch({ kind: "failed", id: command.id, error: message(error) });
+        if (propagateFailure) throw error;
+      }
     }
   }
+  onSettled(() => {
+    void dispatch({ kind: "refresh" });
+    return () => controller.abort();
+  });
+  const sets = () => model().collection.data?.sets ?? [];
+  const rooms = () => model().collection.data?.rooms ?? [];
+  const loading = () => model().collection.kind === "loading";
+  const creating = () =>
+    model().creating.kind === "pending" || model().creating.kind === "navigating";
+  const createError = () => {
+    const value = model().creating;
+    return value.kind === "failed" ? value.error : "";
+  };
+  const loadError = () => {
+    const value = model().collection;
+    return value.kind === "failed" ? value.error : "";
+  };
   const visibleRooms = () => rooms().filter((room) => showFinished() || room.phase !== "finished");
-  void load();
   return (
     <>
       <section aria-label="Your rooms">
@@ -46,27 +69,38 @@ export function Lobby(props: { user: User }) {
           />
           Show finished games
         </label>
-        <Show
-          when={visibleRooms().length}
-          fallback={
-            <p>
-              {showFinished() ? "No games yet." : "No unfinished games."} Create a room and invite
-              someone.
-            </p>
-          }
-        >
-          <ul>
-            <For each={visibleRooms()}>
-              {(room) => (
-                <li>
-                  <a href={`/vortoj/room/${room.id}`}>{room.title}</a> ·{" "}
-                  {room.phase === "playing" && room.turnId === props.user.id
-                    ? "Your turn"
-                    : room.phase}
-                </li>
-              )}
-            </For>
-          </ul>
+        <Show when={loading()}>
+          <p role="status">Loading your rooms and tile sets…</p>
+        </Show>
+        <Show when={loadError()}>
+          <p role="alert">{loadError()}</p>
+          <button type="button" onClick={() => void dispatch({ kind: "refresh" })}>
+            Try loading again
+          </button>
+        </Show>
+        <Show when={model().collection.data}>
+          <Show
+            when={visibleRooms().length}
+            fallback={
+              <p>
+                {showFinished() ? "No games yet." : "No unfinished games."} Create a room and invite
+                someone.
+              </p>
+            }
+          >
+            <ul>
+              <For each={visibleRooms()}>
+                {(room) => (
+                  <li>
+                    <a href={`/vortoj/room/${room.id}`}>{room.title}</a> ·{" "}
+                    {room.phase === "playing" && room.turnId === props.user.id
+                      ? "Your turn"
+                      : room.phase}
+                  </li>
+                )}
+              </For>
+            </ul>
+          </Show>
         </Show>
         <Show when={showFinished()}>
           <p>
@@ -78,28 +112,28 @@ export function Lobby(props: { user: User }) {
         </Show>
       </section>
       <form
-        onSubmit={async (event) => {
+        onSubmit={(event) => {
           event.preventDefault();
-          setError("");
           const data = new FormData(event.currentTarget);
-          try {
-            const room = snapshotSchema.parse(
-              await api("/rooms", {
-                title: String(data.get("title")),
-                tileSetId: String(data.get("tiles")),
-              }),
-            );
-            location.href = `/vortoj/room/${room.id}`;
-          } catch (error) {
-            setError(message(error));
-          }
+          void dispatch({
+            kind: "create",
+            title: String(data.get("title") ?? ""),
+            tileSetId: String(data.get("tiles") ?? ""),
+          });
         }}
       >
         <h2>Create a room</h2>
         <label for="room-title">Room name</label>
-        <input id="room-title" name="title" required maxlength={80} value="Word night" />
+        <input
+          disabled={creating()}
+          id="room-title"
+          name="title"
+          required
+          maxlength={80}
+          value="Word night"
+        />
         <label for="room-tiles">Tile set</label>
-        <select id="room-tiles" name="tiles" required>
+        <select disabled={creating()} id="room-tiles" name="tiles" required>
           <For each={sets()}>
             {(set) => (
               <option value={set.id}>
@@ -108,7 +142,9 @@ export function Lobby(props: { user: User }) {
             )}
           </For>
         </select>
-        <button disabled={!sets().length}>Create room</button>
+        <button disabled={!sets().length || creating()}>
+          {creating() ? "Creating room…" : "Create room"}
+        </button>
         <p>Share the room link with up to three other players. Everyone signs in before joining.</p>
       </form>
       <section>
@@ -118,16 +154,11 @@ export function Lobby(props: { user: User }) {
           {editing() ? "Close tile editor" : "Open tile editor"}
         </button>
         <Show when={editing()}>
-          <TileEditor
-            sets={sets()}
-            saved={async () => {
-              await load();
-            }}
-          />
+          <TileEditor sets={sets()} saved={() => dispatch({ kind: "refresh" }, true)} />
         </Show>
       </section>
-      <Show when={error()}>
-        <p role="alert">{error()}</p>
+      <Show when={createError()}>
+        <p role="alert">{createError()}</p>
       </Show>
     </>
   );
