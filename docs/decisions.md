@@ -201,6 +201,21 @@ directly and omit zoom controls. Mouse pointers use a 32-pixel minimum; touch us
 Scores, history, passing, exchanges and word voting remain available through dialogs.
 The alternative mobile concepts and their standalone exploration files are removed.
 
+## Vortoj bonus labels — 2026-10-08
+
+Use `2×` and `3×` instead of language-specific bonus abbreviations. Word bonuses
+fill the square; letter bonus labels are half the size. Preserve the centre marker
+and describe the bonus type explicitly for screen readers. Scoring rules stay the same.
+
+## Vortoj default tile distributions — 2026-10-08
+
+The English and German presets are Vortoj defaults with small distribution changes.
+English: E 12→11, I 9→8, S 4→5, T 6→7; 100 tiles total. German: E 15→14, N 9→8,
+S 7→8, U 6→5; 100 tiles total instead of 102. These changes focus on common letters;
+rare letters, all point values, and two zero-point jokers remain unchanged. Users
+can save their preferred distributions as named custom sets. Existing rooms retain
+the tile set frozen at creation; only new rooms and preset copies get the new defaults.
+
 ## Coolify runtime origin — 2026-10-05
 
 Use Coolify's runtime `SERVICE_URL_APPLICATION` as the canonical public origin when

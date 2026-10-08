@@ -188,6 +188,11 @@ recheck them before sending. Emails never appear in game snapshots.
 
 ## Vortoj rules and data
 
+English and German presets each contain 100 tiles, including two zero-point jokers.
+They use Vortoj's adjusted common-letter distributions; the exact changes are recorded
+in [decisions](decisions.md). Users can copy or replace them with saved custom sets.
+Room creation freezes the distribution, so preset changes do not alter existing games.
+
 Two to four players join through a room link after sign-in. Membership closes when the
 creator starts the game. The creator plays first. Seven tiles are dealt per player on
 an empty 15×15 board. Moves must form a connected line, cover the centre on the first
@@ -226,9 +231,14 @@ and move controls. Small screens begin in overview, then zoom to 44-pixel square
 panning and placement. Accepted moves restore overview. A `ResizeObserver` sizes the
 board from the available space; sufficiently large screens support direct placement
 without zoom controls. Wider screens place the rack beside the board. Camera changes
-are client-only and preserve draft placements. Scores/history, extra actions, joker
-letters and word approval use native dialogs; opponents can dismiss approval to
-inspect the board and reopen it from the rack area.
+are client-only and preserve draft placements. The header shows the current player's score explicitly.
+Scores/history, rules, extra actions, joker letters and word approval use native dialogs;
+Rules sits beside the score button and includes a visual bonus legend. History list
+padding keeps three-digit numbering and wrapped text inside its accordion. Opponents can dismiss approval to
+inspect the board and reopen it from the rack area. Bonus squares display `2×` or `3×`,
+with word labels filling the square and letter labels at half that size. The centre
+also keeps a small starting-square star. Screen-reader labels name the multiplier
+and whether it applies to a letter or word.
 
 ## Styles and browser storage
 

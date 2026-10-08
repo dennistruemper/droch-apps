@@ -53,7 +53,7 @@ describe("Vortoj board rules", () => {
   it("validates the presets and their tile counts", () => {
     expect(
       presets.map((set) => tileSetSchema.parse(set).tiles.reduce((sum, t) => sum + t.count, 0)),
-    ).toEqual([100, 102]);
+    ).toEqual([100, 100]);
   });
   it("normalizes Unicode letters and rejects symbols, duplicates and scored jokers", () => {
     const set = {

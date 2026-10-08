@@ -80,7 +80,12 @@ test("accounts, saved sets, invitations, private racks, word voting and recovery
     for (const tile of ownerSnapshot.you.rack)
       expect(JSON.stringify(guestWire)).not.toContain(tile.id);
     await owner.getByRole("button", { name: "Tile A, 1 points", exact: true }).nth(0).click();
-    await owner.getByRole("button", { name: "Row 8, column 8, empty, DW", exact: true }).click();
+    await owner
+      .getByRole("button", {
+        name: "Row 8, column 8, empty, 2× word bonus, starting square",
+        exact: true,
+      })
+      .click();
     await owner.getByRole("button", { name: "Tile A, 1 points", exact: true }).nth(1).click();
     await owner.getByRole("button", { name: "Row 8, column 9, empty", exact: true }).click();
     await owner.getByRole("button", { name: "Submit words for approval" }).click();
@@ -88,7 +93,10 @@ test("accounts, saved sets, invitations, private racks, word voting and recovery
     await expect(guest.getByText("Your turn", { exact: true })).toBeVisible();
     await owner.reload();
     await expect(
-      owner.getByRole("button", { name: "Row 8, column 8, A, DW", exact: true }),
+      owner.getByRole("button", {
+        name: "Row 8, column 8, A, 2× word bonus, starting square",
+        exact: true,
+      }),
     ).toBeVisible();
     await expect(owner.getByRole("button", { name: "Tile A, 1 points", exact: true })).toHaveCount(
       7,

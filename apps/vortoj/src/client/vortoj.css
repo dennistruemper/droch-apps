@@ -138,7 +138,14 @@ body:has(.game-shell) {
   font-size: 12px;
   margin: 3px 0 0;
 }
+.game-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
 .game-heading button {
+  font-size: 12px;
   flex-direction: column;
   min-height: 44px;
   max-width: 140px;
@@ -238,12 +245,16 @@ body:has(.game-shell) {
   font-size: 8px;
 }
 .game-board button[data-premium="DW"],
-.game-board button[data-premium="TW"] {
+.game-board button[data-premium="TW"],
+.bonus-key-square[data-premium="DW"],
+.bonus-key-square[data-premium="TW"] {
   border-style: double;
   border-width: 3px;
 }
 .game-board button[data-premium="DL"],
-.game-board button[data-premium="TL"] {
+.game-board button[data-premium="TL"],
+.bonus-key-square[data-premium="DL"],
+.bonus-key-square[data-premium="TL"] {
   border-style: dashed;
 }
 .game-board button[data-filled="true"] {
@@ -257,8 +268,23 @@ body:has(.game-shell) {
   outline: 2px dashed var(--color-bg);
   outline-offset: -3px;
 }
-.game-board .premium-label {
-  font-size: clamp(6px, calc(var(--board-cell) * 0.2), 11px);
+.game-board .premium-label,
+.bonus-key .premium-label {
+  font-size: calc((var(--board-cell) - 6px) * 0.8);
+  line-height: 1;
+}
+.game-board button[data-premium="DL"] .premium-label,
+.game-board button[data-premium="TL"] .premium-label,
+.bonus-key-square[data-premium="DL"] .premium-label,
+.bonus-key-square[data-premium="TL"] .premium-label {
+  font-size: calc((var(--board-cell) - 6px) * 0.4);
+}
+.game-board .start-square {
+  position: absolute;
+  top: 0;
+  left: 0;
+  font-size: calc(var(--board-cell) * 0.2);
+  line-height: 1;
 }
 .small-board button small {
   display: none;
@@ -395,12 +421,44 @@ body:has(.game-shell) {
   min-height: 44px;
   margin: 4px 0;
 }
+.bonus-key {
+  --board-cell: 44px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.bonus-key-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.bonus-key-square {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--board-cell);
+  height: var(--board-cell);
+  border: 1px solid var(--color-fg);
+  flex: none;
+}
+.game-dialog h3 {
+  font-size: 16px;
+  margin-block: 16px 8px;
+}
 .game-dialog .player-list {
   flex-direction: column;
   gap: 12px;
 }
 .game-dialog p {
   font-size: 14px;
+}
+.game-dialog .game-history {
+  padding-inline-start: 3.5rem;
+  padding-inline-end: 1rem;
+}
+.game-history li {
+  overflow-wrap: anywhere;
 }
 .game-dialog article {
   margin-block: 12px;
