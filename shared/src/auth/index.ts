@@ -53,6 +53,7 @@ export function createAuthService(options: {
         ? "9999"
         : (options.generateCode?.() ?? randomInt(1000000).toString().padStart(6, "0"));
       const storedDigest = digest(email, code);
+      const sentAt = now();
       db.transaction(() => {
         if (
           db
@@ -74,7 +75,7 @@ export function createAuthService(options: {
             email,
             digest: storedDigest,
             expiresAt: now() + 600000,
-            sentAt: now(),
+            sentAt,
             attempts: 0,
             requests: withinWindow ? old.requests + 1 : 1,
             windowStart: withinWindow ? old.windowStart : now(),
@@ -84,7 +85,7 @@ export function createAuthService(options: {
             set: {
               digest: storedDigest,
               expiresAt: now() + 600000,
-              sentAt: now(),
+              sentAt,
               attempts: 0,
               requests: withinWindow ? old.requests + 1 : 1,
               windowStart: withinWindow ? old.windowStart : now(),
@@ -101,7 +102,8 @@ export function createAuthService(options: {
       } catch {
         db.transaction(() => {
           const row = db.select().from(codes).where(eq(codes.email, email)).get();
-          if (row?.digest === storedDigest) db.delete(codes).where(eq(codes.email, email)).run();
+          if (row?.digest === storedDigest && row.sentAt === sentAt)
+            db.update(codes).set({ digest: "", attempts: 5 }).where(eq(codes.email, email)).run();
         });
         throw new AuthError("Could not send your code. Please try again shortly.", 503);
       }

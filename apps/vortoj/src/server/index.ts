@@ -133,8 +133,10 @@ export function createRoutes(options?: VortojOptions) {
                 `id: ${snapshot.version}\nevent: snapshot\ndata: ${JSON.stringify(snapshot)}\n\n`,
               ),
             );
-          } catch {
-            controller.enqueue(encoder.encode("event: expired\ndata: {}\n\n"));
+          } catch (error) {
+            const event =
+              error instanceof VortojError && error.status === 404 ? "removed" : "expired";
+            controller.enqueue(encoder.encode(`event: ${event}\ndata: {}\n\n`));
             stop();
           }
         };

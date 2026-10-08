@@ -128,6 +128,7 @@ export const roomListSchema = z.array(
     phase: z.enum(["waiting", "playing", "voting", "finished"]),
     turnId: z.string(),
     version: z.number().int(),
+    updatedAt: z.number().int(),
   }),
 );
 export type RoomInfo = z.infer<typeof roomInfoSchema>;

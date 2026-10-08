@@ -181,7 +181,8 @@ Poker has a separate guest flow with no registration requirement.
 
 Codes have ten-minute expiry, five verification attempts, a one-minute resend interval,
 and five requests per address per hour. Thirty active addresses per minute bound mail
-requests across addresses. Consumption and attempt tracking commit synchronously.
+requests across addresses. Failed deliveries invalidate the code but retain all resend
+and hourly/global throttling records. Consumption and attempt tracking commit synchronously.
 The auth cookie is scoped to `/api`; sessions expire after 30 days and logout revokes
 the digest. Auth APIs, game reads and game streams require active sessions; streams
 recheck them before sending. Emails never appear in game snapshots.
@@ -192,6 +193,16 @@ English and German presets each contain 100 tiles, including two zero-point joke
 They use Vortoj's adjusted common-letter distributions; the exact changes are recorded
 in [decisions](decisions.md). Users can copy or replace them with saved custom sets.
 Room creation freezes the distribution, so preset changes do not alter existing games.
+
+Each account retains up to 100 rooms it created. Creation at the limit deletes the
+least recently updated owned room, finished or unfinished, including memberships
+and command receipts. Deletion and creation share one transaction, so failures
+roll back pruning. Successful new joins and game commands update a durable timestamp;
+reads, streams, duplicate joins, retries and rejected commands do not. Lists sort
+by updated time descending, with creation time and ID as stable tie-breakers;
+pruning uses the reverse order. A Show finished games checkbox filters a single activity-ordered list;
+checking it includes finished games and shows the retention explanation. Removal applies to all players. Existing rooms'
+timestamps are backfilled from their latest game history or creation time.
 
 Two to four players join through a room link after sign-in. Membership closes when the
 creator starts the game. The creator plays first. Seven tiles are dealt per player on
@@ -231,9 +242,11 @@ and move controls. Small screens begin in overview, then zoom to 44-pixel square
 panning and placement. Accepted moves restore overview. A `ResizeObserver` sizes the
 board from the available space; sufficiently large screens support direct placement
 without zoom controls. Wider screens place the rack beside the board. Camera changes
-are client-only and preserve draft placements. The header shows the current player's score explicitly.
+are client-only and preserve draft placements. The board uses one roving tab stop;
+arrow keys navigate squares, Home/End navigate a row, and Ctrl+Home/End navigate
+the board corners. Enter/Space activate the focused square. The header shows the current player's score explicitly.
 Scores/history, rules, extra actions, joker letters and word approval use native dialogs;
-Rules sits beside the score button and includes a visual bonus legend. History list
+Rules is available in the side panel and includes a visual bonus legend. History list
 padding keeps three-digit numbering and wrapped text inside its accordion. Opponents can dismiss approval to
 inspect the board and reopen it from the rack area. Bonus squares display `2×` or `3×`,
 with word labels filling the square and letter labels at half that size. The centre

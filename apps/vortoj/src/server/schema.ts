@@ -16,6 +16,7 @@ export const rooms = sqliteTable("rooms", {
   ownerId: text("owner_id").notNull(),
   title: text("title").notNull(),
   createdAt: integer("created_at").notNull(),
+  updatedAt: integer("updated_at").notNull().default(0),
   tileSet: text("tile_set", { mode: "json" }).$type<TileSet>().notNull(),
   state: text("state", { mode: "json" }).$type<Game>().notNull(),
 });

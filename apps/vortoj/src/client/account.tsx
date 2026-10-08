@@ -116,6 +116,13 @@ export function Account(props: {
                   >
                     Request another code
                   </button>
+                  <button
+                    type="button"
+                    disabled={busy()}
+                    onClick={() => void dispatch({ kind: "change-email" })}
+                  >
+                    Change email
+                  </button>
                 </Show>
               </div>
             </form>

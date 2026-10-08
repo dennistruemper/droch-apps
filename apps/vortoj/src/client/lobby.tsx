@@ -6,10 +6,18 @@ import { api, message } from "./api.ts";
 export function Lobby(props: { user: User }) {
   const [sets, setSets] = createSignal<SavedSet[]>([]),
     [rooms, setRooms] = createSignal<
-      { id: string; title: string; phase: string; turnId: string; version: number }[]
+      {
+        id: string;
+        title: string;
+        phase: string;
+        turnId: string;
+        version: number;
+        updatedAt: number;
+      }[]
     >([]),
     [error, setError] = createSignal(""),
-    [editing, setEditing] = createSignal(false);
+    [editing, setEditing] = createSignal(false),
+    [showFinished, setShowFinished] = createSignal(false);
   const controller = new AbortController();
   onCleanup(() => controller.abort());
   async function load() {
@@ -24,17 +32,31 @@ export function Lobby(props: { user: User }) {
       if (!controller.signal.aborted) setError(message(error));
     }
   }
+  const visibleRooms = () => rooms().filter((room) => showFinished() || room.phase !== "finished");
   void load();
   return (
     <>
-      <section>
+      <section aria-label="Your rooms">
         <h2>Your rooms</h2>
+        <label>
+          <input
+            type="checkbox"
+            checked={showFinished()}
+            onChange={(event) => setShowFinished(event.currentTarget.checked)}
+          />
+          Show finished games
+        </label>
         <Show
-          when={rooms().length}
-          fallback={<p>No games yet. Create a room and invite someone.</p>}
+          when={visibleRooms().length}
+          fallback={
+            <p>
+              {showFinished() ? "No games yet." : "No unfinished games."} Create a room and invite
+              someone.
+            </p>
+          }
         >
           <ul>
-            <For each={rooms()}>
+            <For each={visibleRooms()}>
               {(room) => (
                 <li>
                   <a href={`/vortoj/room/${room.id}`}>{room.title}</a> ·{" "}
@@ -45,6 +67,14 @@ export function Lobby(props: { user: User }) {
               )}
             </For>
           </ul>
+        </Show>
+        <Show when={showFinished()}>
+          <p>
+            You can keep up to 100 rooms you create. When you create another at the limit, the room
+            you created that has gone longest without updates is automatically removed for all
+            players, even if unfinished. Rooms are listed with the most recently updated first.
+            Viewing a game does not count as an update.
+          </p>
         </Show>
       </section>
       <form

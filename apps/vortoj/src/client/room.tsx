@@ -31,9 +31,12 @@ export function Room(props: {
     [cell, setCell] = createSignal(20),
     [fits, setFits] = createSignal(false),
     [exchangeMode, setExchangeMode] = createSignal(false),
-    [jokerError, setJokerError] = createSignal("");
+    [jokerError, setJokerError] = createSignal(""),
+    [boardFocus, setBoardFocus] = createSignal(112),
+    [removed, setRemoved] = createSignal(false);
   const controller = new AbortController();
   let events: EventSource | null = null;
+  let unavailable = false;
   let viewport: HTMLDivElement | undefined;
   let resizeObserver: ResizeObserver | undefined;
   let detailsDialog: HTMLDialogElement | undefined;
@@ -87,6 +90,7 @@ export function Room(props: {
   const pointerChange = () => measureBoard();
   pointer.addEventListener("change", pointerChange);
   function receive(data: unknown) {
+    if (unavailable || controller.signal.aborted) return;
     const next = snapshotSchema.parse(data),
       old = room();
     if (old && next.version <= old.version) return;
@@ -117,8 +121,25 @@ export function Room(props: {
       }
     });
   }
+  function removeRoom() {
+    unavailable = true;
+    events?.close();
+    events = null;
+    cancelAnimationFrame(approvalFrame);
+    for (const dialog of [approvalDialog, actionsDialog, detailsDialog, rulesDialog, jokerDialog])
+      dialog?.close();
+    setRemoved(true);
+    setRoom(null);
+    setInfo(null);
+    setDraft([]);
+    setSelected(null);
+    setConnection("");
+    setError(
+      "This room is no longer available. Old rooms are automatically removed when their creator reaches the 100-room limit.",
+    );
+  }
   function subscribe() {
-    if (events) return;
+    if (events || unavailable) return;
     events = new EventSource(`/api/vortoj/rooms/${props.id}/events`);
     events.addEventListener("snapshot", (event) => {
       try {
@@ -128,6 +149,7 @@ export function Room(props: {
         setError("Could not read this game update. Refresh to recover.");
       }
     });
+    events.addEventListener("removed", removeRoom);
     events.addEventListener("expired", () => {
       events?.close();
       events = null;
@@ -138,11 +160,16 @@ export function Room(props: {
       setConnection("Connection interrupted. Your game is saved; reconnecting…");
   }
   async function load() {
+    if (unavailable) return;
     try {
       receive(await api(`/rooms/${props.id}`, undefined, "GET", controller.signal));
       subscribe();
     } catch (error) {
-      if (controller.signal.aborted) return;
+      if (controller.signal.aborted || unavailable) return;
+      if (error instanceof RequestError && error.status === 404) {
+        removeRoom();
+        return;
+      }
       if (error instanceof RequestError && error.status === 403) {
         try {
           setInfo(roomInfoSchema.parse(await api(`/rooms/${props.id}/info`)));
@@ -198,6 +225,11 @@ export function Room(props: {
         }),
       );
     } catch (error) {
+      if (unavailable) return;
+      if (error instanceof RequestError && error.status === 404) {
+        removeRoom();
+        return;
+      }
       setError(message(error));
       if (error instanceof RequestError && [401, 409].includes(error.status)) await load();
     } finally {
@@ -235,6 +267,39 @@ export function Room(props: {
       setJokerError("");
       jokerDialog?.showModal();
     }
+  }
+  function navigateBoard(event: KeyboardEvent, row: number, col: number) {
+    let nextRow = row,
+      nextCol = col;
+    switch (event.key) {
+      case "ArrowUp":
+        nextRow = Math.max(0, row - 1);
+        break;
+      case "ArrowDown":
+        nextRow = Math.min(14, row + 1);
+        break;
+      case "ArrowLeft":
+        nextCol = Math.max(0, col - 1);
+        break;
+      case "ArrowRight":
+        nextCol = Math.min(14, col + 1);
+        break;
+      case "Home":
+        nextCol = 0;
+        if (event.ctrlKey) nextRow = 0;
+        break;
+      case "End":
+        nextCol = 14;
+        if (event.ctrlKey) nextRow = 14;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    const square =
+      viewport?.querySelectorAll<HTMLButtonElement>(".game-board button")[nextRow * 15 + nextCol];
+    square?.focus({ preventScroll: true });
+    square?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
   function squareClick(row: number, col: number) {
     focus = { row, col };
@@ -493,6 +558,12 @@ export function Room(props: {
                           return (
                             <button
                               type="button"
+                              tabindex={boardFocus() === index ? 0 : -1}
+                              onFocus={() => {
+                                setBoardFocus(index);
+                                focus = { row, col };
+                              }}
+                              onKeyDown={(event) => navigateBoard(event, row, col)}
                               data-premium={bonus}
                               data-proposed={pending() || placement() ? "true" : "false"}
                               data-filled={committed() ? "true" : "false"}
@@ -914,6 +985,9 @@ export function Room(props: {
           <Show when={current().pending} keyed>
             {(pending) => (
               <section aria-label="Word approval">
+                <Show when={error()}>
+                  <p role="alert">{error()}</p>
+                </Show>
                 <p>
                   Each word needs {pending.requiredApprovals} opponent approval
                   {pending.requiredApprovals === 1 ? "" : "s"}. Jokers score zero.
@@ -980,9 +1054,16 @@ export function Room(props: {
       </Show>
       <Show when={error() && (!room() || current().phase === "waiting")}>
         <p role="alert">{error()}</p>
-        <button type="button" onClick={() => location.reload()}>
-          Refresh / sign in again
-        </button>
+        <Show
+          when={removed()}
+          fallback={
+            <button type="button" onClick={() => location.reload()}>
+              Refresh / sign in again
+            </button>
+          }
+        >
+          <a href="/vortoj/">Back to your rooms</a>
+        </Show>
       </Show>
       <Show when={connection() && (!room() || current().phase === "waiting")}>
         <small role="status">{connection()}</small>

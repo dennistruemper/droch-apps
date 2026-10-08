@@ -107,7 +107,58 @@ describe("email-code accounts", () => {
       },
     });
     await expect(broken.request("broken@example.test")).rejects.toThrow("Could not send");
+    expect(() => broken.verify("broken@example.test", "012345", "Broken")).toThrow();
+    await expect(f.service.request("broken@example.test")).rejects.toThrow(/wait/);
+    f.advance(60001);
     await f.service.request("broken@example.test");
+  });
+  it("retains per-address and global throttles when every delivery fails", async () => {
+    const f = fixture();
+    let calls = 0;
+    const broken = createAuthService({
+      ...f.options,
+      send: async () => {
+        calls++;
+        throw new Error("Offline");
+      },
+    });
+    await expect(broken.request("one@example.test")).rejects.toThrow(/Could not send/);
+    for (let i = 0; i < 40; i++)
+      await expect(broken.request("one@example.test")).rejects.toThrow(/wait/);
+    expect(calls).toBe(1);
+    for (let i = 1; i < 30; i++)
+      await expect(broken.request(`other${i}@example.test`)).rejects.toThrow(/Could not send/);
+    await expect(broken.request("overflow@example.test")).rejects.toThrow(/busy/);
+    for (let i = 1; i < 5; i++) {
+      f.advance(60001);
+      await expect(broken.request("one@example.test")).rejects.toThrow(/Could not send/);
+    }
+    f.advance(60001);
+    await expect(broken.request("one@example.test")).rejects.toThrow(/five/);
+    f.advance(3600000);
+    await expect(broken.request("one@example.test")).rejects.toThrow(/Could not send/);
+  });
+  it("does not invalidate a newer fixed code when an older delivery fails late", async () => {
+    const f = fixture();
+    let fail: (error: Error) => void = () => {};
+    let calls = 0;
+    const service = createAuthService({
+      ...f.options,
+      testMode: true,
+      send: async () => {
+        if (++calls === 1)
+          await new Promise<void>((_, reject) => {
+            fail = reject;
+          });
+      },
+    });
+    const older = service.request("test@example.test");
+    const failed = expect(older).rejects.toThrow(/Could not send/);
+    f.advance(60001);
+    await service.request("test@example.test");
+    fail(new Error("Late failure"));
+    await failed;
+    expect(service.verify("test@example.test", "9999", "Test").user.name).toBe("Test");
   });
   it("enforces origins, cookie flags, expiry and avoids exposing emails", async () => {
     const f = fixture(),

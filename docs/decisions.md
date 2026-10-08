@@ -268,3 +268,27 @@ local backup. Use ordinary TypeScript and one Solid model signal;
 no new state-management dependency. Keep I/O separate from pure transitions and
 retain feature-local ownership. Evaluate this example before expanding the pattern
 to gameplay; small independent UI controls can continue to use signals.
+
+## Review fixes — 2026-10-08
+
+Retain throttling records when mail delivery fails, while making the failed code
+unusable. Match the request timestamp as well as its digest so a late failure does
+not invalidate a newer fixed test code. Retain up to 100 rooms per owner, checked transactionally. Creating another room
+automatically removes the owned room inactive longest, including unfinished games,
+and its related data for all players. Sort room lists most recently updated first
+to match pruning. Only accepted joins and game actions count as updates, not viewing.
+Use a Show finished games checkbox to include finished games in the same sorted
+list and display the retention explanation. The
+user rejected manual site-owner cleanup and finished-only pruning because abandoned
+games may never finish. Keep vote failures visible inside word approval and use roving keyboard focus on
+the board rather than 225 tab stops. Removing another saved tile set preserves the
+active editor's update target and draft.
+
+## Follow-up review fixes — 2026-10-09
+
+Lock tile-editor controls while a save is pending so a late response cannot change
+another edit's identity or overwrite a different saved set. Distinguish a removed
+room from an expired auth session in event streams; clear its game UI, ignore late
+snapshots and provide a return to Your rooms. Treat HTTP 404 the same way. Add an
+explicit change-email message to the account model, retaining the entered address
+for correction without sending another code until the user submits it.

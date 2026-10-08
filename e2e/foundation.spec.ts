@@ -13,7 +13,7 @@ test("both app shells load and keep their themes separate", async ({ page }) => 
   await expect(page.locator("html")).toHaveAttribute("data-theme", "ink");
   await page.goto("/vortoj/");
   await expect(page.getByRole("heading", { name: "Your next word can wait." })).toBeVisible();
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "gamegirl");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "antique-paper");
   await expect(page.getByLabel("Your theme")).toBeHidden();
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Settings" })).toBeVisible();

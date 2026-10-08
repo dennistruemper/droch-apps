@@ -54,3 +54,24 @@ test("malformed account responses remain recoverable", async ({ page }) => {
     page.getByRole("button", { name: "Request another code", exact: true }),
   ).toBeEnabled();
 });
+
+test("change email returns to editable entry and requests the corrected address", async ({
+  page,
+}) => {
+  const addresses: string[] = [];
+  await page.route("**/api/auth/session", (route) => route.fulfill({ json: { user: null } }));
+  await page.route("**/api/auth/code", (route) => {
+    addresses.push(route.request().postDataJSON().email);
+    return route.fulfill({ json: { codeLength: 4, message: "Use 9999" } });
+  });
+  await page.goto("/vortoj/");
+  await page.getByLabel("Email address").fill("mistyped@example.test");
+  await page.getByRole("button", { name: "Send sign-in code", exact: true }).click();
+  await page.getByRole("button", { name: "Change email", exact: true }).click();
+  await expect(page.getByLabel("Sign-in code")).toBeHidden();
+  await expect(page.getByLabel("Email address")).toBeEditable();
+  await page.getByLabel("Email address").fill("correct@example.test");
+  await page.getByRole("button", { name: "Send sign-in code", exact: true }).click();
+  await expect(page.getByLabel("Sign-in code")).toBeVisible();
+  expect(addresses).toEqual(["mistyped@example.test", "correct@example.test"]);
+});

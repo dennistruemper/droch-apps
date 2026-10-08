@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, count, asc, desc, inArray } from "drizzle-orm";
 import { randomInt, randomUUID, createHash } from "node:crypto";
 import type { connectDatabase } from "@repo/shared/database";
 import type { User } from "@repo/shared/auth";
@@ -78,10 +78,16 @@ export function createVortojService(
     },
     list(user: User) {
       return db
-        .select({ id: rooms.id, title: rooms.title, state: rooms.state })
+        .select({
+          id: rooms.id,
+          title: rooms.title,
+          state: rooms.state,
+          updatedAt: rooms.updatedAt,
+        })
         .from(rooms)
         .innerJoin(members, eq(rooms.id, members.roomId))
         .where(eq(members.userId, user.id))
+        .orderBy(desc(rooms.updatedAt), desc(rooms.createdAt), desc(rooms.id))
         .all()
         .map((row) => ({
           id: row.id,
@@ -89,12 +95,37 @@ export function createVortojService(
           phase: row.state.phase,
           turnId: row.state.players[row.state.turn]!.id,
           version: row.state.version,
+          updatedAt: row.updatedAt,
         }));
     },
     create(user: User, title: string, tileSetId: string) {
       const set = presets.find((p) => p.id === tileSetId) ?? ownedSet(tileSetId, user),
         id = effects.id();
       db.transaction(() => {
+        const owned = db
+          .select({ count: count() })
+          .from(rooms)
+          .where(eq(rooms.ownerId, user.id))
+          .get()!;
+        if (owned.count >= 100) {
+          const needed = owned.count - 99;
+          const oldest = db
+            .select({ id: rooms.id })
+            .from(rooms)
+            .where(eq(rooms.ownerId, user.id))
+            .orderBy(asc(rooms.updatedAt), asc(rooms.createdAt), asc(rooms.id))
+            .limit(needed)
+            .all();
+          // Deletion and creation commit together; foreign keys remove memberships and receipts.
+          db.delete(rooms)
+            .where(
+              inArray(
+                rooms.id,
+                oldest.map((room) => room.id),
+              ),
+            )
+            .run();
+        }
         db.insert(rooms)
           .values({
             id,
@@ -102,6 +133,7 @@ export function createVortojService(
             title,
             tileSet: { name: set.name, tiles: set.tiles },
             createdAt: effects.now(),
+            updatedAt: effects.now(),
             state: newGame(user),
           })
           .run();
@@ -133,7 +165,7 @@ export function createVortojService(
         state.players.push({ ...user, score: 0, rack: [] });
         state.version++;
         db.insert(members).values({ roomId: id, userId: user.id }).run();
-        db.update(rooms).set({ state }).where(eq(rooms.id, id)).run();
+        db.update(rooms).set({ state, updatedAt: effects.now() }).where(eq(rooms.id, id)).run();
       });
       return snapshot(id, user);
     },
@@ -164,7 +196,7 @@ export function createVortojService(
             draw: effects.draw,
             id: effects.id,
           });
-          db.update(rooms).set({ state }).where(eq(rooms.id, id)).run();
+          db.update(rooms).set({ state, updatedAt: effects.now() }).where(eq(rooms.id, id)).run();
           db.insert(commands)
             .values({ roomId: id, userId: user.id, commandId: command.commandId, digest })
             .run();

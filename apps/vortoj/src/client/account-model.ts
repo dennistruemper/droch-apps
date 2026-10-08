@@ -21,6 +21,7 @@ export type Model = {
 export type Message =
   | { kind: "submit"; email: string; code: string; name: string }
   | { kind: "resend" }
+  | { kind: "change-email" }
   | { kind: "sign-out" }
   | { kind: "session-loaded"; id: number; user: User | null }
   | { kind: "code-sent"; id: number; instructions: Instructions }
@@ -65,6 +66,10 @@ export function update(model: Model, message: Message): Transition {
         });
       return unchanged;
     }
+    case "change-email":
+      return !model.pending && model.screen.kind === "code"
+        ? finish({ kind: "email", email: model.screen.email })
+        : unchanged;
     case "resend":
       return !model.pending && model.screen.kind === "code"
         ? start({ kind: "send-code", id: model.nextId, email: model.screen.email })

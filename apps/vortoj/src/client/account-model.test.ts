@@ -77,6 +77,24 @@ describe("account transitions", () => {
     );
   });
 
+  it("returns to editable email entry without sending mail and ignores old responses", () => {
+    const code = enteringCode();
+    const changed = update(code, { kind: "change-email" });
+    expect(changed.model.screen).toEqual({ kind: "email", email: "review@example.test" });
+    expect(changed.commands).toEqual([]);
+    expect(update(changed.model, { kind: "code-sent", id: 2, instructions }).model).toBe(
+      changed.model,
+    );
+    const next = update(changed.model, {
+      kind: "submit",
+      email: "correct@example.test",
+      code: "",
+      name: "",
+    });
+    expect(next.commands[0]).toMatchObject({ kind: "send-code", email: "correct@example.test" });
+    const pending = update(code, { kind: "resend" });
+    expect(update(pending.model, { kind: "change-email" }).model).toBe(pending.model);
+  });
   it("keeps the signed-in session on logout failure and clears it on success", () => {
     const signedIn = update(init().model, { kind: "session-loaded", id: 1, user }).model;
     const logout = update(signedIn, { kind: "sign-out" });
