@@ -1,4 +1,5 @@
 import { createSignal, For, Show } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { createAppStorage } from "../storage/index.ts";
 
 const fonts = [
@@ -58,13 +59,18 @@ function nativeScheme(background: string) {
 }
 const themes = [
   { value: "paper", label: "Paper" },
+  { value: "antique-paper", label: "Antique paper" },
   { value: "ink", label: "Ink" },
   { value: "gamegirl", label: "Gamegirl" },
   { value: "ocean", label: "Ocean" },
   { value: "custom", label: "Custom" },
 ] as const;
 
-export function AppSettings(props: { appId: string; defaultTheme: string }) {
+export function AppSettings(props: {
+  appId: string;
+  defaultTheme: string;
+  trigger?: (open: () => void) => JSX.Element;
+}) {
   const storage = createAppStorage(props.appId, localStorage);
   const saved = storage.get("theme");
   let savedCustomTheme = readCustomTheme(storage.get("custom-theme"));
@@ -129,9 +135,13 @@ export function AppSettings(props: { appId: string; defaultTheme: string }) {
   const themeId = `${props.appId}-theme`;
   return (
     <>
-      <button type="button" onClick={() => dialog?.showModal()}>
-        Settings
-      </button>
+      {props.trigger ? (
+        props.trigger(() => dialog?.showModal())
+      ) : (
+        <button type="button" onClick={() => dialog?.showModal()}>
+          Settings
+        </button>
+      )}
       <dialog
         data-app-settings
         aria-labelledby={headingId}

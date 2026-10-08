@@ -75,7 +75,7 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
 
-  apps/words:
+  apps/vortoj:
     dependencies:
       '@repo/shared':
         specifier: workspace:*
@@ -110,9 +110,9 @@ importers:
       '@repo/shared':
         specifier: workspace:*
         version: link:../shared
-      '@repo/words':
+      '@repo/vortoj':
         specifier: workspace:*
-        version: link:../apps/words
+        version: link:../apps/vortoj
       hono:
         specifier: 4.13.12
         version: 4.13.12
@@ -131,6 +131,9 @@ importers:
       drizzle-orm:
         specifier: 0.45.3
         version: 0.45.3(@types/better-sqlite3@9.6.0)(@types/pg@8.23.1)(better-sqlite3@13.0.3)(pg@8.23.1)
+      hono:
+        specifier: 4.13.12
+        version: 4.13.12
       solid-js:
         specifier: 2.0.0-rc.13
         version: 2.0.0-rc.13
