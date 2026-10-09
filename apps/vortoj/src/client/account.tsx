@@ -6,6 +6,11 @@ import { execute } from "./account-commands.ts";
 import { message } from "./api.ts";
 export function Account(props: {
   children: (user: User, signOut: () => Promise<void>) => JSX.Element;
+  layout: (
+    user: () => User | null,
+    signOut: () => Promise<void>,
+    content: JSX.Element,
+  ) => JSX.Element;
 }) {
   const initial = init();
   let current = initial.model;
@@ -49,7 +54,7 @@ export function Account(props: {
     void apply(initial);
     return () => controller.abort();
   });
-  return (
+  const content = (
     <Show when={screen().kind !== "loading"} fallback={<p>Loading your account…</p>}>
       <Show
         when={user()}
@@ -134,12 +139,6 @@ export function Account(props: {
       >
         {(person) => (
           <>
-            <div class="account-bar">
-              <small>Playing as {person.name}</small>
-              <button type="button" onClick={signOut}>
-                Sign out
-              </button>
-            </div>
             <Show when={error()}>
               <p role="alert">{error()}</p>
             </Show>
@@ -149,4 +148,5 @@ export function Account(props: {
       </Show>
     </Show>
   );
+  return props.layout(user, signOut, content);
 }

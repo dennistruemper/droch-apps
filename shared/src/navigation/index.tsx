@@ -1,4 +1,4 @@
-import { createSignal, onCleanup } from "solid-js";
+import { createSignal, onCleanup, Show } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import { createAppStorage } from "../storage/index.ts";
 
@@ -77,7 +77,11 @@ export function SidePanel(props: {
         }}
       >
         <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 6h16M4 12h16M4 18h16" fill="none" stroke="currentColor" stroke-width="2" />
+          <g fill="none" stroke="currentColor" stroke-width="2">
+            <path data-panel-icon="top" d="M4 6h16" />
+            <path data-panel-icon="middle" d="M4 12h16" />
+            <path data-panel-icon="bottom" d="M4 18h16" />
+          </g>
         </svg>
       </button>
     ),
@@ -122,9 +126,11 @@ export function SidePanel(props: {
       >
         <header data-panel-heading>
           <strong>Menu</strong>
-          <button type="button" aria-label="Close menu panel" onClick={close}>
-            ×
-          </button>
+          <Show when={!desktop()}>
+            <button type="button" aria-label="Close menu panel" onClick={close}>
+              ×
+            </button>
+          </Show>
         </header>
         {props.menu(controls)}
       </dialog>

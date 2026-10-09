@@ -329,9 +329,9 @@ test("game side panel adapts, restores focus, persists desktop choice and signs 
     await signIn(guest, url, "PanelBob");
     await guest.getByRole("button", { name: "Join room", exact: true }).click();
     await owner.getByRole("button", { name: "Start game", exact: true }).click();
-    const menu = owner.getByRole("dialog", { name: "Game menu", exact: true });
-    const open = () => owner.getByRole("button", { name: "Open game menu", exact: true });
-    const close = () => owner.getByRole("button", { name: "Close game menu", exact: true });
+    const menu = owner.getByRole("dialog", { name: "Vortoj menu", exact: true });
+    const open = () => owner.getByRole("button", { name: "Open vortoj menu", exact: true });
+    const close = () => owner.getByRole("button", { name: "Close vortoj menu", exact: true });
     await expect(menu).toBeVisible();
     await expect(owner.locator(".game-player")).toHaveText("Playing as PanelAlice");
     await expect(menu).not.toContainText("Panel word night");
