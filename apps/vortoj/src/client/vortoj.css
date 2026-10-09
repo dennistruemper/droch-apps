@@ -77,22 +77,59 @@ body:has(.game-shell) {
   display: flex;
   flex-direction: column;
 }
-#app:has(.game-shell) > header {
+#app > [data-side-panel] {
+  min-height: 100dvh;
+}
+.vortoj-page-shell {
+  position: relative;
+  min-width: 0;
+  flex: 1;
+}
+.vortoj-menu-trigger {
+  position: absolute;
+  top: 6px;
+  left: 12px;
+  z-index: 1;
+}
+.vortoj-page-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  min-height: 56px;
+  padding: 6px 12px 6px 64px;
+  border-bottom: 1px solid var(--color-fg);
+}
+.vortoj-content {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.vortoj-page-shell:has(.game-shell) {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  min-height: 0;
+}
+.vortoj-page-shell:has(.game-shell) > .vortoj-page-heading {
   display: none;
 }
-#app:has(.game-shell) > footer {
-  display: none;
-}
-#app > main.room-page:has(.game-shell) {
+.vortoj-content:has(.game-shell) {
   padding: 0;
   gap: 0;
-  max-width: 1440px;
+  max-width: none;
   width: 100%;
   flex: 1;
   min-height: 0;
 }
-.room-page:has(.game-shell) > .account-bar {
-  display: none;
+.room-page:has(.game-shell) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 .game-shell {
   flex: 1;
@@ -104,7 +141,7 @@ body:has(.game-shell) {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 12px;
+  padding: 6px 12px 6px 64px;
   border-bottom: 1px solid var(--color-fg);
 }
 .game-heading > div {

@@ -443,3 +443,119 @@ test("saved tile identity survives a failed collection refresh without a false s
   ).toBeVisible();
   expect(paths).toEqual(["/api/vortoj/tile-sets", `/api/vortoj/tile-sets/${id}`]);
 });
+
+for (const viewport of [
+  { width: 375, height: 667 },
+  { width: 1440, height: 900 },
+]) {
+  test(`Vortoj uses the same side panel on every page (${viewport.width}px)`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    const f = fixture();
+    let signedIn = false;
+    let playing = false;
+    await page.route("**/api/**", (route) => {
+      const path = new URL(route.request().url()).pathname;
+      if (path === "/api/auth/session")
+        return route.fulfill({ json: { user: signedIn ? f.author : null } });
+      if (path === "/api/vortoj/rooms") return route.fulfill({ json: [] });
+      if (path === "/api/vortoj/tile-sets")
+        return route.fulfill({ json: [{ id: "english", ...f.set }] });
+      if (path.endsWith("/events"))
+        return route.fulfill({ contentType: "text/event-stream", body: "" });
+      return route.fulfill({
+        json: {
+          ...projectGame(f.playing, f.author.id, f.room),
+          phase: playing ? "playing" : "waiting",
+        },
+      });
+    });
+    const menu = page.getByRole("dialog", { name: "Vortoj menu", exact: true });
+    const open = async () => {
+      if (!(await menu.isVisible()))
+        await page.getByRole("button", { name: "Open vortoj menu", exact: true }).click();
+    };
+    await page.goto("/vortoj/");
+    await expect(page.getByLabel("Email address")).toBeVisible();
+    await open();
+    await expect(menu.getByRole("button", { name: "Sign out", exact: true })).toHaveCount(0);
+    await expect(menu.getByRole("button", { name: "Close menu panel", exact: true })).toHaveCount(
+      viewport.width < 1280 ? 1 : 0,
+    );
+    await menu.getByRole("button", { name: "Rules", exact: true }).click();
+    await expect(page.getByRole("dialog", { name: "Game rules", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Close game rules", exact: true }).click();
+    await open();
+    await menu.getByRole("button", { name: "Settings", exact: true }).click();
+    await expect(page.getByLabel("Your theme")).toHaveValue("antique-paper");
+    await page.getByRole("button", { name: "Close settings", exact: true }).click();
+    signedIn = true;
+    for (const [path, game] of [
+      ["/vortoj/", false],
+      [`/vortoj/room/${f.room.id}`, false],
+      [`/vortoj/room/${f.room.id}`, true],
+      ["/vortoj/not-a-page", false],
+    ] as const) {
+      playing = game;
+      await page.goto(path);
+      if (game)
+        await expect(page.getByRole("heading", { name: "Your tiles", exact: true })).toBeVisible();
+      else if (path.endsWith("not-a-page"))
+        await expect(
+          page.getByRole("heading", { name: "Page not found", exact: true }),
+        ).toBeVisible();
+      else if (path.endsWith(f.room.id))
+        await expect(page.getByLabel("Room invitation")).toBeVisible();
+      else
+        await expect(page.getByRole("heading", { name: "Your rooms", exact: true })).toBeVisible();
+      await open();
+      await expect(menu.locator("nav > button, nav > a")).toHaveText([
+        "Rules",
+        "Your rooms",
+        "Settings",
+        "Sign out",
+        "← All apps",
+      ]);
+      await expect(page.locator("[data-panel-trigger]")).toHaveCount(1);
+      await expect(page.locator(".account-bar")).toHaveCount(0);
+      await expect(
+        menu.getByRole("button", { name: "Players and scores", exact: true }),
+      ).toHaveCount(0);
+      if (game)
+        await expect(
+          page.getByRole("button", { name: "Players, scores and game details" }),
+        ).toHaveCount(1);
+    }
+  });
+}
+
+test("incoming word approval closes the app-wide rules dialog", async ({ page }) => {
+  const f = fixture();
+  let snapshot = projectGame(f.playing, f.reviewer.id, f.room);
+  await page.route("**/api/**", (route) => {
+    if (new URL(route.request().url()).pathname === "/api/auth/session")
+      return route.fulfill({ json: { user: f.reviewer } });
+    if (route.request().url().endsWith("/events"))
+      return route.fulfill({ contentType: "text/event-stream", body: "" });
+    return route.fulfill({ json: snapshot });
+  });
+  await page.goto(`/vortoj/room/${f.room.id}`);
+  await expect(page.getByRole("heading", { name: "Your tiles", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Rules", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Game rules", exact: true })).toBeVisible();
+  snapshot = {
+    ...snapshot,
+    version: snapshot.version + 1,
+    phase: "voting",
+    pending: {
+      authorId: f.author.id,
+      placements: [],
+      words: [{ id: "word", text: "AA", points: 2 }],
+      bonus: 0,
+      votes: {},
+      requiredApprovals: 1,
+    },
+  };
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  await expect(page.getByRole("button", { name: "Accept AA", exact: true })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Game rules", exact: true })).not.toBeVisible();
+});

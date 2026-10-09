@@ -284,20 +284,24 @@ alert visibility rules, and extend reduced-motion handling to all animations. Pr
 the semantic design approach; avoid introducing a CSS framework by default.
 
 Shared storage helpers automatically prefix app keys and implement app-only deletion.
-Theme choices are app-specific. Poker and Vortoj keep their theme pickers in a shared, header-accessible
-native Settings dialog, with keyboard focus management and Escape dismissal.
-Active Vortoj games replace the app header and account row with a compact room
-header showing room name, player identity, turn status, personal score, and an
-outlined burger button. The shared `@repo/shared/navigation` SidePanel accepts
-app-owned menu and main-content render functions. Its native dialog is a modal
-left drawer below 1280px and a nonmodal 240px column at wider widths. The desktop
-column starts expanded unless the app-prefixed `side-panel` preference records
-collapse; mobile always starts closed. Rules, players/scores, rooms, settings and
-sign-out are Vortoj-owned menu items. A separated All apps link sits at the bottom.
-Native modal focus containment, Escape and backdrop dismissal restore focus to the
-burger. Resizing switches modes without saving a mobile open state. The shared
-Settings component accepts an optional trigger renderer so its single dialog can
-be opened from either the lobby header or the game menu.
+Theme choices are app-specific. Poker and Vortoj keep their theme pickers in a shared
+native Settings dialog, opened from Poker’s header and Vortoj’s side panel, with keyboard focus management and Escape dismissal.
+Every Vortoj page uses the app-owned Shell around the shared
+`@repo/shared/navigation` SidePanel, including sign-in, lobby, invitations, active
+rooms and missing pages. The single outlined burger appears in a compact page
+header; active rooms retain their room name, player identity, turn status and
+personal score while sharing the same burger. The old app links and account row
+are removed. The native panel is a modal left drawer below 1280px and a nonmodal
+240px column at wider widths. The drawer has an X close button on mobile; desktop uses only the menu toggle to
+collapse or expand the column. Its icon morphs from a burger when closed to an X
+when open; reduced-motion preferences disable the transition. The desktop column starts expanded unless the
+app-prefixed `side-panel` preference records collapse; mobile always starts closed.
+Rules, Your rooms and Settings are consistent on every page; authenticated users
+also get Sign out. All apps remains a separated return link at the bottom.
+Game-specific scores and history stay behind the room score button. Rules is one
+app-wide dialog, available without a game or account. Shell owns one Settings
+dialog. Native modal focus containment, Escape and backdrop dismissal restore focus
+to the burger. Resizing switches modes without saving a mobile open state.
 The Custom option edits background/foreground colors and selects a local font stack
 (system sans-serif, serif, or monospace). Changes preview immediately and save as
 validated preferences under the app storage prefix. Preset hex shorthand from production

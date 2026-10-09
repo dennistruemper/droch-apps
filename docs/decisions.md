@@ -318,3 +318,20 @@ and empty lists are distinct; preserve prior data on refresh failure and propaga
 that failure to callers. Guard pending creation and navigation against duplicate
 submissions. Room updates emit explicit show/close/keep approval-dialog commands;
 the adapter does not decide game policy.
+
+## Vortoj navigation on every page — 2026-10-09
+
+The user requested the side panel across Vortoj, rather than only active rooms.
+Use one page shell and a consistent menu: Rules, Your rooms, Settings, authenticated
+Sign out, and a separated All apps return link. The login state changes availability
+of Sign out, not the page. Keep scores and history as a room-specific control next
+to the score. Extract the existing rules into an app-wide dialog so the same Rules
+entry works from sign-in, the lobby and games. Retain the shared panel's desktop
+preference, mobile modality and outlined burger; remove the old header links and
+separate account row.
+
+Show the panel's X close button only in mobile drawer mode. On desktop the burger
+is the single collapse/expand control, avoiding two simultaneous close controls.
+
+The outlined menu toggle shows a burger when closed and an X when open, with a
+short morph animation. Respect `prefers-reduced-motion` by switching instantly.
