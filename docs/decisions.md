@@ -153,6 +153,19 @@ setup without duplicating runner/tool/dependency setup. The prior hosted run spe
 runner contention and must be measured on the next hosted run. Persistent CI Docker
 caching remains an option to evaluate.
 
+## Poker Attention mode — 2026-10-15
+
+The owner requested an ironic “Attention mode” option in Poker Settings, using
+locally generated, unrelated animations around the voting elements. All prototype
+effects except number 6 (the olive machine) were selected. Each effect may run for
+one minute before random rotation; the twelve-second comparison clips do not limit
+animation duration. No external videos, assets, or data sources are involved.
+
+The implementation starts disabled, saves the choice under poker browser storage,
+and shows two distinct scenes per minute. Layout and pairing are implementation
+choices. Device reduced-motion preference keeps the artwork static. Animation time
+pauses when the page or both scenes are out of view, and work stops when disabled.
+
 ## Still to settle
 
 - Word-game dictionary language, licensing, board layout, scoring, and player count.

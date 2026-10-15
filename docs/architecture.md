@@ -197,6 +197,16 @@ a light/dark color scheme derived from the custom background. Preset selection r
 custom color/font inline overrides; saved customization remains available for later use. Direct `localStorage.clear()` is forbidden in app code.
 Prefixes prevent collisions but do not isolate same-origin apps from each other.
 
+Poker adds app-specific content to the shared Settings dialog through its children
+slot. Its optional Attention mode stores a validated boolean under
+`droch:poker:attention-mode` and mounts two decorative Canvas scenes around the
+voting area (below it on narrow screens). Nine procedural scenes live in the poker
+client; the standalone experiment and recorded media are not bundled. A new pair
+is chosen after 60 visible seconds, excluding both outgoing effects. Scene rendering
+accepts time explicitly and is independent of votes, room snapshots, and network
+requests. The client owns a capped 30 fps loop and cleans it up on unmount; hidden
+tabs and offscreen scenes suspend animation, and reduced motion renders static art.
+
 ## Compose, production, and migrations
 
 One Compose stack has a migration step and one application container, sharing a

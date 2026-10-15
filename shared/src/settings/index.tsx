@@ -1,4 +1,4 @@
-import { createSignal, For, Show } from "solid-js";
+import { createSignal, For, Show, type Element } from "solid-js";
 import { createAppStorage } from "../storage/index.ts";
 
 const fonts = [
@@ -64,7 +64,7 @@ const themes = [
   { value: "custom", label: "Custom" },
 ] as const;
 
-export function AppSettings(props: { appId: string; defaultTheme: string }) {
+export function AppSettings(props: { appId: string; defaultTheme: string; children?: Element }) {
   const storage = createAppStorage(props.appId, localStorage);
   const saved = storage.get("theme");
   let savedCustomTheme = readCustomTheme(storage.get("custom-theme"));
@@ -194,6 +194,7 @@ export function AppSettings(props: { appId: string; defaultTheme: string }) {
               </button>
             </fieldset>
           </Show>
+          {props.children}
           <button type="button" onClick={() => dialog?.close()}>
             Close settings
           </button>
