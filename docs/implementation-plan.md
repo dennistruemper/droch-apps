@@ -106,10 +106,13 @@ Restart and reconnect preserve the authoritative match.
 - Add a small app scaffold command using the chosen package layout and registry.
 - Verify a temporary third app builds and mounts without Compose, DNS, or Coolify edits.
 - Verify streaming and reconnect through the production proxy.
-- Preview origin mapping now prefers Coolify's generated service URL over a stale
-  saved production origin. Actual Compose rendering plus startup validation have
-  been checked for preview, production, local fallback, empty values, and missing
-  configuration. Verify room creation on the redeployed hosted preview.
+- Preview server startup selects the runtime generated service URL before a stale
+  saved production origin; a Compose-only mapping did not fix hosted room creation.
+  Configuration tests cover preview, production, local fallback, missing/empty and
+  invalid service URLs. The production image passes all nine browser checks; with
+  a stale production APP_ORIGIN and a preview SERVICE_URL_APPLICATION, it creates
+  rooms and accepts votes for the preview origin while rejecting production and
+  foreign origins. Verify room creation on the redeployed hosted preview.
 
 Acceptance: one deployable Compose stack, tested recovery, reproducible tool versions,
 and documented app creation requiring only repository changes and deployment.

@@ -170,9 +170,12 @@ pauses when the page or both scenes are out of view, and work stops when disable
 
 A preview reported `APP_ORIGIN=https://apps.droch.dev` alongside the correct
 `SERVICE_URL_APPLICATION=https://6.apps.droch.dev`, despite a saved
-`APP_ORIGIN=$SERVICE_URL_APPLICATION` alias. Compose now maps the generated service
-URL directly into the application's `APP_ORIGIN`, with the explicit origin as a
-fallback when the generated URL is absent or empty. Local worktrees retain their
+`APP_ORIGIN=$SERVICE_URL_APPLICATION` alias. A Compose-only mapping still left
+hosted room creation rejected. Compose now passes the two inputs separately, and
+server startup selects the runtime generated service URL as its effective
+`APP_ORIGIN`, with the explicit origin as a fallback when the generated URL is
+absent or empty. An invalid nonempty generated URL fails validation rather than
+silently selecting the production fallback. Local worktrees retain their
 localhost origins. The server's strict HTTP(S)-origin validation and exact POST
 origin check remain unchanged; missing configuration fails at application startup.
 

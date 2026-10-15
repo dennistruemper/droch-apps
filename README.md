@@ -171,7 +171,7 @@ zone root and first-level subdomains, but not deeper names such as
 `1.apps.droch.dev`. Keeping preview records DNS only avoids that certificate
 coverage issue. See [Cloudflare's SSL limitations](https://developers.cloudflare.com/ssl/edge-certificates/universal-ssl/limitations/).
 
-Compose sets the application's `APP_ORIGIN` directly from Coolify's generated
+The server selects its origin at startup from the running container's
 `SERVICE_URL_APPLICATION`, falling back to the explicit `APP_ORIGIN` only when the
 generated URL is unset or empty. For PR 6, that selects `https://6.apps.droch.dev`
 even if the saved `APP_ORIGIN` still contains `https://apps.droch.dev`. Coolify
@@ -180,15 +180,18 @@ replace the generated value.
 
 A dashboard alias such as `APP_ORIGIN=$SERVICE_URL_APPLICATION` is not required.
 It was observed resolving to the production URL while the running preview's
-`SERVICE_URL_APPLICATION` correctly contained the preview URL. The direct Compose
-mapping avoids relying on that alias expansion. Existing explicit production
+`SERVICE_URL_APPLICATION` correctly contained the preview URL. A Compose-only
+mapping did not resolve the hosted failure; server-side runtime selection avoids
+relying on that alias expansion or Compose preprocessing. Existing explicit production
 `APP_ORIGIN` values can remain as fallbacks, and local development continues using
 its generated localhost origin. The server validates the final origin at startup.
 
 Keep the application service's internal port at 3000 and redeploy the preview to
-apply Compose changes. To diagnose an origin mismatch, compare the running
-application's `printenv APP_ORIGIN SERVICE_URL_APPLICATION` with the browser origin
-(scheme and hostname, without a path, trailing slash, or internal `:3000` port).
+apply the server and Compose changes. The startup log `Droch apps listening on …`
+shows the selected origin; compare it with the browser origin (scheme and hostname,
+without a path, trailing slash, or internal `:3000` port). The raw `APP_ORIGIN`
+environment value may still contain the production fallback; use
+`printenv APP_ORIGIN SERVICE_URL_APPLICATION` to inspect both inputs.
 
 See [Coolify's preview deployment documentation](https://coolify.io/docs/applications/deployments/preview-deployments).
 

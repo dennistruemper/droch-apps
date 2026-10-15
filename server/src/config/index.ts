@@ -19,7 +19,12 @@ const configurationSchema = z.object({
 });
 
 export function readConfiguration(environment: Record<string, string | undefined>) {
-  const parsed = configurationSchema.safeParse(environment);
+  // Select from the running container, after Coolify has generated preview URLs.
+  // Saved APP_ORIGIN aliases can already have expanded to the production URL.
+  const parsed = configurationSchema.safeParse({
+    ...environment,
+    APP_ORIGIN: environment.SERVICE_URL_APPLICATION || environment.APP_ORIGIN,
+  });
   if (!parsed.success) {
     // Report field names, never values containing credentials.
     const originHint = parsed.error.issues.some((issue) => issue.path[0] === "APP_ORIGIN")
