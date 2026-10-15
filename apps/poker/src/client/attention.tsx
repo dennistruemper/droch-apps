@@ -40,15 +40,10 @@ export function AttentionSettings() {
           id="poker-attention-mode"
           type="checkbox"
           checked={attention.enabled()}
-          aria-describedby="poker-attention-description"
           onChange={(event) => attention.setEnabled(event.currentTarget.checked)}
         />
         Attention mode
       </label>
-      <small id="poker-attention-description">
-        So you can finally concentrate. New distractions every minute.
-      </small>
-      <small>Animations follow your device’s reduced-motion setting.</small>
     </section>
   );
 }

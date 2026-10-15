@@ -200,7 +200,9 @@ Prefixes prevent collisions but do not isolate same-origin apps from each other.
 Poker adds app-specific content to the shared Settings dialog through its children
 slot. Its optional Attention mode stores a validated boolean under
 `droch:poker:attention-mode` and mounts two decorative Canvas scenes around the
-voting area (below it on narrow screens). Nine procedural scenes live in the poker
+voting area. Wide screens use full-width side panels around a compact voting
+column; narrower screens show full-width scenes below voting. Settings shows only
+the Attention mode switch. Nine procedural scenes live in the poker
 client; the standalone experiment and recorded media are not bundled. A new pair
 is chosen after 60 visible seconds, excluding both outgoing effects. Scene rendering
 accepts time explicitly and is independent of votes, room snapshots, and network
