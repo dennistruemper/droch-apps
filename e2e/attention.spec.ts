@@ -56,7 +56,7 @@ test("attention mode persists, rotates after one minute, and leaves voting usabl
   await page.clock.fastForward(120000);
   await page.reload();
   await expect(scenes).toHaveCount(0);
-  await page.goto("/words/");
+  await page.goto("/vortoj/");
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await expect(page.getByRole("checkbox", { name: "Attention mode", exact: true })).toHaveCount(0);
   expect(errors).toEqual([]);

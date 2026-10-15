@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
-import { mkdir, readdir, writeFile } from "node:fs/promises";
+import { randomBytes } from "node:crypto";
+import { mkdir, readdir, writeFile, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { createServer } from "node:net";
 import { worktreeIdentity } from "./worktree.ts";
@@ -49,6 +50,12 @@ async function availablePort() {
 if (command === "up") {
   await mkdir(directory, { recursive: true });
   const port = await availablePort();
+  const oldEnvironment = await readFile(resolve(directory, ".env"), "utf8").catch(() => "");
+  const authSecret =
+    oldEnvironment
+      .split("\n")
+      .find((line) => line.startsWith("AUTH_SECRET="))
+      ?.slice("AUTH_SECRET=".length) || randomBytes(32).toString("hex");
   const packages = [
     "server",
     "shared",
@@ -74,7 +81,7 @@ if (command === "up") {
   };
   await writeFile(
     resolve(directory, ".env"),
-    `DATA_DIRECTORY=/data\nAPP_ORIGIN=http://localhost:${port}\nSESSION_COOKIE_NAME=${identity.cookieName}\nAPP_PORT=${port}\n`,
+    `AUTH_SECRET=${authSecret}\nAUTH_MODE=local\nDATA_DIRECTORY=/data\nAPP_ORIGIN=http://localhost:${port}\nSESSION_COOKIE_NAME=${identity.cookieName}\nAPP_PORT=${port}\n`,
     { mode: 0o600 },
   );
   await writeFile(

@@ -12,8 +12,8 @@ describe("HTTP composition", () => {
       app: "poker",
       stage: "foundation",
     });
-    expect(await (await app.request("/api/words/status")).json()).toEqual({
-      app: "words",
+    expect(await (await app.request("/api/vortoj/status")).json()).toEqual({
+      app: "vortoj",
       stage: "foundation",
     });
     const response = await app.request("/poker");

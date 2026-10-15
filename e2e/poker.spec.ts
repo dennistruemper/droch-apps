@@ -41,7 +41,7 @@ test("two anonymous players vote privately, reveal, reset, and reconnect", async
     ).toHaveAttribute("aria-pressed", "true");
     await expect(guest.getByRole("row", { name: /Alice/ })).toContainText("Ready");
     const roomUrl = host.url();
-    await host.goto("/words/"); // Creator disconnects; the team can continue.
+    await host.goto("/vortoj/"); // Creator disconnects; the team can continue.
     await guest.getByRole("button", { name: "Reveal votes" }).click();
     await expect(guest.getByText("Votes revealed", { exact: true })).toBeVisible();
     await expect(guest.getByRole("row", { name: /Alice/ }).getByRole("cell")).toHaveText("13");

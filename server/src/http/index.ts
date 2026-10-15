@@ -5,6 +5,7 @@ export type FrontendResponse = { body: Uint8Array | string; contentType: string 
 export type FrontendReader = (appId: string, pathname: string) => Promise<FrontendResponse | null>;
 
 export function createApplication(options: {
+  authRoutes?: Hono;
   ready: () => Promise<boolean>;
   readFrontend: FrontendReader;
   applicationOptions?: (id: string) => ApplicationOptions;
@@ -24,6 +25,9 @@ export function createApplication(options: {
       return context.json({ status: "not-ready" }, 503);
     }
   });
+  if (options.authRoutes) app.route("/api/auth", options.authRoutes);
+  app.get("/words", (c) => c.redirect("/vortoj/", 308));
+  app.get("/words/*", (c) => c.redirect(c.req.path.replace(/^\/words/, "/vortoj"), 308));
   for (const application of applications) {
     app.route(
       `/api/${application.id}`,

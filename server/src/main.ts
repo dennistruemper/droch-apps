@@ -1,8 +1,10 @@
 import { createServer } from "node:http";
 import { getRequestListener } from "@hono/node-server";
+import { createAuthService, createAuthRoutes } from "@repo/shared/auth";
+import { createMailSender, createTestMailSender } from "@repo/shared/mail";
 import { connectDatabase } from "@repo/shared/database";
 import { createApplication } from "./http/index.ts";
-import { readConfiguration } from "./config/index.ts";
+import { readConfiguration, accountPolicy } from "./config/index.ts";
 import { createFrontendReader } from "./frontend/index.ts";
 import { applications, databaseDefinitions } from "./registry/index.ts";
 
@@ -57,7 +59,34 @@ const readFrontend = createFrontendReader({
       }
     : {}),
 });
+const authDatabase = databases.find((database) => database.id === "auth")!;
+const policy = accountPolicy(configuration);
+const auth =
+  configuration.AUTH_SECRET && policy.ready
+    ? createAuthService({
+        db: authDatabase.connection.db,
+        secret: configuration.AUTH_SECRET,
+        testMode: policy.testMode,
+        mailDelivery: policy.sendMail,
+        send: policy.sendMail
+          ? createMailSender({
+              ...(configuration.MAILTRAP_TOKEN ? { token: configuration.MAILTRAP_TOKEN } : {}),
+              ...(configuration.MAIL_FROM ? { from: configuration.MAIL_FROM } : {}),
+              ...(configuration.MAILTRAP_SANDBOX_ID
+                ? { sandboxId: configuration.MAILTRAP_SANDBOX_ID }
+                : {}),
+            })
+          : createTestMailSender(),
+      })
+    : null;
 const app = createApplication({
+  authRoutes: createAuthRoutes({
+    service: auth,
+    origin: configuration.APP_ORIGIN,
+    cookieName: configuration.SESSION_COOKIE_NAME,
+    secure: configuration.NODE_ENV === "production",
+    ready: () => authDatabase.connection.ready(authDatabase.migrationsFolder),
+  }),
   ready: async () =>
     databases.every(({ connection, migrationsFolder }) => connection.ready(migrationsFolder)),
   readFrontend,
@@ -66,6 +95,7 @@ const app = createApplication({
     if (!database) throw new Error(`Missing database for ${id}`);
     return {
       db: database.connection.db,
+      resolveUser: (token) => auth?.lookup(token) ?? null,
       ready: () => database.connection.ready(database.migrationsFolder),
       origin: configuration.APP_ORIGIN,
       cookieName: configuration.SESSION_COOKIE_NAME,

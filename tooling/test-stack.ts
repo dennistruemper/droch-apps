@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -56,7 +57,7 @@ if (command === "build") {
   const origin = `http://localhost:${await availablePort()}`;
   await writeFile(
     resolve(directory, ".env"),
-    `APP_ORIGIN=${origin}\nSESSION_COOKIE_NAME=${identity.cookieName}_test\n`,
+    `AUTH_SECRET=${randomBytes(32).toString("hex")}\nAUTH_MODE=local\nAPP_ORIGIN=${origin}\nSESSION_COOKIE_NAME=${identity.cookieName}_test\n`,
     { mode: 0o600 },
   );
   await writeFile(resolve(directory, "browser.env"), `TEST_BASE_URL=${origin}\n`);

@@ -23,7 +23,7 @@ describe("app-scoped storage", () => {
   it("clears all of one app's keys without touching another app or unrelated data", () => {
     const storage = memoryStorage();
     const poker = createAppStorage("poker", storage);
-    const words = createAppStorage("words", storage);
+    const words = createAppStorage("vortoj", storage);
     poker.set("theme", "paper");
     poker.set("room", "room-1");
     words.set("theme", "gamegirl");
