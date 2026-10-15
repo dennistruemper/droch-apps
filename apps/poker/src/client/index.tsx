@@ -280,7 +280,7 @@ function Room(props: { id: string }) {
       </Show>
       <Show when={room()}>
         <AttentionFrame>
-          <section>
+          <section class="attention-participants">
             <div class="room-heading">
               <h2>Round {room()?.round}</h2>
               <strong>{room()?.revealed ? "Votes revealed" : "Voting in progress"}</strong>
@@ -320,7 +320,7 @@ function Room(props: { id: string }) {
             </table>
           </section>
           <Show when={!room()?.revealed}>
-            <section>
+            <section class="attention-estimate">
               <h2>Your estimate</h2>
               <p>Your vote stays private until someone reveals the round.</p>
               <div class="voting-deck" role="group" aria-label="Choose an estimate">

@@ -34,13 +34,32 @@
 .attention-frame[data-active] {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "top" "participants" "middle" "estimate" "controls" "bottom";
   align-items: start;
 }
 #app > main:has(.attention-frame[data-active]) {
   max-width: 32rem;
 }
-.attention-voting {
-  grid-column: 1 / -1;
+.attention-frame[data-active] .attention-voting {
+  display: contents;
+}
+.attention-participants {
+  grid-area: participants;
+}
+.attention-estimate {
+  grid-area: estimate;
+}
+.attention-frame .round-controls {
+  grid-area: controls;
+}
+.attention-scene-left {
+  grid-area: top;
+}
+.attention-scene-middle {
+  grid-area: middle;
+}
+.attention-scene-right {
+  grid-area: bottom;
 }
 .attention-scene {
   min-width: 0;
@@ -66,20 +85,22 @@
     width: calc(100vw - 2 * var(--space-md));
     align-self: center;
     grid-template-columns: minmax(0, 1fr) minmax(0, 30rem) minmax(0, 1fr);
-  }
-  .attention-frame[data-active] .attention-voting {
-    grid-column: 2;
-    grid-row: 1;
+    grid-template-areas:
+      "left participants right"
+      "left estimate right"
+      "left controls right";
   }
   .attention-scene {
     position: sticky;
     top: var(--space-lg);
-    grid-row: 1;
   }
   .attention-scene-left {
-    grid-column: 1;
+    grid-area: left;
+  }
+  .attention-scene-middle {
+    display: none;
   }
   .attention-scene-right {
-    grid-column: 3;
+    grid-area: right;
   }
 }

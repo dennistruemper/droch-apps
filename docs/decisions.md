@@ -162,9 +162,10 @@ one minute before random rotation; the twelve-second comparison clips do not lim
 animation duration. No external videos, assets, or data sources are involved.
 
 The implementation starts disabled, saves the choice under poker browser storage,
-and shows two distinct scenes per minute. Layout and pairing are implementation
-choices. Device reduced-motion preference keeps the artwork static. Animation time
-pauses when the page or both scenes are out of view, and work stops when disabled.
+and shows two distinct scenes on wide screens and three on mobile. The owner
+requested mobile placement above the participants, between the table and estimate
+controls, and below round controls. Scene groups rotate each minute. Device reduced-motion preference keeps the artwork static. Animation time
+pauses when the page or all visible scenes are out of view, and work stops when disabled.
 
 ## Preview origin configuration — 2026-10-15
 

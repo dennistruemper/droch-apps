@@ -67,9 +67,10 @@ Coolify's external proxy remains part of milestone 6.
 
 Poker Settings includes an optional, per-browser Attention mode. Nine locally
 rendered Canvas scenes from `experiments/attention-mode/` are included; the owner
-excluded the olive machine. Two distinct scenes surround voting on wide screens
-and sit below it on narrow screens. A new pair is chosen after 60 visible seconds,
-without immediately repeating either outgoing scene. Reduced-motion preference
+excluded the olive machine. Two scenes surround voting on wide screens. On narrower screens, three distinct
+scenes appear above the participants, between the table and estimate controls, and
+below round controls. A new group is chosen after 60 visible seconds without
+immediately repeating an outgoing scene. Reduced-motion preference
 keeps the scenes static, hidden/offscreen scenes pause, and disabling the setting
 cleans up animation work. The isolated ten-effect experiment and its twelve-second
 comparison videos remain a reference, separate from the production bundle.

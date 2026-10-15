@@ -47,13 +47,13 @@ export function AttentionSettings() {
     </section>
   );
 }
-function choosePair(previous: readonly Effect[]): readonly [Effect, Effect] {
+function chooseScenes(previous: readonly Effect[]): readonly [Effect, Effect, Effect] {
   const available = effects.filter((effect) => !previous.includes(effect));
   const take = () => available.splice(Math.floor(Math.random() * available.length), 1)[0]!;
-  return [take(), take()];
+  return [take(), take(), take()];
 }
 function AttentionScenes() {
-  const [pair, setPair] = createSignal(choosePair([]));
+  const [scenes, setScenes] = createSignal(chooseScenes([]));
   const canvases: HTMLCanvasElement[] = [];
   createEffect(
     () => true,
@@ -66,14 +66,14 @@ function AttentionScenes() {
         lastDraw = -Infinity;
       function draw() {
         canvases.forEach((canvas, index) => {
-          if (visible.has(canvas)) render(canvas, pair()[index]!, elapsed);
+          if (visible.has(canvas)) render(canvas, scenes()[index]!, elapsed);
         });
       }
       function tick(now: number) {
         if (last !== undefined) elapsed += (now - last) / 1000;
         last = now;
         if (elapsed >= 60) {
-          setPair(choosePair(pair()));
+          setScenes(chooseScenes(scenes()));
           elapsed = 0;
         }
         if (now - lastDraw >= 1000 / 30) {
@@ -97,7 +97,7 @@ function AttentionScenes() {
         sync();
       });
       canvases.forEach((canvas, index) => {
-        render(canvas, pair()[index]!, 0);
+        render(canvas, scenes()[index]!, 0);
         observer.observe(canvas);
       });
       document.addEventListener("visibilitychange", sync);
@@ -115,7 +115,7 @@ function AttentionScenes() {
       <aside
         class="attention-scene attention-scene-left"
         aria-hidden="true"
-        data-attention-effect={pair()[0].id}
+        data-attention-effect={scenes()[0].id}
       >
         <canvas
           width="720"
@@ -124,12 +124,12 @@ function AttentionScenes() {
             canvases[0] = canvas;
           }}
         />
-        <small>{pair()[0].name}</small>
+        <small>{scenes()[0].name}</small>
       </aside>
       <aside
-        class="attention-scene attention-scene-right"
+        class="attention-scene attention-scene-middle"
         aria-hidden="true"
-        data-attention-effect={pair()[1].id}
+        data-attention-effect={scenes()[1].id}
       >
         <canvas
           width="720"
@@ -138,7 +138,21 @@ function AttentionScenes() {
             canvases[1] = canvas;
           }}
         />
-        <small>{pair()[1].name}</small>
+        <small>{scenes()[1].name}</small>
+      </aside>
+      <aside
+        class="attention-scene attention-scene-right"
+        aria-hidden="true"
+        data-attention-effect={scenes()[2].id}
+      >
+        <canvas
+          width="720"
+          height="450"
+          ref={(canvas) => {
+            canvases[2] = canvas;
+          }}
+        />
+        <small>{scenes()[2].name}</small>
       </aside>
     </>
   );

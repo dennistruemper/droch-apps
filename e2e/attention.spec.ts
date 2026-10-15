@@ -19,7 +19,7 @@ test("attention mode persists, rotates after one minute, and leaves voting usabl
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page.getByRole("checkbox", { name: "Attention mode", exact: true }).check();
   await page.getByRole("button", { name: "Close settings", exact: true }).click();
-  const scenes = page.locator(".attention-scene");
+  const scenes = page.locator(".attention-scene:visible");
   await expect(scenes).toHaveCount(2);
   await expect(scenes.first().locator("canvas")).toBeVisible();
   const pair = () =>
@@ -69,6 +69,30 @@ test("attention mode respects reduced motion, resumes on preference changes, and
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => localStorage.setItem("droch:poker:attention-mode", "true"));
   await createRoom(page);
+  await expect(page.locator(".attention-scene:visible")).toHaveCount(3);
+  const layout = await page.evaluate(() => {
+    const bounds = (selector: string) => {
+      const rect = document.querySelector(selector)!.getBoundingClientRect();
+      return { top: rect.top, bottom: rect.bottom };
+    };
+    return [
+      bounds(".attention-scene-left"),
+      bounds(".attention-participants"),
+      bounds(".attention-scene-middle"),
+      bounds(".attention-estimate"),
+      bounds(".round-controls"),
+      bounds(".attention-scene-right"),
+    ];
+  });
+  for (let index = 1; index < layout.length; index++) {
+    expect(layout[index]!.top).toBeGreaterThanOrEqual(layout[index - 1]!.bottom);
+  }
+  const sceneIds = await page
+    .locator(".attention-scene")
+    .evaluateAll((elements) =>
+      elements.map((element) => element.getAttribute("data-attention-effect")),
+    );
+  expect(new Set(sceneIds).size).toBe(3);
   const canvas = page.locator(".attention-scene canvas").first();
   await canvas.scrollIntoViewIfNeeded();
   await expect(canvas).toBeVisible();
