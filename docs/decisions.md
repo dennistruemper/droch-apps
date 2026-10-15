@@ -153,6 +153,20 @@ setup without duplicating runner/tool/dependency setup. The prior hosted run spe
 runner contention and must be measured on the next hosted run. Persistent CI Docker
 caching remains an option to evaluate.
 
+## Poker Attention mode — 2026-10-15
+
+The owner requested an ironic “Attention mode” option in Poker Settings, using
+locally generated, unrelated animations around the voting elements. All prototype
+effects except number 6 (the olive machine) were selected. Each effect may run for
+one minute before random rotation; the twelve-second comparison clips do not limit
+animation duration. No external videos, assets, or data sources are involved.
+
+The implementation starts disabled, saves the choice under poker browser storage,
+and shows two distinct scenes on wide screens and three on mobile. The owner
+requested mobile placement above the participants, between the table and estimate
+controls, and below round controls. Scene groups rotate each minute. Device reduced-motion preference keeps the artwork static. Animation time
+pauses when the page or all visible scenes are out of view, and work stops when disabled.
+
 ## Vortoj and accounts — 2026-10-04
 
 User decisions:
@@ -219,7 +233,7 @@ the tile set frozen at creation; only new rooms and preset copies get the new de
 ## Coolify runtime origin — 2026-10-05
 
 Use Coolify's runtime `SERVICE_URL_APPLICATION` as the canonical public origin when
-present, otherwise use `APP_ORIGIN`. The preview container had the correct generated
+present and nonempty, otherwise use `APP_ORIGIN`. The preview container had the correct generated
 URL while an `APP_ORIGIN=$SERVICE_URL_APPLICATION` alias retained the production URL.
 Reading the generated value at startup avoids that expansion dependency and follows
 future preview numbers automatically. Validate the selected URL strictly and fail

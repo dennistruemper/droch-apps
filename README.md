@@ -224,28 +224,35 @@ zone root and first-level subdomains, but not deeper names such as
 `1.apps.droch.dev`. Keeping preview records DNS only avoids that certificate
 coverage issue. See [Cloudflare's SSL limitations](https://developers.cloudflare.com/ssl/edge-certificates/universal-ssl/limitations/).
 
-Open the application's **Preview Deployment Environment Variables** and set:
+The server selects its origin at startup from the running container's
+`SERVICE_URL_APPLICATION`, falling back to the explicit `APP_ORIGIN` only when the
+generated URL is unset or empty. For PR 6, that selects `https://6.apps.droch.dev`
+even if the saved `APP_ORIGIN` still contains `https://apps.droch.dev`. Coolify
+manages the service URL from the preview domain; do not hardcode a PR number or
+replace the generated value.
 
-```dotenv
-AUTH_MODE=test
-```
+A dashboard alias such as `APP_ORIGIN=$SERVICE_URL_APPLICATION` is not required.
+It was observed resolving to the production URL while the running preview's
+`SERVICE_URL_APPLICATION` correctly contained the preview URL. A Compose-only
+mapping did not resolve the hosted failure; server-side runtime selection avoids
+relying on that alias expansion or Compose preprocessing. Existing explicit production
+`APP_ORIGIN` values can remain as fallbacks, and local development continues using
+its generated localhost origin. The server validates the final origin at startup.
 
-Enable **Runtime Variable**. The backend reads Coolify's generated
-`SERVICE_URL_APPLICATION` directly at startup, rather than asking Coolify to expand
-an `APP_ORIGIN` alias. That alias can retain the production URL in a preview.
-PR 1 therefore gets `https://1.apps.droch.dev` and PR 2 gets
-`https://2.apps.droch.dev` automatically. No preview-specific `APP_ORIGIN` override
-is needed. Remove any old
-`APP_ORIGIN=$SERVICE_URL_APPLICATION` preview override. Keep the application
-service's internal port at 3000, save, and redeploy after configuration changes.
+Keep the application service's internal port at 3000 and redeploy the preview to
+apply the server and Compose changes. The startup log `Droch apps listening on …`
+shows the selected origin; compare it with the browser origin (scheme and hostname,
+without a path, trailing slash, or internal `:3000` port). The raw `APP_ORIGIN`
+environment value may still contain the production fallback; use
+`printenv APP_ORIGIN SERVICE_URL_APPLICATION` to inspect both inputs.
 
-If requests report `Invalid request origin`, inspect `SERVICE_URL_APPLICATION` in
-the application container: it must match the browser's origin exactly. The backend
-validates that single URL and does not use the comma-separated `COOLIFY_URL` list,
-request headers, or wildcard domains to determine which origin to trust.
+For preview account behavior, set `AUTH_MODE=test` in the preview runtime variables.
+This uses code `9999` with Mailtrap delivery when configured; keep the production
+mode separate. No preview-specific `APP_ORIGIN` alias is needed.
 
-These values belong to the preview variable group, which is separate from
-production. The existing production `APP_ORIGIN` remains its public origin.
+The backend validates a single trusted origin. It does not use the comma-separated
+`COOLIFY_URL` list, request headers, or wildcard domains to choose that origin.
+
 See [Coolify's preview deployment documentation](https://coolify.io/docs/applications/deployments/preview-deployments).
 
 ## Priorities

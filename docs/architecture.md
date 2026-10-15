@@ -312,6 +312,19 @@ a light/dark color scheme derived from the custom background. Preset selection r
 custom color/font inline overrides; saved customization remains available for later use. Direct `localStorage.clear()` is forbidden in app code.
 Prefixes prevent collisions but do not isolate same-origin apps from each other.
 
+Poker adds app-specific content to the shared Settings dialog through its children
+slot. Its optional Attention mode stores a validated boolean under
+`droch:poker:attention-mode` and mounts decorative Canvas scenes around the
+voting area. Wide screens use full-width side panels around a compact voting
+column; narrower screens show three full-width scenes: above the participants,
+between the participant table and estimate controls, and below round controls. Settings shows only
+the Attention mode switch. Nine procedural scenes live in the poker
+client; the standalone experiment and recorded media are not bundled. A new group
+is chosen after 60 visible seconds, excluding all three outgoing effects. Scene rendering
+accepts time explicitly and is independent of votes, room snapshots, and network
+requests. The client owns a capped 30 fps loop and cleans it up on unmount; hidden
+tabs and offscreen scenes suspend animation, and reduced motion renders static art.
+
 ## Compose, production, and migrations
 
 One Compose stack has a migration step and one application container, sharing a
@@ -323,7 +336,7 @@ Coolify uses the Git repository's Docker Compose build pack with `compose.yaml`.
 Its proxy routes one HTTPS domain to `application` on internal port 3000; the
 production definition does not publish a host port. The backend uses the runtime
 `SERVICE_URL_APPLICATION` supplied by Coolify as its canonical origin; outside
-Coolify it uses `APP_ORIGIN`. This avoids an alias resolving to the production URL
+Coolify or when the generated value is empty it uses `APP_ORIGIN`. This avoids an alias resolving to the production URL
 in a preview. The selected value must be one HTTP(S) origin matching the browser
 exactly; malformed generated URLs fail startup rather than falling back. Request
 headers and Coolify's comma-separated domain list do not set the trusted origin.

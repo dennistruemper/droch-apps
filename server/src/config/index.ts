@@ -33,11 +33,11 @@ const configurationSchema = z.object({
 });
 
 export function readConfiguration(environment: Record<string, string | undefined>) {
-  // Coolify supplies the service's canonical URL at runtime. Resolving an
-  // APP_ORIGIN alias during Compose parsing can retain the production URL in previews.
+  // Select from the running container, after Coolify has generated preview URLs.
+  // Saved APP_ORIGIN aliases can already have expanded to the production URL.
   const parsed = configurationSchema.safeParse({
     ...environment,
-    APP_ORIGIN: environment.SERVICE_URL_APPLICATION ?? environment.APP_ORIGIN,
+    APP_ORIGIN: environment.SERVICE_URL_APPLICATION || environment.APP_ORIGIN,
   });
   if (!parsed.success) {
     // Report field names, never values containing credentials.

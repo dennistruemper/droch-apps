@@ -1,4 +1,4 @@
-import { createSignal, For, Show } from "solid-js";
+import { createSignal, For, Show, type Element } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import { createAppStorage } from "../storage/index.ts";
 
@@ -69,6 +69,7 @@ const themes = [
 export function AppSettings(props: {
   appId: string;
   defaultTheme: string;
+  children?: Element;
   trigger?: (open: () => void) => JSX.Element;
 }) {
   const storage = createAppStorage(props.appId, localStorage);
@@ -204,6 +205,7 @@ export function AppSettings(props: {
               </button>
             </fieldset>
           </Show>
+          {props.children}
           <button type="button" onClick={() => dialog?.close()}>
             Close settings
           </button>

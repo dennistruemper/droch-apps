@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Attention Mode · Motion Lab</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: system-ui, sans-serif;
+        background: #0d1019;
+        color: #edf0f7;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+      }
+      main {
+        max-width: 1320px;
+        margin: auto;
+        padding: 44px 32px;
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        gap: 24px;
+        align-items: end;
+        margin-bottom: 30px;
+      }
+      h1 {
+        font-size: clamp(32px, 5vw, 58px);
+        letter-spacing: -0.055em;
+        margin: 8px 0;
+      }
+      p {
+        color: #abb4c8;
+        line-height: 1.6;
+        margin: 8px 0;
+      }
+      .eyebrow {
+        color: #a4edd4;
+        font: 12px monospace;
+        letter-spacing: 0.15em;
+      }
+      .toolbar {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin: 22px 0;
+      }
+      button,
+      select {
+        background: #202737;
+        border: 1px solid #394459;
+        color: inherit;
+        border-radius: 9px;
+        padding: 11px 16px;
+        font: inherit;
+        cursor: pointer;
+      }
+      button[aria-pressed="true"] {
+        background: #a4edd4;
+        color: #142923;
+        border-color: #a4edd4;
+      }
+      button:focus-visible,
+      a:focus-visible,
+      select:focus-visible {
+        outline: 3px solid #a4edd4;
+        outline-offset: 4px;
+      }
+      button:hover {
+        border-color: #a4edd4;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 30px 24px;
+      }
+      article {
+        min-width: 0;
+      }
+      canvas,
+      video {
+        display: block;
+        width: 100%;
+        aspect-ratio: 8/5;
+        border-radius: 14px;
+        background: #131a2b;
+      }
+      article h2 {
+        font-size: 19px;
+        letter-spacing: -0.02em;
+        margin: 0;
+      }
+      article p {
+        font-size: 14px;
+        margin: 6px 0;
+      }
+      .meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-top: 14px;
+      }
+      .number {
+        color: #92a0bb;
+        font: 12px monospace;
+        margin-right: 10px;
+      }
+      .actions {
+        display: flex;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+      .actions button {
+        font-size: 13px;
+        padding: 8px 12px;
+      }
+      #selection {
+        font-size: 14px;
+        color: #a4edd4;
+        min-height: 24px;
+      }
+      #stage {
+        max-width: 960px;
+        margin: 0 auto 40px;
+      }
+      #stage[hidden] {
+        display: none;
+      }
+      #stage h2 {
+        margin-bottom: 6px;
+      }
+      footer {
+        margin-top: 35px;
+        border-top: 1px solid #293145;
+        padding-top: 20px;
+        color: #8995ad;
+        font-size: 13px;
+      }
+      a {
+        color: #a4edd4;
+      }
+      .recording header,
+      .recording .toolbar,
+      .recording #selection,
+      .recording .grid,
+      .recording footer,
+      .recording #stage h2,
+      .recording #stage p {
+        display: none;
+      }
+      .recording main {
+        padding: 0;
+        max-width: none;
+      }
+      .recording #stage {
+        margin: 0;
+        max-width: none;
+      }
+      .recording canvas {
+        border-radius: 0;
+      }
+      @media (max-width: 700px) {
+        main {
+          padding: 28px 18px;
+        }
+        header {
+          display: block;
+        }
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        .meta {
+          flex-wrap: wrap;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <div class="eyebrow">DROCH POKER / EXPERIMENT 01</div>
+          <h1>Attention mode.</h1>
+          <p>Damit du dich endlich konzentrieren kannst.</p>
+        </div>
+        <p>10 lokale Animationen.<br />Keine Videos. Keine fremden Daten. Nur Bewegung.</p>
+      </header>
+      <div class="toolbar">
+        <button id="pause" type="button" aria-pressed="false">Pausieren</button
+        ><button id="shuffle" type="button" aria-pressed="false">Zufallswechsel testen</button
+        ><label
+          >Wechsel nach
+          <select id="interval">
+            <option value="12">12 Sekunden</option>
+            <option value="20">20 Sekunden</option>
+            <option value="30">30 Sekunden</option>
+          </select></label
+        ><button id="overview" type="button">Alle Effekte</button>
+      </div>
+      <p id="selection" aria-live="polite">
+        Favoriten markieren und anschließend im Chat die Nummern nennen.
+      </p>
+      <section id="stage" hidden>
+        <h2></h2>
+        <p></p>
+        <canvas
+          width="720"
+          height="450"
+          role="img"
+          aria-label="Ausgewählter Animationseffekt"
+        ></canvas>
+      </section>
+      <div id="grid" class="grid"></div>
+      <footer>
+        Eigenständiges Motion Lab · Die Auswahl gilt für diese Vorschau. Die Poker-Integration folgt
+        nach deiner Auswahl. Bei reduzierter Bewegung startet die Vorschau pausiert.
+      </footer>
+      <script type="module" src="./main.ts"></script>
+    </main>
+  </body>
+</html>

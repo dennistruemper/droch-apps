@@ -62,6 +62,18 @@ private votes, and room controls. Desktop/mobile views are inspected. Production
 image build and local browser checks verify the bundled slice; streaming through
 Coolify's external proxy remains part of milestone 6.
 
+### Attention mode — implemented
+
+Poker Settings includes an optional, per-browser Attention mode. Nine locally
+rendered Canvas scenes from `experiments/attention-mode/` are included; the owner
+excluded the olive machine. Two scenes surround voting on wide screens. On narrower screens, three distinct
+scenes appear above the participants, between the table and estimate controls, and
+below round controls. A new group is chosen after 60 visible seconds without
+immediately repeating an outgoing scene. Reduced-motion preference
+keeps the scenes static, hidden/offscreen scenes pause, and disabling the setting
+cleans up animation work. The isolated ten-effect experiment and its twelve-second
+comparison videos remain a reference, separate from the production bundle.
+
 ## 4. Custom email-code accounts — implemented
 
 - Shared in-process auth API: request, verify, session lookup, and logout.
@@ -119,6 +131,13 @@ Real Mailtrap delivery and streaming through Coolify still need deployment verif
 - Add a small app scaffold command using the chosen package layout and registry.
 - Verify a temporary third app builds and mounts without Compose, DNS, or Coolify edits.
 - Verify streaming and reconnect through the production proxy.
+- Preview server startup selects the runtime generated service URL before a stale
+  saved production origin; a Compose-only mapping did not fix hosted room creation.
+  Configuration tests cover preview, production, local fallback, missing/empty and
+  invalid service URLs. The production image passes all nine browser checks; with
+  a stale production APP_ORIGIN and a preview SERVICE_URL_APPLICATION, it creates
+  rooms and accepts votes for the preview origin while rejecting production and
+  foreign origins. Verify room creation on the redeployed hosted preview.
 
 Acceptance: one deployable Compose stack, tested recovery, reproducible tool versions,
 and documented app creation requiring only repository changes and deployment.

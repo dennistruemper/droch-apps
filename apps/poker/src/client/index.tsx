@@ -14,6 +14,7 @@ import {
 } from "../contracts/index.ts";
 import "@repo/shared/styles";
 import "./poker.css";
+import { AttentionProvider, AttentionSettings, AttentionFrame } from "./attention.tsx";
 
 const storage = createAppStorage("poker", localStorage);
 class RequestError extends Error {
@@ -278,89 +279,91 @@ function Room(props: { id: string }) {
         </form>
       </Show>
       <Show when={room()}>
-        <section>
-          <div class="room-heading">
-            <h2>Round {room()?.round}</h2>
-            <strong>{room()?.revealed ? "Votes revealed" : "Voting in progress"}</strong>
-          </div>
-          <p>
-            {room()?.participants.filter((person) => person.hasVoted).length} of{" "}
-            {room()?.participants.length} people have voted.
-          </p>
-          <table>
-            <caption>Team votes</caption>
-            <thead>
-              <tr>
-                <th scope="col">Participant</th>
-                <th scope="col">Vote</th>
-              </tr>
-            </thead>
-            <tbody>
-              <For each={room()?.participants}>
-                {(person) => (
-                  <tr>
-                    <th scope="row">
-                      {person.name}
-                      {person.isCreator ? " · Creator" : ""}
-                      {person.id === room()?.you.id ? " · You" : ""}
-                    </th>
-                    <td>
-                      {room()?.revealed
-                        ? (person.vote ?? "—")
-                        : person.hasVoted
-                          ? "Ready"
-                          : "Thinking"}
-                    </td>
-                  </tr>
-                )}
-              </For>
-            </tbody>
-          </table>
-        </section>
-        <Show when={!room()?.revealed}>
-          <section>
-            <h2>Your estimate</h2>
-            <p>Your vote stays private until someone reveals the round.</p>
-            <div class="voting-deck" role="group" aria-label="Choose an estimate">
-              <For each={deck}>
-                {(value) => (
-                  <button
-                    type="button"
-                    aria-label={value === "☕" ? "Vote for a break" : `Vote ${value}`}
-                    title={value === "☕" ? "Break" : `Estimate ${value}`}
-                    aria-pressed={room()?.you.vote === value ? "true" : "false"}
-                    disabled={busy()}
-                    onClick={() => void command("vote", value)}
-                  >
-                    {value}
-                  </button>
-                )}
-              </For>
+        <AttentionFrame>
+          <section class="attention-participants">
+            <div class="room-heading">
+              <h2>Round {room()?.round}</h2>
+              <strong>{room()?.revealed ? "Votes revealed" : "Voting in progress"}</strong>
             </div>
             <p>
-              Your vote: <strong>{room()?.you.vote ?? "Not selected"}</strong>
+              {room()?.participants.filter((person) => person.hasVoted).length} of{" "}
+              {room()?.participants.length} people have voted.
             </p>
-            <Show when={room()?.you.vote !== null}>
-              <button type="button" disabled={busy()} onClick={() => void command("vote", null)}>
-                Clear my vote
+            <table>
+              <caption>Team votes</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Participant</th>
+                  <th scope="col">Vote</th>
+                </tr>
+              </thead>
+              <tbody>
+                <For each={room()?.participants}>
+                  {(person) => (
+                    <tr>
+                      <th scope="row">
+                        {person.name}
+                        {person.isCreator ? " · Creator" : ""}
+                        {person.id === room()?.you.id ? " · You" : ""}
+                      </th>
+                      <td>
+                        {room()?.revealed
+                          ? (person.vote ?? "—")
+                          : person.hasVoted
+                            ? "Ready"
+                            : "Thinking"}
+                      </td>
+                    </tr>
+                  )}
+                </For>
+              </tbody>
+            </table>
+          </section>
+          <Show when={!room()?.revealed}>
+            <section class="attention-estimate">
+              <h2>Your estimate</h2>
+              <p>Your vote stays private until someone reveals the round.</p>
+              <div class="voting-deck" role="group" aria-label="Choose an estimate">
+                <For each={deck}>
+                  {(value) => (
+                    <button
+                      type="button"
+                      aria-label={value === "☕" ? "Vote for a break" : `Vote ${value}`}
+                      title={value === "☕" ? "Break" : `Estimate ${value}`}
+                      aria-pressed={room()?.you.vote === value ? "true" : "false"}
+                      disabled={busy()}
+                      onClick={() => void command("vote", value)}
+                    >
+                      {value}
+                    </button>
+                  )}
+                </For>
+              </div>
+              <p>
+                Your vote: <strong>{room()?.you.vote ?? "Not selected"}</strong>
+              </p>
+              <Show when={room()?.you.vote !== null}>
+                <button type="button" disabled={busy()} onClick={() => void command("vote", null)}>
+                  Clear my vote
+                </button>
+              </Show>
+            </section>
+          </Show>
+          <section class="round-controls" aria-label="Round controls">
+            <Show when={!room()?.revealed}>
+              <button
+                type="button"
+                disabled={busy() || !room()?.participants.some((person) => person.hasVoted)}
+                onClick={() => void command("reveal")}
+              >
+                Reveal votes
               </button>
             </Show>
-          </section>
-        </Show>
-        <section class="round-controls" aria-label="Round controls">
-          <Show when={!room()?.revealed}>
-            <button
-              type="button"
-              disabled={busy() || !room()?.participants.some((person) => person.hasVoted)}
-              onClick={() => void command("reveal")}
-            >
-              Reveal votes
+            <button type="button" disabled={busy()} onClick={() => void command("reset")}>
+              Start next round
             </button>
-          </Show>
-          <button type="button" disabled={busy()} onClick={() => void command("reset")}>
-            Start next round
-          </button>
-        </section>
+          </section>
+        </AttentionFrame>
         <section>
           <label for="invite">Invite link</label>
           <input
@@ -419,19 +422,21 @@ const Router = createRouter({
 });
 function App() {
   return (
-    <>
+    <AttentionProvider>
       <header>
         <strong>Scrum poker</strong>
         <nav aria-label="App navigation">
           <a href="/">All apps</a>
-          <AppSettings appId={appDefinition.id} defaultTheme={appDefinition.theme} />
+          <AppSettings appId={appDefinition.id} defaultTheme={appDefinition.theme}>
+            <AttentionSettings />
+          </AppSettings>
         </nav>
       </header>
       <Router />
       <footer>
         <small>Droch apps · Scrum poker</small>
       </footer>
-    </>
+    </AttentionProvider>
   );
 }
 render(() => <App />, element);
