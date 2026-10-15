@@ -166,6 +166,16 @@ and shows two distinct scenes per minute. Layout and pairing are implementation
 choices. Device reduced-motion preference keeps the artwork static. Animation time
 pauses when the page or both scenes are out of view, and work stops when disabled.
 
+## Preview origin configuration — 2026-10-15
+
+A preview reported `APP_ORIGIN=https://apps.droch.dev` alongside the correct
+`SERVICE_URL_APPLICATION=https://6.apps.droch.dev`, despite a saved
+`APP_ORIGIN=$SERVICE_URL_APPLICATION` alias. Compose now maps the generated service
+URL directly into the application's `APP_ORIGIN`, with the explicit origin as a
+fallback when the generated URL is absent or empty. Local worktrees retain their
+localhost origins. The server's strict HTTP(S)-origin validation and exact POST
+origin check remain unchanged; missing configuration fails at application startup.
+
 ## Still to settle
 
 - Word-game dictionary language, licensing, board layout, scoring, and player count.

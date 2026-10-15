@@ -17,7 +17,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      APP_ORIGIN: ${APP_ORIGIN:?}
+      # Use Coolify's deployment-specific URL before a saved production origin.
+      APP_ORIGIN: ${SERVICE_URL_APPLICATION:-${APP_ORIGIN:-}}
       DATA_DIRECTORY: /data
       SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-droch_session}
     volumes:
