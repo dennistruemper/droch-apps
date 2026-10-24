@@ -120,17 +120,22 @@ h2 {
   align-items: center;
   gap: 14px;
   text-align: left;
-  background: #ffffff05;
+  background: #2b1e30;
   color: #fff3d4;
-  border: 1px solid #ffffff30;
+  border: 1px solid #72536a;
   padding: 16px;
   border-radius: 8px;
   transition:
     background 0.15s,
     border-color 0.15s;
 }
-.mode:hover:not(:disabled) {
-  background: #ffffff0d;
+.mode:hover,
+.mode:active {
+  transform: none;
+}
+.mode:not(.selected):is(:hover, :focus-visible):not(:disabled) {
+  background: #442c46;
+  color: #fff3d4;
   border-color: #ffda58;
 }
 .mode.selected {
@@ -138,6 +143,11 @@ h2 {
   color: #211326;
   border-color: #ffda58;
   box-shadow: 4px 4px 0 #ae455d;
+}
+.mode.selected:is(:hover, :focus-visible):not(:disabled) {
+  background: #ffe890;
+  color: #211326;
+  border-color: #ffe890;
 }
 .mode:disabled {
   opacity: 0.65;
