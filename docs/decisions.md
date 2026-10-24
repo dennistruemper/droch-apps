@@ -414,3 +414,11 @@ explicitly rejected implementation explanations such as refresh cadence, retenti
 length and real-browser checking. Observo shows site status, check time, timezone
 and explorable history; operational details belong in developer documentation.
 This guidance is also recorded in `AGENTS.md` for future contributors.
+
+Show only today's recorded history by default. A compact Show history control reveals
+older dates on demand, only when older observations exist. Omit any date with no
+recorded checks, including dates before monitoring began; do not fill the page with
+empty rows during the first month. Preserve expansion across automatic updates.
+
+Use the viewer's local time implicitly. The user requested removal of the standalone
+timezone label because local browser time is expected without explanation.

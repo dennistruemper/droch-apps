@@ -65,6 +65,20 @@ function SiteCard(props: {
       ),
   );
   const summary = (hour: number) => summaries().get(hour)!;
+  const [historyExpanded, setHistoryExpanded] = createSignal(false);
+  const populatedDays = createMemo(() =>
+    days().filter((day) =>
+      day.hours.some((hour) => {
+        const result = summary(hour);
+        return result.passed + result.failed > 0;
+      }),
+    ),
+  );
+  const hasHistory = () => populatedDays().some((day) => day.start < days()[0]!.start);
+  const visibleDays = createMemo(() =>
+    populatedDays().filter((day) => historyExpanded() || day.start === days()[0]!.start),
+  );
+
   const [compact, setCompact] = createSignal(false);
   onSettled(() => {
     const media = matchMedia("(max-width: 600px)");
@@ -73,7 +87,12 @@ function SiteCard(props: {
     media.addEventListener("change", change);
     return () => media.removeEventListener("change", change);
   });
-  const selected = () => (props.selected === null ? null : summaries().get(props.selected));
+  const selected = () => {
+    const hour = props.selected;
+    return hour === null || !visibleDays().some((day) => hour >= day.start && hour < day.end)
+      ? null
+      : summaries().get(hour);
+  };
   return (
     <article class="observo-site">
       <div class="observo-heading">
@@ -91,123 +110,139 @@ function SiteCard(props: {
           </p>
         )}
       </Show>
-      <section class="observo-status-panel" aria-label={`${props.site.name} availability history`}>
-        <div class="observo-axis" aria-hidden="true">
-          <For each={Array.from({ length: 24 }, (_, hour) => hour)}>
-            {(hour) => <span>{String(hour).padStart(2, "0")}</span>}
-          </For>
-        </div>
-        <div class="observo-history">
-          <For each={days()}>
-            {(day, dayIndex) => (
-              <details class="observo-day" open={!compact() || dayIndex() === 0}>
-                <summary>
-                  {dayIndex() === 0 ? "Today · " : ""}
-                  {new Date(day.start).toLocaleDateString(undefined, {
-                    month: "short",
-                    day: "numeric",
-                  })}
-                </summary>
-                <div
-                  class="observo-hours"
-                  role="group"
-                  aria-label={`Hourly availability · ${new Date(day.start).toLocaleDateString()}`}
-                  style={{ "--hours": day.hours.length }}
-                >
-                  <For each={day.hours}>
-                    {(hour) => (
-                      <button
-                        type="button"
-                        disabled={hour > props.now}
-                        data-status={hour > props.now ? "upcoming" : summary(hour).status}
-                        data-current={summary(hour).current ? "true" : undefined}
-                        aria-pressed={props.selected === hour ? "true" : "false"}
-                        aria-label={`${summary(hour).current ? "Now · " : ""}${timestamp(hour)}: ${hour > props.now ? "Upcoming" : statusNames[summary(hour).status]}, ${summary(hour).passed} passed, ${summary(hour).failed} failed, ${summary(hour).missing} missing`}
-                        title={`${hourLabel(hour)} · ${hour > props.now ? "Upcoming" : statusNames[summary(hour).status]}`}
-                        onClick={() => props.select(hour)}
-                      >
+      <Show when={populatedDays().length > 0}>
+        <section
+          class="observo-status-panel"
+          aria-label={`${props.site.name} availability history`}
+        >
+          <div class="observo-axis" aria-hidden="true">
+            <For each={Array.from({ length: 24 }, (_, hour) => hour)}>
+              {(hour) => <span>{String(hour).padStart(2, "0")}</span>}
+            </For>
+          </div>
+          <div class="observo-history">
+            <For each={visibleDays()}>
+              {(day) => (
+                <details class="observo-day" open={!compact() || day.start === days()[0]!.start}>
+                  <summary>
+                    {day.start === days()[0]!.start ? "Today · " : ""}
+                    {new Date(day.start).toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </summary>
+                  <div
+                    class="observo-hours"
+                    role="group"
+                    aria-label={`Hourly availability · ${new Date(day.start).toLocaleDateString()}`}
+                    style={{ "--hours": day.hours.length }}
+                  >
+                    <For each={day.hours}>
+                      {(hour) => (
+                        <button
+                          type="button"
+                          disabled={hour > props.now}
+                          data-status={hour > props.now ? "upcoming" : summary(hour).status}
+                          data-current={summary(hour).current ? "true" : undefined}
+                          aria-pressed={props.selected === hour ? "true" : "false"}
+                          aria-label={`${summary(hour).current ? "Now · " : ""}${timestamp(hour)}: ${hour > props.now ? "Upcoming" : statusNames[summary(hour).status]}, ${summary(hour).passed} passed, ${summary(hour).failed} failed, ${summary(hour).missing} missing`}
+                          title={`${hourLabel(hour)} · ${hour > props.now ? "Upcoming" : statusNames[summary(hour).status]}`}
+                          onClick={() => props.select(hour)}
+                        >
+                          <span>
+                            {summary(hour).current
+                              ? "Now"
+                              : new Date(hour).toLocaleTimeString(undefined, {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: false,
+                                })}
+                          </span>
+                          <b>
+                            {hour > props.now
+                              ? "·"
+                              : summary(hour).status === "available"
+                                ? "✓"
+                                : summary(hour).status === "degraded"
+                                  ? "!"
+                                  : summary(hour).status === "mostly-unavailable" ||
+                                      summary(hour).status === "unavailable"
+                                    ? "×"
+                                    : "?"}
+                          </b>
+                        </button>
+                      )}
+                    </For>
+                  </div>
+                </details>
+              )}
+            </For>
+          </div>
+          <Show when={hasHistory()}>
+            <button
+              type="button"
+              class="observo-history-toggle"
+              aria-expanded={historyExpanded() ? "true" : "false"}
+              onClick={() => setHistoryExpanded((expanded) => !expanded)}
+            >
+              {historyExpanded() ? "Hide history" : "Show history"}
+            </button>
+          </Show>
+          <ul class="observo-legend" aria-label="Completed hour status legend">
+            <li>
+              <i data-status="available" />
+              Available
+            </li>
+            <li>
+              <i data-status="degraded" />
+              Degraded
+            </li>
+            <li>
+              <i data-status="mostly-unavailable" />
+              Mostly unavailable
+            </li>
+            <li>
+              <i data-status="unknown" />
+              Unknown
+            </li>
+          </ul>
+          <Show when={selected()}>
+            {(value) => (
+              <div class="observo-detail" aria-live="polite">
+                <h3>
+                  {props.selected === null
+                    ? ""
+                    : `${timestamp(props.selected)} (${hourLabel(props.selected)})`}{" "}
+                  · {value().current ? "Now · " : ""}
+                  {statusNames[value().status]}
+                </h3>
+                <p>
+                  {value().passed} passed · {value().failed} failed · {value().missing} missing
+                </p>
+                <ol class="observo-slots" aria-label="Five-minute checks">
+                  <For each={value().slots}>
+                    {(slot, index) => (
+                      <li data-outcome={slot}>
+                        <strong>:{String(index() * 5).padStart(2, "0")}</strong>
                         <span>
-                          {summary(hour).current
-                            ? "Now"
-                            : new Date(hour).toLocaleTimeString(undefined, {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                                hour12: false,
-                              })}
+                          {props.selected !== null &&
+                          props.selected + index() * interval > props.now
+                            ? "Upcoming"
+                            : slot === "unreachable"
+                              ? "Offline"
+                              : slot === "not-functional"
+                                ? "Failed"
+                                : statusNames[slot]}
                         </span>
-                        <b>
-                          {hour > props.now
-                            ? "·"
-                            : summary(hour).status === "available"
-                              ? "✓"
-                              : summary(hour).status === "degraded"
-                                ? "!"
-                                : summary(hour).status === "mostly-unavailable" ||
-                                    summary(hour).status === "unavailable"
-                                  ? "×"
-                                  : "?"}
-                        </b>
-                      </button>
+                      </li>
                     )}
                   </For>
-                </div>
-              </details>
+                </ol>
+              </div>
             )}
-          </For>
-        </div>
-        <ul class="observo-legend" aria-label="Completed hour status legend">
-          <li>
-            <i data-status="available" />
-            Available
-          </li>
-          <li>
-            <i data-status="degraded" />
-            Degraded
-          </li>
-          <li>
-            <i data-status="mostly-unavailable" />
-            Mostly unavailable
-          </li>
-          <li>
-            <i data-status="unknown" />
-            Unknown
-          </li>
-        </ul>
-        <Show when={selected()}>
-          {(value) => (
-            <div class="observo-detail" aria-live="polite">
-              <h3>
-                {props.selected === null
-                  ? ""
-                  : `${timestamp(props.selected)} (${hourLabel(props.selected)})`}{" "}
-                · {value().current ? "Now · " : ""}
-                {statusNames[value().status]}
-              </h3>
-              <p>
-                {value().passed} passed · {value().failed} failed · {value().missing} missing
-              </p>
-              <ol class="observo-slots" aria-label="Five-minute checks">
-                <For each={value().slots}>
-                  {(slot, index) => (
-                    <li data-outcome={slot}>
-                      <strong>:{String(index() * 5).padStart(2, "0")}</strong>
-                      <span>
-                        {props.selected !== null && props.selected + index() * interval > props.now
-                          ? "Upcoming"
-                          : slot === "unreachable"
-                            ? "Offline"
-                            : slot === "not-functional"
-                              ? "Failed"
-                              : statusNames[slot]}
-                      </span>
-                    </li>
-                  )}
-                </For>
-              </ol>
-            </div>
-          )}
-        </Show>
-      </section>
+          </Show>
+        </section>
+      </Show>
     </article>
   );
 }
@@ -277,14 +312,15 @@ function App() {
               <Show when={!data().checksEnabled}>
                 <p role="status">Monitoring paused.</p>
               </Show>
-              <p class="observo-timezone">{Intl.DateTimeFormat().resolvedOptions().timeZone}</p>
-              <For each={data().sites}>
+              <For each={data().sites} keyed={(site) => site.id}>
                 {(site) => (
                   <SiteCard
-                    site={site}
+                    site={site()}
                     now={model().now}
-                    selected={model().selected?.siteId === site.id ? model().selected!.hour : null}
-                    select={(hour) => void dispatch({ kind: "select", siteId: site.id, hour })}
+                    selected={
+                      model().selected?.siteId === site().id ? model().selected!.hour : null
+                    }
+                    select={(hour) => void dispatch({ kind: "select", siteId: site().id, hour })}
                   />
                 )}
               </For>

@@ -453,10 +453,12 @@ failures, and mostly unavailable with seven to twelve failures. Missing coverage
 unknown. The current hour shows the latest result, becoming unknown after ten minutes
 without a fresh observation. The dashboard shows a 30-day hourly grid using local
 calendar days from midnight to midnight, including 23/25-hour clock-change days.
+Only today is shown by default; Show history reveals older recorded dates. Dates
+without observations are omitted, and the control is absent when no older data exists.
 Future cells are muted; mobile dates expand to reveal hours. Five-minute drill-down
 remains available. Data refreshes every two minutes and on returning to the page;
-there is no manual refresh button or footer. Product copy shows status, check time
-and timezone; refresh cadence, retention and checker internals stay in developer
-documentation. A fixed neutral history panel uses green/amber/red with symbols,
+there is no manual refresh button or footer. Product copy shows status and check time;
+local time is implicit. Refresh cadence, retention and checker internals stay in
+developer documentation. A fixed neutral history panel uses green/amber/red with symbols,
 labels and counts independently of the surrounding Drochsign theme. A feature-local
 model/message/update/command flow guards duplicate refreshes and stale results.

@@ -30,9 +30,6 @@
   border: 1px solid #64748b;
   border-radius: 0.35rem;
 }
-.observo-timezone {
-  font-size: 0.8rem;
-}
 .observo-hours {
   display: grid;
   grid-template-columns: repeat(var(--hours), minmax(0, 1fr));
@@ -226,4 +223,9 @@
   .observo-day > summary::after {
     display: none;
   }
+}
+
+.observo-history-toggle {
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
 }

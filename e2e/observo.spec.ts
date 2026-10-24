@@ -22,6 +22,7 @@ test("Observo shows public history, slot details, recovery, and a theme-independ
     down = recordSlot(down, now + i * interval, i < 7 ? "unreachable" : "available");
   }
   let fail = true;
+  let historical = false;
   await page.route("**/api/observo/*", (route) => {
     requests++;
     return fail
@@ -45,6 +46,14 @@ test("Observo shows public history, slot details, recovery, and a theme-independ
                   durationMs: 1500,
                 },
                 hours: [
+                  ...(historical
+                    ? [
+                        {
+                          hour: hourStart(now) - 24 * hourDuration,
+                          slots: recordSlot(0, now, "unreachable"),
+                        },
+                      ]
+                    : []),
                   { hour: hourStart(now) - hourDuration, slots: healthy },
                   { hour: hourStart(now) - 2 * hourDuration, slots: degraded },
                   { hour: hourStart(now) - 3 * hourDuration, slots: down },
@@ -60,7 +69,8 @@ test("Observo shows public history, slot details, recovery, and a theme-independ
   fail = false;
   await page.clock.fastForward(120_000);
   const groups = page.getByRole("group", { name: /^Hourly availability ·/ });
-  await expect(groups).toHaveCount(30);
+  await expect(groups).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Show history", exact: true })).toHaveCount(0);
   await expect(groups.first().getByRole("button")).toHaveCount(24);
   await expect(page.getByRole("button", { name: "Refresh", exact: true })).toHaveCount(0);
   await expect(page.locator("footer")).toHaveCount(0);
@@ -89,18 +99,25 @@ test("Observo shows public history, slot details, recovery, and a theme-independ
   const before = requests;
   await page.clock.fastForward(119_000);
   expect(requests).toBe(before);
+  historical = true;
   outcome = "unreachable";
   await page.clock.fastForward(1000);
   await expect(page.locator('button[data-current="true"]')).toHaveAttribute(
     "data-status",
     "unavailable",
   );
+  await expect(groups).toHaveCount(1);
+  await page.getByRole("button", { name: "Show history", exact: true }).click();
+  await expect(groups).toHaveCount(2);
   outcome = "available";
   await page.clock.fastForward(120_000);
   await expect(page.locator('button[data-current="true"]')).toHaveAttribute(
     "data-status",
     "available",
   );
+  await expect(groups).toHaveCount(2); // Automatic updates preserve the expanded view.
+  await page.getByRole("button", { name: "Hide history", exact: true }).click();
+  await expect(groups).toHaveCount(1);
   fail = true;
   await page.clock.fastForward(360_000);
   await expect(page.locator('button[data-current="true"]')).toHaveAttribute(
