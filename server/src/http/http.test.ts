@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createApplication } from "./index.ts";
+import { databaseDefinitions } from "../registry/index.ts";
 
 describe("HTTP composition", () => {
   const app = createApplication({
@@ -26,6 +27,23 @@ describe("HTTP composition", () => {
       expect((await app.request(path)).status).toBe(404);
     },
   );
+  it("serves Schlezaz without calling the database options provider", async () => {
+    const composed = createApplication({
+      ready: async () => true,
+      readFrontend: async () => ({ body: "Schlezaz", contentType: "text/html" }),
+      applicationOptions: (id) => {
+        if (id === "schlezaz") throw new Error("A browser-only app has no database");
+        return undefined!;
+      },
+    });
+    const redirect = await composed.request("/schlezaz");
+    expect(redirect.status).toBe(308);
+    expect(redirect.headers.get("location")).toBe("/schlezaz/");
+    expect(await (await composed.request("/schlezaz/")).text()).toBe("Schlezaz");
+    expect((await composed.request("/api/schlezaz/status")).status).toBe(404);
+    expect(databaseDefinitions.map(({ id }) => id)).not.toContain("schlezaz");
+    expect(await (await composed.request("/")).text()).toContain('href="/schlezaz/"');
+  });
   it("keeps liveness separate from database readiness", async () => {
     const unready = createApplication({
       ready: async () => {

@@ -1,3 +1,4 @@
+import { appDefinition as schlezaz } from "@repo/schlezaz/contracts";
 import { appDefinition as poker, createRoutes as createPokerRoutes } from "@repo/poker/server";
 import { appDefinition as words, createRoutes as createWordsRoutes } from "@repo/vortoj/server";
 
@@ -5,6 +6,7 @@ import { appDefinition as words, createRoutes as createWordsRoutes } from "@repo
 export const applications = [
   { ...poker, createRoutes: createPokerRoutes },
   { ...words, createRoutes: createWordsRoutes },
+  schlezaz,
 ] as const;
 
 export function validateApplications(apps: readonly { id: string }[]) {
@@ -17,10 +19,12 @@ export function validateApplications(apps: readonly { id: string }[]) {
   }
 }
 
-// File names and schema locations follow the registered app IDs. Auth is shared.
+// Server-backed apps own databases; browser-only entries need no storage. Auth is shared.
 export const databaseDefinitions = [
   { id: "auth", schema: "./shared/src/auth/schema.ts" },
-  ...applications.map((app) => ({ id: app.id, schema: `./apps/${app.id}/src/server/schema.ts` })),
+  ...applications
+    .filter((app) => "createRoutes" in app)
+    .map((app) => ({ id: app.id, schema: `./apps/${app.id}/src/server/schema.ts` })),
 ] as const;
 
 import type { PokerOptions } from "@repo/poker/server";

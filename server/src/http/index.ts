@@ -29,10 +29,12 @@ export function createApplication(options: {
   app.get("/words", (c) => c.redirect("/vortoj/", 308));
   app.get("/words/*", (c) => c.redirect(c.req.path.replace(/^\/words/, "/vortoj"), 308));
   for (const application of applications) {
-    app.route(
-      `/api/${application.id}`,
-      application.createRoutes(options.applicationOptions?.(application.id)),
-    );
+    if ("createRoutes" in application) {
+      app.route(
+        `/api/${application.id}`,
+        application.createRoutes(options.applicationOptions?.(application.id)),
+      );
+    }
     app.get(`/${application.id}`, (context) => context.redirect(`/${application.id}/`, 308));
     app.get(`/${application.id}/*`, async (context) => {
       const frontend = await options.readFrontend(application.id, context.req.path);
