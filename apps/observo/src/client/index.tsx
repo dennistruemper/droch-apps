@@ -101,7 +101,13 @@ function SiteCard(props: {
             {props.site.name}
           </a>
         </h2>
-        <strong>{latestLabel(props.site.latest, props.now)}</strong>
+        <strong
+          class="observo-current-status"
+          data-status={currentStatus(props.site.latest, props.now)}
+        >
+          <i aria-hidden="true" />
+          {latestLabel(props.site.latest, props.now)}
+        </strong>
       </div>
       <Show when={props.site.latest}>
         {(latest) => (
@@ -190,19 +196,27 @@ function SiteCard(props: {
           </Show>
           <ul class="observo-legend" aria-label="Completed hour status legend">
             <li>
-              <i data-status="available" />
+              <i data-status="available" aria-hidden="true">
+                ✓
+              </i>
               Available
             </li>
             <li>
-              <i data-status="degraded" />
+              <i data-status="degraded" aria-hidden="true">
+                !
+              </i>
               Degraded
             </li>
             <li>
-              <i data-status="mostly-unavailable" />
+              <i data-status="mostly-unavailable" aria-hidden="true">
+                ×
+              </i>
               Mostly unavailable
             </li>
             <li>
-              <i data-status="unknown" />
+              <i data-status="unknown" aria-hidden="true">
+                ?
+              </i>
               Unknown
             </li>
           </ul>

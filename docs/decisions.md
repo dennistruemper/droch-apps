@@ -433,3 +433,10 @@ For concept comparisons, the user prefers faster results over exhaustive preview
 quality. Show lightweight representative alternatives and sanity-check their main
 interaction. Defer detailed polish, responsive verification and edge cases until
 a solution is chosen. This workflow preference is recorded in `AGENTS.md`.
+
+The user selected “Quiet accents” (colour preview option 5), replacing the earlier
+fixed light status panel. Keep surfaces and text within Drochsign's two-colour theme.
+Use restrained green/amber/red marks rather than status-coloured fills, plus a small
+current-status dot. Preserve symbols, labels and counts so meaning remains clear
+even on a theme whose background resembles a status accent. Light/dark accent
+shades follow the selected theme's native colour scheme, including custom themes.

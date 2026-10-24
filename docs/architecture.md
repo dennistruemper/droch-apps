@@ -461,6 +461,9 @@ Future cells are muted; mobile dates expand to reveal hours. Five-minute drill-d
 remains available. Data refreshes every two minutes and on returning to the page;
 there is no manual refresh button or footer. Product copy shows status and check time;
 local time is implicit. Refresh cadence, retention and checker internals stay in
-developer documentation. A fixed neutral history panel uses green/amber/red with symbols,
-labels and counts independently of the surrounding Drochsign theme. A feature-local
+developer documentation. Quiet accents keep all surfaces and text in the app theme;
+small green/amber/red status underlines and a current-status dot provide emphasis.
+Accents adapt to the native light/dark scheme, including custom themes. Hour cells
+and legends retain symbols and labels; slot details retain outcome text, so meaning
+survives a theme with a similar accent colour. A feature-local
 model/message/update/command flow guards duplicate refreshes and stale results.

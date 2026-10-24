@@ -3,7 +3,7 @@ import { createServer } from "node:http";
 import { checkSite } from "@repo/observo/server";
 import { hourDuration, hourStart, interval, recordSlot } from "@repo/observo/domain";
 
-test("Observo shows public history, slot details, recovery, and a theme-independent palette", async ({
+test("Observo shows public history, slot details, recovery, and quiet accents across themes", async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -90,12 +90,46 @@ test("Observo shows public history, slot details, recovery, and a theme-independ
     page.locator('button[data-status="available"]:not([data-current])').evaluate((element) => ({
       background: getComputedStyle(element).backgroundColor,
       color: getComputedStyle(element).color,
+      accent: getComputedStyle(element).borderBottomColor,
     }));
   const original = await palette();
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page.getByLabel("Your theme").selectOption("ink");
   await page.getByRole("button", { name: "Close settings" }).click();
-  expect(await palette()).toEqual(original);
+  expect((await palette()).background).not.toBe(original.background);
+  expect((await palette()).color).not.toBe(original.color);
+  const statuses = page.locator(
+    'button[data-status="available"]:not([data-current]), button[data-status="degraded"], button[data-status="mostly-unavailable"]',
+  );
+  const marks = await statuses.evaluateAll((elements) =>
+    elements.map((element) => ({
+      background: getComputedStyle(element).backgroundColor,
+      color: getComputedStyle(element).color,
+      accent: getComputedStyle(element).borderBottomColor,
+    })),
+  );
+  expect(new Set(marks.map((mark) => mark.background)).size).toBe(1);
+  expect(new Set(marks.map((mark) => mark.color)).size).toBe(1);
+  expect(new Set(marks.map((mark) => mark.accent)).size).toBe(3);
+  // On a red custom theme, semantic meaning still comes from contrasting symbols.
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await page.getByLabel("Your theme").selectOption("custom");
+  for (const [label, value] of [
+    ["Background color", "#a12f40"],
+    ["Text and border color", "#ffffff"],
+  ]) {
+    await page.getByLabel(label!).evaluate((input, color) => {
+      (input as HTMLInputElement).value = color!;
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    }, value);
+  }
+  await page.getByRole("button", { name: "Close settings" }).click();
+  await expect(page.locator('button[data-status="degraded"] b')).toHaveText("!");
+  await expect(page.locator('button[data-status="mostly-unavailable"] b')).toHaveText("×");
+  expect((await palette()).color).toBe("rgb(255, 255, 255)");
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await page.getByLabel("Your theme").selectOption("ink");
+  await page.getByRole("button", { name: "Close settings" }).click();
   const before = requests;
   await page.clock.fastForward(119_000);
   expect(requests).toBe(before);
