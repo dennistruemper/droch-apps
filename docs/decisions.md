@@ -422,3 +422,9 @@ empty rows during the first month. Preserve expansion across automatic updates.
 
 Use the viewer's local time implicitly. The user requested removal of the standalone
 timezone label because local browser time is expected without explanation.
+
+Treat the browser workflow's overall 60-second deadline as a failed check
+(not-functional / timeout), not as a missing observation. Genuine browser crashes,
+launch failures and shutdown cancellation remain missing. The user accepted the
+current calendar behavior for desktop clock-change labels and fractional clock-change
+days; no calendar fixes are requested for those review findings.

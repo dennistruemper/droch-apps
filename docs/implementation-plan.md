@@ -180,11 +180,13 @@ inspected, with no browser errors. Hosted preview verification remains to be don
   scheduler recovery, a realistic local browser fixture, mobile layout and themes.
 
 Implemented and verified locally: `pnpm check` passes type checking, boundaries,
-formatting and 174 tests in the isolated Observo worktree. Targeted Playwright checks
+formatting and 178 tests in the isolated Observo worktree. Targeted Playwright checks
 cover the 30-day grid, two-minute automatic recovery, fresh/current/stale states,
 mobile layout, themes, app shells, and a realistic browser-check fixture. Calendar
 tests cover Berlin clock changes and UTC bucket reassembly in fractional timezones.
 Activation tests prove reads remain dormant, concurrent visits start one check,
 activation survives database reopening and retention, and the test hard-off stays off.
+Checker deadline tests distinguish failed timeouts from crashes, launch failures and
+shutdown cancellation (including cancellation racing with the deadline).
 All four apps build. Hosted checker access was previously verified successfully;
 verify the updated dashboard after deployment.

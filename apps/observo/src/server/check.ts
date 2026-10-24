@@ -19,7 +19,11 @@ export async function checkSite(
   const close = () => {
     void browser.close().catch(() => {});
   };
-  const deadline = setTimeout(close, 60_000);
+  let deadlineExpired = false;
+  const deadline = setTimeout(() => {
+    deadlineExpired = true;
+    close();
+  }, 60_000);
   options.signal.addEventListener("abort", close, { once: true });
   let reached = false;
   let statusCode: number | null = null;
@@ -86,7 +90,9 @@ export async function checkSite(
     if (statusCode !== null && statusCode >= 400) return result("not-functional", "http-error");
     return result("available", "ok");
   } catch (error) {
-    if (options.signal.aborted || !browser.isConnected()) throw error;
+    if (options.signal.aborted) throw error;
+    if (deadlineExpired) return result("not-functional", "timeout");
+    if (!browser.isConnected()) throw error;
     if (blockedNavigation) return result("not-functional", "redirect-blocked");
     if (await confirmationVisible().catch(() => false))
       return result("not-functional", "verification-required");

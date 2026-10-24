@@ -437,7 +437,9 @@ It follows current navigation instead of hardcoding a season or league ID. Reque
 are restricted to the configured origin, GET/HEAD and the observed confirmation POST;
 images, media, fonts, service workers and downloads are disabled. Navigation, element
 waits and the whole run have bounded timeouts. Launch/crash failures leave missing
-observations; HTTP, network and workflow failures are recorded with safe reason codes.
+observations; exhausting the overall 60-second deadline records a not-functional
+timeout. Shutdown cancellation remains missing even if it coincides with the deadline.
+HTTP, network and workflow failures are recorded with safe reason codes.
 The pinned Playwright runtime and Chromium headless shell are included in Docker.
 
 `observo.sqlite` owns `migrations/observo/`. Twelve two-bit outcomes fit in one integer
