@@ -455,6 +455,8 @@ without a fresh observation. The dashboard shows a 30-day hourly grid using loca
 calendar days from midnight to midnight, including 23/25-hour clock-change days.
 Future cells are muted; mobile dates expand to reveal hours. Five-minute drill-down
 remains available. Data refreshes every two minutes and on returning to the page;
-there is no manual refresh button or footer. A fixed neutral history panel uses green/amber/red with symbols,
+there is no manual refresh button or footer. Product copy shows status, check time
+and timezone; refresh cadence, retention and checker internals stay in developer
+documentation. A fixed neutral history panel uses green/amber/red with symbols,
 labels and counts independently of the surrounding Drochsign theme. A feature-local
 model/message/update/command flow guards duplicate refreshes and stale results.

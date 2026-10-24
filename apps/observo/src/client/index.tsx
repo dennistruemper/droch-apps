@@ -3,7 +3,7 @@ import { createMemo, createSignal, For, onSettled, Show } from "solid-js";
 import { AppSettings } from "@repo/shared/settings";
 import "@repo/shared/styles";
 import "./styles.css";
-import { appDefinition, type Dashboard, type Latest, type Reason } from "../contracts/index.ts";
+import { appDefinition, type Dashboard, type Latest } from "../contracts/index.ts";
 import { currentStatus, interval } from "../domain/index.ts";
 import { localDays, localSummary } from "./history.ts";
 import { init, update, type Message } from "./dashboard-model.ts";
@@ -19,15 +19,6 @@ const statusNames = {
   "not-functional": "Not functional",
   missing: "Missing",
 } as const;
-const reasons: Record<Reason, string> = {
-  ok: "Check passed",
-  "http-error": "Website returned an HTTP error",
-  "network-error": "Connection or certificate failed",
-  timeout: "Website did not respond in time",
-  "workflow-failed": "Website responded, but the browser workflow did not complete",
-  "verification-required": "Human verification required; functionality cannot be verified",
-  "redirect-blocked": "Navigation outside the configured website was blocked",
-};
 const timestamp = (time: number) =>
   new Date(time).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 const hourLabel = (hour: number) =>
@@ -93,18 +84,14 @@ function SiteCard(props: {
         </h2>
         <strong>{latestLabel(props.site.latest, props.now)}</strong>
       </div>
-      <p>{props.site.description}</p>
       <Show when={props.site.latest}>
         {(latest) => (
           <p class="observo-latest">
-            {checkedAgo(latest(), props.now)} · {reasons[latest().reason]}
-            {latest().statusCode ? ` · HTTP ${latest().statusCode}` : ""} ·{" "}
-            {timestamp(latest().checkedAt)} · {(latest().durationMs / 1000).toFixed(1)} s
+            {checkedAgo(latest(), props.now)} · {timestamp(latest().checkedAt)}
           </p>
         )}
       </Show>
       <section class="observo-status-panel" aria-label={`${props.site.name} availability history`}>
-        <p class="observo-range">30 days · midnight to midnight · select an hour for details</p>
         <div class="observo-axis" aria-hidden="true">
           <For each={Array.from({ length: 24 }, (_, hour) => hour)}>
             {(hour) => <span>{String(hour).padStart(2, "0")}</span>}
@@ -171,21 +158,20 @@ function SiteCard(props: {
         <ul class="observo-legend" aria-label="Completed hour status legend">
           <li>
             <i data-status="available" />
-            Available · 12/12 pass
+            Available
           </li>
           <li>
             <i data-status="degraded" />
-            Degraded · 1–6 fail
+            Degraded
           </li>
           <li>
             <i data-status="mostly-unavailable" />
-            Mostly unavailable · 7–12 fail
+            Mostly unavailable
           </li>
           <li>
             <i data-status="unknown" />
-            Unknown · missing checks
+            Unknown
           </li>
-          <li>Now · latest check</li>
         </ul>
         <Show when={selected()}>
           {(value) => (
@@ -199,7 +185,6 @@ function SiteCard(props: {
               </h3>
               <p>
                 {value().passed} passed · {value().failed} failed · {value().missing} missing
-                {value().current ? " · current hour; status uses the latest check" : ""}
               </p>
               <ol class="observo-slots" aria-label="Five-minute checks">
                 <For each={value().slots}>
@@ -242,7 +227,7 @@ function App() {
         await dispatch({
           kind: "failed",
           id: command.id,
-          error: "Could not refresh monitoring data. Previously loaded results may be out of date.",
+          error: "Updates unavailable. Results may be outdated.",
         });
       }
     }
@@ -275,20 +260,7 @@ function App() {
         </nav>
       </header>
       <main>
-        <section>
-          <p class="observo-eyebrow">A small watch on the web</p>
-          <h1>Is it working?</h1>
-          <p>
-            A real browser checks every five minutes. Explore each hour, with just 30 days of
-            history.
-          </p>
-          <p>
-            <small>
-              Checks run from this server and can miss brief outages. Missing observations remain
-              unknown.
-            </small>
-          </p>
-        </section>
+        <h1>Is it working?</h1>
         <Show when={error()}>
           <p role="alert">{error()}</p>
         </Show>
@@ -303,15 +275,9 @@ function App() {
           {(data) => (
             <>
               <Show when={!data().checksEnabled}>
-                <p role="status">Checks are disabled in this environment.</p>
+                <p role="status">Monitoring paused.</p>
               </Show>
-              <p>
-                <small>
-                  Updated {timestamp(data().generatedAt)} · Times shown in{" "}
-                  {Intl.DateTimeFormat().resolvedOptions().timeZone}. Updates automatically every
-                  two minutes. Each cell is one hour.
-                </small>
-              </p>
+              <p class="observo-timezone">{Intl.DateTimeFormat().resolvedOptions().timeZone}</p>
               <For each={data().sites}>
                 {(site) => (
                   <SiteCard

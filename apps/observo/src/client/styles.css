@@ -1,10 +1,4 @@
-.observo-eyebrow {
-  text-transform: uppercase;
-  letter-spacing: 0.13em;
-  font-size: 0.75rem;
-}
-.observo-heading,
-.observo-range {
+.observo-heading {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -36,9 +30,8 @@
   border: 1px solid #64748b;
   border-radius: 0.35rem;
 }
-.observo-range {
-  font-size: 0.72rem;
-  margin-bottom: 0.75rem;
+.observo-timezone {
+  font-size: 0.8rem;
 }
 .observo-hours {
   display: grid;

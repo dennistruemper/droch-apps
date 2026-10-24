@@ -23,6 +23,16 @@ to understand the intended order of work.
 - Use Drochsign as the CSS starting point, with independent app themes.
 - Development must support multiple independent Git worktrees concurrently.
 
+## Product copy
+
+- Keep user-facing text brief and focused on useful status and actions.
+- Do not expose implementation or operational details in app copy unless they help
+  the user make a meaningful decision. For example, Observo should not advertise
+  its refresh interval, history retention policy, real-browser checks, HTTP codes,
+  request durations, storage, accounts or deployment environments.
+- Keep such details in developer documentation. Prefer clear interface labels to
+  explanatory paragraphs and omit redundant footers or instructions.
+
 ## Vortoj product rules
 
 - The word app is Vortoj, at `/vortoj/`, with two to four authenticated room members.

@@ -408,3 +408,9 @@ midnight to midnight, rather than clicking through rolling 24-hour slices. Clock
 changes preserve repeated/skipped hours; mobile dates expand for usable hour targets.
 Remove the manual refresh control and footer. Refresh dashboard data automatically
 every two minutes and when the page becomes visible again; checks remain five-minute.
+
+Product copy must stay brief and describe information useful to visitors. The user
+explicitly rejected implementation explanations such as refresh cadence, retention
+length and real-browser checking. Observo shows site status, check time, timezone
+and explorable history; operational details belong in developer documentation.
+This guidance is also recorded in `AGENTS.md` for future contributors.
