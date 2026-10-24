@@ -3,6 +3,12 @@ import { createAuthRoutes } from "@repo/shared/auth";
 import { readConfiguration, accountPolicy } from "./index.ts";
 
 describe("runtime configuration", () => {
+  it("validates the monitoring switch and enables checks by default", () => {
+    const base = { DATA_DIRECTORY: "/data", APP_ORIGIN: "http://localhost:3000" };
+    expect(readConfiguration(base).OBSERVO_CHECKS).toBe(true);
+    expect(readConfiguration({ ...base, OBSERVO_CHECKS: "false" }).OBSERVO_CHECKS).toBe(false);
+    expect(() => readConfiguration({ ...base, OBSERVO_CHECKS: "no" })).toThrow("OBSERVO_CHECKS");
+  });
   it.each([
     ["https://6.apps.droch.dev", "https://apps.droch.dev", "https://6.apps.droch.dev"],
     ["https://6.apps.droch.dev", undefined, "https://6.apps.droch.dev"],

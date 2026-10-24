@@ -162,3 +162,30 @@ The full production browser suite passed 28 checks; one Vortoj phone-board check
 encountered a socket disconnect and passed when rerun alone. Container logs show
 normal startup with no application error. Desktop/mobile Schlezaz views were
 inspected, with no browser errors. Hosted preview verification remains to be done.
+
+## Observo website monitoring
+
+- Public dashboard and read-only API, code-defined targets, no account/admin workflow.
+- First target: Rendsburg-Eckernförde TischtennisLive. Check real league navigation
+  and populated standings using Chromium, including the current confirmation form.
+- Five-minute scheduler in the existing backend; durable immutable slots, migration
+  readiness, restart recovery, bounded sequential work and cancellation on shutdown.
+- Dedicated SQLite file/migrations, one compact row per hour, latest diagnostics only,
+  automatic 30-day retention, and cleanup for deconfigured sites.
+- Theme-independent status panel, accessible hourly timeline/five-minute drill-down,
+  local timezone display, 30-day browsing and feature-local client transitions.
+- Verify aggregation thresholds, privacy/public reads, duplicate/late results, pruning,
+  scheduler recovery, a realistic local browser fixture, mobile layout and themes.
+
+Implemented and verified locally: `pnpm check` passes type checking, boundaries,
+formatting and 162 tests in the isolated Observo worktree. Four targeted Playwright checks pass for Observo and the
+existing app shells. The checker fixture requires a fresh confirmation token and
+rejects HTTP-200 pages without standings rows. A live run through the implemented
+checker in headless Chrome passes the actual TischtennisLive workflow (HTTP 200,
+about 4.3 seconds). The production Docker image builds, and an isolated container
+without external networking passes migrations, public API and bundled-dashboard
+rendering using its installed Chromium. Desktop/mobile views are inspected.
+
+Deployment follow-up: verify the browser workflow from the hosted server's network.
+The approved local live test reaches league standings after one confirmation click;
+that does not establish whether the site permits the production server's traffic.

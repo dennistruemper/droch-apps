@@ -1,0 +1,164 @@
+.observo-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  font-size: 0.75rem;
+}
+.observo-heading,
+.observo-controls,
+.observo-range {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.observo-heading h2 {
+  font-size: 1.25rem;
+  overflow-wrap: anywhere;
+}
+.observo-heading strong {
+  font-size: 0.9rem;
+}
+.observo-site {
+  padding: clamp(0.75rem, 3vw, 1.5rem);
+  min-width: 0;
+}
+.observo-latest {
+  font-size: 0.85rem;
+}
+.observo-controls [role="group"] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.observo-controls button {
+  padding: 0.5rem 0.7rem;
+}
+/* A deliberate fixed palette, scoped to monitoring history, independent of themes. */
+.observo-status-panel {
+  --color-bg: #f8fafc;
+  --color-fg: #172033;
+  color-scheme: light;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  padding: 1rem;
+  border: 1px solid #64748b;
+  border-radius: 0.35rem;
+}
+.observo-range {
+  font-size: 0.72rem;
+  margin-bottom: 0.75rem;
+}
+.observo-hours {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+.observo-hours button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  padding: 0.5rem 0;
+  min-height: 3.25rem;
+  border: 1px solid #64748b;
+  color: #172033;
+  border-radius: 0.2rem;
+  font-size: 0.68rem;
+  box-shadow: none;
+}
+.observo-hours button:hover,
+.observo-hours button[aria-pressed="true"] {
+  outline: 2px solid #172033;
+  outline-offset: 1px;
+  transform: none;
+}
+.observo-hours button b {
+  font-size: 1rem;
+}
+.observo-status-panel [data-status="available"] {
+  background: #c7edd6;
+  color: #13452b;
+}
+.observo-status-panel [data-status="degraded"] {
+  background: #ffe7a3;
+  color: #624400;
+}
+.observo-status-panel [data-status="mostly-unavailable"] {
+  background: #ffd1d1;
+  color: #761d27;
+}
+.observo-status-panel [data-status="unknown"] {
+  background: repeating-linear-gradient(135deg, #f8fafc, #f8fafc 4px, #e2e8f0 4px, #e2e8f0 6px);
+  color: #334155;
+}
+.observo-status-panel [data-status="in-progress"] {
+  background: #dbeafe;
+  color: #1e3a5f;
+  border-style: dashed;
+}
+.observo-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0;
+  font-size: 0.75rem;
+}
+.observo-legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.observo-legend i {
+  display: inline-block;
+  width: 0.8rem;
+  height: 0.8rem;
+  border: 1px solid #64748b;
+}
+.observo-detail {
+  border-top: 1px solid #cbd5e1;
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+.observo-detail h3 {
+  font-size: 0.95rem;
+}
+.observo-detail p {
+  font-size: 0.85rem;
+}
+.observo-slots {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+.observo-slots li {
+  display: flex;
+  flex-direction: column;
+  padding: 0.4rem;
+  font-size: 0.7rem;
+  border: 1px solid #94a3b8;
+  overflow-wrap: anywhere;
+}
+.observo-slots [data-outcome="available"] {
+  border-bottom: 3px solid #187342;
+}
+.observo-slots [data-outcome="unreachable"],
+.observo-slots [data-outcome="not-functional"] {
+  border-bottom: 3px solid #b52c3b;
+}
+@media (max-width: 480px) {
+  .observo-status-panel {
+    padding: 0.65rem;
+  }
+  .observo-hours {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .observo-slots {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

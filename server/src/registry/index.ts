@@ -1,4 +1,11 @@
 import { appDefinition as schlezaz } from "@repo/schlezaz/contracts";
+
+import {
+  appDefinition as observo,
+  createRoutes as createObservoRoutes,
+  start as startObservo,
+  type ObservoOptions,
+} from "@repo/observo/server";
 import { appDefinition as poker, createRoutes as createPokerRoutes } from "@repo/poker/server";
 import { appDefinition as words, createRoutes as createWordsRoutes } from "@repo/vortoj/server";
 
@@ -7,6 +14,8 @@ export const applications = [
   { ...poker, createRoutes: createPokerRoutes },
   { ...words, createRoutes: createWordsRoutes },
   schlezaz,
+
+  { ...observo, createRoutes: createObservoRoutes, start: startObservo },
 ] as const;
 
 export function validateApplications(apps: readonly { id: string }[]) {
@@ -29,4 +38,4 @@ export const databaseDefinitions = [
 
 import type { PokerOptions } from "@repo/poker/server";
 import type { VortojOptions } from "@repo/vortoj/server";
-export type ApplicationOptions = PokerOptions & Pick<VortojOptions, "resolveUser">;
+export type ApplicationOptions = PokerOptions & Pick<VortojOptions, "resolveUser"> & ObservoOptions;

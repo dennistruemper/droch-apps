@@ -368,3 +368,31 @@ and mode edits reset sequence memory. Controls freeze while drawing. Native cont
 and reduced-motion support replace perpetual flashing; Drochsign and an app theme
 replace external Tailwind/font CDNs. Optional features from the source plan, such as
 saved generators, sharing, statistics and sound, are outside this port.
+
+## Observo — 2026-10-24
+
+The user requested Observo for five-minute website availability/functionality checks
+with hourly history, then simplified the original account/quota/admin proposal to a
+public dashboard with code-defined websites. There is no Observo login, per-account
+limit, domain allowlist or admin page. Start with
+`https://rendsburg-eckernfoerde.tischtennislive.de/`.
+
+Keep only 30 days of history and minimize stored data. The implementation uses one
+24-bit value for twelve five-minute outcomes per hour, preserving drill-down without
+individual check rows. Retain only the latest diagnostic; no bodies, screenshots,
+traces or persistent browser sessions. Retain at most 720 hourly buckets including
+the running hour, with no longer-term archive.
+
+The user requested browser-based checks because a banner is insufficient. An approved
+live browser test submitted the site's tokenized confirmation form, navigated through
+Spielbetrieb to populated Kreisliga standings, and retained access after reload. Use
+that functional workflow with a pinned Playwright/Chromium runtime. Passing requires
+real team/score rows, not merely HTTP 200 or a page title. The live test proves local
+browser access; hosted-server access still needs deployment verification.
+
+Implementation defaults: one sequential browser run per target/slot, a fresh context
+per run, same-origin requests, bounded waits, no retries within a recorded slot, and
+no backfill after outages. Complete-hour thresholds are zero failures for available,
+one to six for degraded, seven to twelve for mostly unavailable. Missing data stays
+unknown, and the running hour remains in progress. Use the proposed fixed-color
+status panel with labels/symbols, while surrounding UI follows Drochsign themes.

@@ -76,7 +76,9 @@ export function checkImport(filename, specifier) {
     browser &&
     (/^node:/.test(specifier) ||
       builtinModules.includes(specifier) ||
-      /^(pg|better-sqlite3|drizzle-orm|hono|@hono\/node-server)(\/|$)/.test(specifier))
+      /^(pg|better-sqlite3|drizzle-orm|hono|@hono\/node-server|playwright|playwright-core|@playwright\/test)(\/|$)/.test(
+        specifier,
+      ))
   )
     return "Browser-safe modules cannot import server libraries.";
   let target;

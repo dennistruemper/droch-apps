@@ -30,6 +30,9 @@ describe("module boundaries", () => {
     "better-sqlite3",
     "node:sqlite",
     "node:fs",
+    "playwright",
+    "playwright-core",
+    "@playwright/test",
   ])("rejects server dependency %s from a client", (specifier) => {
     expect(checkImport(client, specifier)).toBeTruthy();
   });

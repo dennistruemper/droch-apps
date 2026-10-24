@@ -410,3 +410,45 @@ controls freeze during a draw. Request IDs reject stale callbacks and disposal
 aborts timers. Options stay in the current tab; there is no account or persistence.
 Drochsign provides the base styling with an independent retro theme, German copy,
 keyboard-accessible controls, live result announcements and reduced-motion support.
+
+## Observo
+
+Observo is a public website-monitoring dashboard at `/observo/`, with read-only data
+at `/api/observo/sites`. It has no accounts or admin UI. Trusted targets and their
+browser workflows live in `apps/observo/src/server/sites.ts`; changing a target or
+its success conditions should use a new ID to start fresh history. The first target
+is the Rendsburg-Eckernförde TischtennisLive website.
+
+A scheduler explicitly started by server composition runs immediately and then on
+five-minute UTC boundaries, independently of visitors. It checks migration readiness,
+skips already recorded slots, serializes browser runs, and aborts on shutdown before
+database closure. Missed observations are never backfilled. `OBSERVO_CHECKS=false`
+disables outbound checks for isolated browser test stacks; ordinary runtime defaults
+to enabled. Each run creates and closes a fresh headless Chromium browser/context;
+there are no persistent cookies, screenshots, response bodies or traces.
+
+The TischtennisLive workflow submits the current tokenized human-confirmation form
+if shown, follows Spielbetrieb and Kreisliga links, then requires the league heading,
+Mannschaft/Punkte labels and a visible standings row containing a team link and scores.
+It follows current navigation instead of hardcoding a season or league ID. Requests
+are restricted to the configured origin, GET/HEAD and the observed confirmation POST;
+images, media, fonts, service workers and downloads are disabled. Navigation, element
+waits and the whole run have bounded timeouts. Launch/crash failures leave missing
+observations; HTTP, network and workflow failures are recorded with safe reason codes.
+The pinned Playwright runtime and Chromium headless shell are included in Docker.
+
+`observo.sqlite` owns `migrations/observo/`. Twelve two-bit outcomes fit in one integer
+per website/hour: missing, available, unreachable or not functional. Transactional
+updates make each slot immutable and prevent old completions replacing the latest
+result. At most 720 UTC hourly buckets per configured site are retained, including
+the running hour. Cleanup runs on startup/check cycles and reads, removes old latest
+results, and deletes deconfigured sites. The latest check alone retains an HTTP code,
+duration and safe reason; historical individual diagnostics are discarded.
+
+Complete hours are available when all twelve checks pass, degraded with one to six
+failures, and mostly unavailable with seven to twelve failures. Missing coverage is
+unknown; the running hour is in progress. The dashboard shows 24-hour slices with
+five-minute drill-down, local timestamps/timezone, 30-day navigation and automatic
+refresh/recovery. A fixed neutral history panel uses green/amber/red with symbols,
+labels and counts independently of the surrounding Drochsign theme. A feature-local
+model/message/update/command flow guards duplicate refreshes and stale results.
