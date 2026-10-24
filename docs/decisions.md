@@ -428,3 +428,8 @@ Treat the browser workflow's overall 60-second deadline as a failed check
 launch failures and shutdown cancellation remain missing. The user accepted the
 current calendar behavior for desktop clock-change labels and fractional clock-change
 days; no calendar fixes are requested for those review findings.
+
+For concept comparisons, the user prefers faster results over exhaustive preview
+quality. Show lightweight representative alternatives and sanity-check their main
+interaction. Defer detailed polish, responsive verification and edge cases until
+a solution is chosen. This workflow preference is recorded in `AGENTS.md`.
