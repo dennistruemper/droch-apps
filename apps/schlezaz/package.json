@@ -1,0 +1,14 @@
+{
+  "name": "@repo/schlezaz",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./contracts": "./src/contracts/index.ts",
+    "./domain": "./src/domain/index.ts"
+  },
+  "dependencies": {
+    "@repo/shared": "workspace:*",
+    "@solidjs/web": "2.0.0-rc.13",
+    "solid-js": "2.0.0-rc.13"
+  }
+}

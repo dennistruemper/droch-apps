@@ -51,6 +51,7 @@ apps/
     src/contracts/
     src/domain/
   vortoj/                # same internal structure
+  schlezaz/              # browser-only generator: client, contracts, domain
 server/                  # backend entry point, app registration, composition
 shared/
   src/auth/              # server-only account API and schema
@@ -98,6 +99,7 @@ show, close or keep, leaving the room adapter to execute dialog operations.
 ```text
 /poker/          poker frontend
 /vortoj/          word-game frontend
+/schlezaz/        browser-only random-choice frontend
 /api/auth/       shared account API
 /api/poker/      poker commands, queries, and event stream
 /api/vortoj/      word-game commands, queries, and event stream
@@ -125,7 +127,7 @@ Periodic snapshots and browser visibility changes reconcile missed updates. Acco
 event streams as well as commands.
 
 One backend process owns `auth.sqlite`, `poker.sqlite`, and `vortoj.sqlite` under
-`DATA_DIRECTORY`. Every app and auth owns its table declarations, queries, and
+`DATA_DIRECTORY`. Every persisted app and auth owns its table declarations, queries, and
 migration history (`migrations/<id>/`). Shared database infrastructure opens files
 through better-sqlite3/Drizzle, enables WAL and foreign keys, sets a busy timeout,
 and applies migrations. Native-driver binaries are built for the image platform.
@@ -390,3 +392,21 @@ Email entry, code entry and signed-in screens are discriminated states. Resendin
 keeps code entry available if delivery fails. This is a reference implementation of the default client style for coupled state
 and asynchronous workflows. Simple independent controls retain local signals;
 models remain feature-local rather than becoming one global store.
+
+## Schlezaz
+
+SchleZaZ is a German browser-only random-choice app at `/schlezaz/`, ported from
+an existing Lamdera app to TypeScript and Solid 2. Its registry entry participates
+in the common landing page, development server and production build. Entries without
+`createRoutes` have no backend API or database; database registration includes only
+server-backed apps. No deployment or ingress configuration is needed.
+
+The feature-local generator model owns options, mode, sequence memory and request
+phases. Pure rules implement XKCD (fourth option, wrapping), standard random,
+SchleZaZ (pairs of identical results), unique-value shuffle and Random-Random
+(one random concrete mode per draw). The adapter supplies browser crypto randomness
+and a random 2–10 second timer. Edits and mode changes reset sequence memory;
+controls freeze during a draw. Request IDs reject stale callbacks and disposal
+aborts timers. Options stay in the current tab; there is no account or persistence.
+Drochsign provides the base styling with an independent retro theme, German copy,
+keyboard-accessible controls, live result announcements and reduced-motion support.
