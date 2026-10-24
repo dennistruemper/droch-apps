@@ -6,7 +6,7 @@ import { connectDatabase } from "@repo/shared/database";
 import { createApplication } from "./http/index.ts";
 import { readConfiguration, accountPolicy } from "./config/index.ts";
 import { createFrontendReader } from "./frontend/index.ts";
-import { applications, databaseDefinitions } from "./registry/index.ts";
+import { applications, databaseDefinitions, type ApplicationOptions } from "./registry/index.ts";
 
 const configuration = readConfiguration(process.env);
 const root = process.cwd();
@@ -79,6 +79,22 @@ const auth =
           : createTestMailSender(),
       })
     : null;
+const applicationOptions = (id: string): ApplicationOptions => {
+  const database = databases.find((entry) => entry.id === id);
+  if (!database) throw new Error(`Missing database for ${id}`);
+  return {
+    db: database.connection.db,
+    resolveUser: (token) => auth?.lookup(token) ?? null,
+    ready: () => database.connection.ready(database.migrationsFolder),
+    origin: configuration.APP_ORIGIN,
+    cookieName: configuration.SESSION_COOKIE_NAME,
+    secureCookies: configuration.NODE_ENV === "production",
+    checksDisabled: !configuration.OBSERVO_CHECKS,
+    registerCleanup: (cleanup) => {
+      cleanupHandlers.add(cleanup);
+    },
+  };
+};
 const app = createApplication({
   authRoutes: createAuthRoutes({
     service: auth,
@@ -90,21 +106,7 @@ const app = createApplication({
   ready: async () =>
     databases.every(({ connection, migrationsFolder }) => connection.ready(migrationsFolder)),
   readFrontend,
-  applicationOptions: (id) => {
-    const database = databases.find((entry) => entry.id === id);
-    if (!database) throw new Error(`Missing database for ${id}`);
-    return {
-      db: database.connection.db,
-      resolveUser: (token) => auth?.lookup(token) ?? null,
-      ready: () => database.connection.ready(database.migrationsFolder),
-      origin: configuration.APP_ORIGIN,
-      cookieName: configuration.SESSION_COOKIE_NAME,
-      secureCookies: configuration.NODE_ENV === "production",
-      registerCleanup: (cleanup) => {
-        cleanupHandlers.add(cleanup);
-      },
-    };
-  },
+  applicationOptions,
 });
 const listener = getRequestListener(app.fetch);
 server.on("request", (request, response) => {

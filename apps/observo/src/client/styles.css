@@ -1,0 +1,246 @@
+.observo-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.observo-heading h2 {
+  font-size: 1.25rem;
+  overflow-wrap: anywhere;
+}
+.observo-heading strong {
+  font-size: 0.9rem;
+}
+.observo-site {
+  padding: clamp(0.75rem, 3vw, 1.5rem);
+  min-width: 0;
+  --observo-cell: color-mix(in srgb, var(--color-bg) 94%, var(--color-fg));
+  --observo-line: color-mix(in srgb, var(--color-bg) 70%, var(--color-fg));
+  --observo-green: light-dark(#19633b, #90d9a9);
+  --observo-amber: light-dark(#855b0b, #f2ca73);
+  --observo-red: light-dark(#a12f40, #f1a0a8);
+}
+.observo-latest {
+  font-size: 0.85rem;
+}
+/* Quiet accents: surfaces and text follow the theme; colour marks status only. */
+.observo-current-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.observo-current-status i {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--observo-accent);
+}
+.observo-status-panel {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  padding: 0;
+}
+.observo-hours {
+  display: grid;
+  grid-template-columns: repeat(var(--hours), minmax(0, 1fr));
+  gap: 0.18rem;
+}
+.observo-hours button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  padding: 0.5rem 0;
+  min-height: 2.5rem;
+  border: 1px solid transparent;
+  border-bottom: 4px solid var(--observo-accent, transparent);
+  background: var(--observo-cell);
+  color: var(--color-fg);
+  border-radius: 0.2rem;
+  font-size: 0.52rem;
+  box-shadow: none;
+}
+.observo-hours button:hover,
+.observo-hours button[aria-pressed="true"] {
+  outline: 2px solid var(--color-fg);
+  outline-offset: 1px;
+  transform: none;
+}
+.observo-hours button b {
+  font-size: 1rem;
+}
+.observo-site [data-status="available"],
+.observo-slots [data-outcome="available"] {
+  --observo-accent: var(--observo-green);
+}
+.observo-site [data-status="degraded"] {
+  --observo-accent: var(--observo-amber);
+}
+.observo-site [data-status="mostly-unavailable"],
+.observo-site [data-status="unavailable"],
+.observo-slots [data-outcome="unreachable"],
+.observo-slots [data-outcome="not-functional"] {
+  --observo-accent: var(--observo-red);
+}
+.observo-site [data-status="unknown"] {
+  --observo-accent: color-mix(in srgb, var(--color-fg) 45%, var(--color-bg));
+}
+.observo-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0;
+  font-size: 0.75rem;
+}
+.observo-legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.18rem;
+}
+.observo-legend i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1.2rem;
+  font-style: normal;
+  color: var(--color-fg);
+  background: var(--observo-cell);
+  border-bottom: 3px solid var(--observo-accent);
+}
+.observo-detail {
+  border-top: 1px solid var(--observo-line);
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+.observo-detail h3 {
+  font-size: 0.95rem;
+}
+.observo-detail p {
+  font-size: 0.85rem;
+}
+.observo-slots {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+.observo-slots li {
+  display: flex;
+  flex-direction: column;
+  padding: 0.4rem;
+  font-size: 0.7rem;
+  background: var(--observo-cell);
+  border: 1px solid transparent;
+  border-bottom: 3px solid var(--observo-accent, transparent);
+  overflow-wrap: anywhere;
+}
+@media (max-width: 480px) {
+  .observo-slots {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.observo-history {
+  display: grid;
+  gap: 0.4rem;
+}
+.observo-day {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-fg);
+}
+.observo-day summary {
+  font-size: 0.78rem;
+  padding: 0.2rem 0;
+  cursor: pointer;
+}
+.observo-status-panel [data-status="upcoming"] {
+  opacity: 0.45;
+}
+@media (max-width: 600px) {
+  .observo-hours {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .observo-hours button {
+    font-size: 0.7rem;
+  }
+}
+
+@media (min-width: 601px) {
+  .observo-history {
+    gap: 0.2rem;
+  }
+  .observo-day > summary {
+    float: left;
+    width: 5.5rem;
+    border: 0;
+    padding: 0.15rem 0;
+    font-size: 0.7rem;
+    line-height: 1.5rem;
+  }
+  .observo-day .observo-hours {
+    margin-left: 5.75rem;
+  }
+  .observo-hours button {
+    min-height: 1.7rem;
+    padding: 0;
+  }
+  .observo-hours button > span {
+    display: none;
+  }
+  .observo-hours button b {
+    font-size: 0.75rem;
+  }
+}
+.observo-hours [data-current="true"] {
+  border-top: 3px solid var(--color-fg);
+}
+.observo-axis {
+  display: grid;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  gap: 0.18rem;
+  margin: 0 0 0.4rem 5.75rem;
+  font-size: 0.58rem;
+  text-align: center;
+}
+@media (max-width: 600px) {
+  .observo-axis {
+    display: none;
+  }
+}
+
+.observo-day > .observo-hours {
+  padding: 0;
+}
+.observo-day[open] > summary {
+  margin-bottom: 0;
+  border-bottom: 0;
+}
+@media (min-width: 601px) {
+  .observo-day > summary::after {
+    display: none;
+  }
+}
+
+.observo-history-toggle {
+  align-self: flex-start;
+  width: auto;
+  margin-top: 0.75rem;
+  padding: 0.25rem 0;
+  font-size: 0.8rem;
+  font-weight: 400;
+  background: transparent;
+  color: var(--color-fg);
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  border-radius: 0;
+  box-shadow: none;
+}

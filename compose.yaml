@@ -17,6 +17,7 @@ services:
     environment:
       AUTH_SECRET: ${AUTH_SECRET:-}
       AUTH_MODE: ${AUTH_MODE:-production}
+      OBSERVO_CHECKS: ${OBSERVO_CHECKS:-auto}
       MAILTRAP_TOKEN: ${MAILTRAP_TOKEN:-}
       MAIL_FROM: ${MAIL_FROM:-}
       MAILTRAP_SANDBOX_ID: ${MAILTRAP_SANDBOX_ID:-}

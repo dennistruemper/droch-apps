@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@hono/node-server": "2.1.3",
+    "@repo/observo": "workspace:*",
     "@repo/poker": "workspace:*",
     "@repo/schlezaz": "workspace:*",
     "@repo/shared": "workspace:*",

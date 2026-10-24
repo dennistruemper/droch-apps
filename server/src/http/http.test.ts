@@ -9,6 +9,11 @@ describe("HTTP composition", () => {
       path.includes(".") ? null : { body: "frontend", contentType: "text/html" },
   });
   it("mounts app APIs and redirects app roots", async () => {
+    expect(await (await app.request("/api/observo/status")).json()).toEqual({
+      app: "observo",
+      stage: "monitoring",
+    });
+    expect((await app.request("/observo")).headers.get("location")).toBe("/observo/");
     expect(await (await app.request("/api/poker/status")).json()).toEqual({
       app: "poker",
       stage: "foundation",

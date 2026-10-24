@@ -8,6 +8,11 @@ USER node
 # Fetch only changes with dependency configuration; adding apps needs no COPY list.
 COPY --chown=node:node pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm fetch --frozen-lockfile --store-dir /pnpm/store
+USER root
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/playwright-browsers
+# Cache the browser with dependencies, independently of application source edits.
+RUN node node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/cli.js install --with-deps --only-shell chromium
+USER node
 COPY --chown=node:node . .
 # Copy avoids overlayfs hardlink copy-up from the fetched store's image layer.
 RUN pnpm install --offline --frozen-lockfile --store-dir /pnpm/store --package-import-method=copy
@@ -19,7 +24,12 @@ RUN pnpm typecheck && pnpm build
 
 FROM node:24.21.0-bookworm-slim AS production
 ENV NODE_ENV=production
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/playwright-browsers
 WORKDIR /workspace
+COPY --from=build --chown=node:node /workspace/node_modules/.pnpm/playwright@1.63.0/node_modules/playwright ./node_modules/playwright
+COPY --from=build --chown=node:node /workspace/node_modules/.pnpm/playwright-core@1.63.0/node_modules/playwright-core ./node_modules/playwright-core
+COPY --from=build /opt/playwright-browsers /opt/playwright-browsers
+RUN node node_modules/playwright/cli.js install-deps chromium && rm -rf /var/lib/apt/lists/*
 COPY --from=build --chown=node:node /workspace/dist ./dist
 COPY --from=build --chown=node:node /workspace/migrations ./migrations
 RUN mkdir -p /data && chown node:node /data

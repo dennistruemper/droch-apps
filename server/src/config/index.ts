@@ -1,6 +1,10 @@
 import { z } from "zod";
 
 const configurationSchema = z.object({
+  OBSERVO_CHECKS: z
+    .enum(["auto", "true", "false"])
+    .default("auto")
+    .transform((value) => value !== "false"),
   AUTH_SECRET: z.preprocess(
     (value) => (value === "" ? undefined : value),
     z.string().min(32).max(256).optional(),

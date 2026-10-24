@@ -66,7 +66,11 @@ if (command === "build") {
     JSON.stringify({
       services: {
         migrate: { image },
-        application: { image, ports: [`127.0.0.1:${new URL(origin).port}:3000`] },
+        application: {
+          image,
+          environment: { OBSERVO_CHECKS: "false" },
+          ports: [`127.0.0.1:${new URL(origin).port}:3000`],
+        },
       },
     }),
   );
