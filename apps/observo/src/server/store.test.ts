@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
@@ -10,7 +10,9 @@ import { sites } from "./sites.ts";
 import { createRoutes } from "./index.ts";
 
 const directories: string[] = [];
+const cleanups: (() => void)[] = [];
 afterEach(() => {
+  for (const cleanup of cleanups.splice(0)) cleanup();
   for (const directory of directories.splice(0))
     rmSync(directory, { recursive: true, force: true });
 });
@@ -71,17 +73,95 @@ describe("Observo persistence and public reads", () => {
       connection.close();
     }
   });
+  it("activates only on an explicit same-origin visit, persists across restarts and survives pruning", async () => {
+    const { directory, connection, store } = setup();
+    let time = now;
+    const check = vi.fn(async () => result(time));
+    let stop = () => {};
+    const app = createRoutes({
+      db: connection.db,
+      origin: "http://localhost",
+      now: () => time,
+      check,
+      registerCleanup: (cleanup) => {
+        stop = cleanup;
+      },
+    });
+    try {
+      await app.request("/status");
+      await app.request("/sites");
+      expect(check).not.toHaveBeenCalled();
+      expect(store.isActivated()).toBe(false);
+      expect((await app.request("/activate", { method: "POST" })).status).toBe(403);
+      expect(
+        (await app.request("/activate", { method: "POST", headers: { Origin: "http://foreign" } }))
+          .status,
+      ).toBe(403);
+      await Promise.all(
+        Array.from({ length: 3 }, () =>
+          app.request("/activate", { method: "POST", headers: { Origin: "http://localhost" } }),
+        ),
+      );
+      expect(check).toHaveBeenCalledTimes(1);
+      expect(store.isActivated()).toBe(true);
+      time += 31 * 24 * hourDuration;
+      store.prune(time);
+      expect(store.isActivated()).toBe(true);
+    } finally {
+      stop();
+      connection.close();
+    }
+    const reopened = connectDatabase(directory, "observo");
+    try {
+      createRoutes({
+        db: reopened.db,
+        origin: "http://localhost",
+        now: () => time,
+        check,
+        registerCleanup: (cleanup) => {
+          stop = cleanup;
+        },
+      });
+      await Promise.resolve();
+      expect(check).toHaveBeenCalledTimes(2);
+    } finally {
+      stop();
+      reopened.close();
+    }
+  });
   it("serves public validated data, rejects writes and unready storage", async () => {
     const { connection } = setup();
     try {
-      const app = createRoutes({ db: connection.db, now: () => now, checksEnabled: false });
+      const app = createRoutes({
+        db: connection.db,
+        now: () => now,
+        origin: "http://localhost",
+        checksDisabled: true,
+        registerCleanup: (cleanup) => cleanups.push(cleanup),
+      });
       const response = await app.request("/sites");
       expect(response.status).toBe(200);
+      expect(
+        (
+          await app.request("/activate", {
+            method: "POST",
+            headers: { Origin: "http://localhost" },
+          })
+        ).status,
+      ).toBe(200);
+      expect(createStore(connection.db, sites).isActivated()).toBe(false);
       expect(response.headers.get("Cache-Control")).toBe("no-store");
       expect(dashboardSchema.parse(await response.json()).sites).toHaveLength(1);
       expect((await app.request("/sites", { method: "POST", body: "{}" })).status).toBe(404);
       expect(
-        (await createRoutes({ db: connection.db, ready: () => false }).request("/sites")).status,
+        (
+          await createRoutes({
+            db: connection.db,
+            origin: "http://localhost",
+            ready: () => false,
+            registerCleanup: (cleanup) => cleanups.push(cleanup),
+          }).request("/sites")
+        ).status,
       ).toBe(503);
     } finally {
       connection.close();

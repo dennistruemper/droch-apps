@@ -36,6 +36,21 @@ describe("compact hourly observations", () => {
   ] as const)("classifies %i failures as %s", (failures, status) => {
     expect(summarize(filled(failures), hour, hour + hourDuration).status).toBe(status);
   });
+  it("uses fresh latest outcomes for Now, including across the hour boundary, and expires stale checks", () => {
+    const latest = {
+      slot: hour - interval,
+      checkedAt: hour - 1000,
+      outcome: "available",
+      reason: "ok",
+      statusCode: 200,
+      durationMs: 1000,
+    } as const;
+    expect(summarize(0, hour, hour, latest).status).toBe("available");
+    expect(summarize(0, hour, hour, { ...latest, outcome: "unreachable" }).status).toBe(
+      "unavailable",
+    );
+    expect(summarize(0, hour, hour + 2 * interval, latest).status).toBe("unknown");
+  });
   it("never calls incomplete coverage available, and distinguishes the running hour", () => {
     const packed = recordSlot(0, hour, "available");
     expect(summarize(packed, hour, hour + hourDuration)).toMatchObject({
@@ -45,7 +60,7 @@ describe("compact hourly observations", () => {
       missing: 11,
     });
     expect(summarize(packed, hour, hour + 2 * interval)).toMatchObject({
-      status: "in-progress",
+      status: "unknown",
       expected: 3,
       missing: 2,
     });

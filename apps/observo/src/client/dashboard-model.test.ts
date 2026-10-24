@@ -6,6 +6,7 @@ const data: Dashboard = { generatedAt: 100, checksEnabled: true, sites: [] };
 describe("dashboard request recovery", () => {
   it("guards duplicate refreshes and stale completions, retaining data after failure", () => {
     const first = update(init(), { kind: "refresh" });
+    expect(first.commands).toEqual([{ kind: "activate", id: 1 }]);
     expect(update(first.model, { kind: "refresh" }).commands).toEqual([]);
     expect(update(first.model, { kind: "loaded", id: 0, data }).model).toBe(first.model);
     const loaded = update(first.model, { kind: "loaded", id: 1, data }).model;

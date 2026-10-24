@@ -3,9 +3,10 @@ import { createAuthRoutes } from "@repo/shared/auth";
 import { readConfiguration, accountPolicy } from "./index.ts";
 
 describe("runtime configuration", () => {
-  it("validates the monitoring switch and enables checks by default", () => {
+  it("permits first-visit activation by default and validates the hard-off override", () => {
     const base = { DATA_DIRECTORY: "/data", APP_ORIGIN: "http://localhost:3000" };
     expect(readConfiguration(base).OBSERVO_CHECKS).toBe(true);
+    expect(readConfiguration({ ...base, OBSERVO_CHECKS: "auto" }).OBSERVO_CHECKS).toBe(true);
     expect(readConfiguration({ ...base, OBSERVO_CHECKS: "false" }).OBSERVO_CHECKS).toBe(false);
     expect(() => readConfiguration({ ...base, OBSERVO_CHECKS: "no" })).toThrow("OBSERVO_CHECKS");
   });

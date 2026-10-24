@@ -1,4 +1,4 @@
-import type { Outcome } from "../contracts/index.ts";
+import type { Latest, Outcome } from "../contracts/index.ts";
 
 export const interval = 5 * 60 * 1000;
 export const hourDuration = 60 * 60 * 1000;
@@ -17,15 +17,19 @@ export function recordSlot(packed: number, time: number, outcome: Outcome): numb
   if (((packed >>> offset) & 3) !== 0) return packed;
   return packed | (codes.indexOf(outcome) << offset);
 }
-export function summarize(packed: number, hour: number, now: number) {
+export function currentStatus(latest: Latest | null, now: number) {
+  if (!latest || now - latest.checkedAt >= interval * 2 || latest.checkedAt > now) return "unknown";
+  return latest.outcome === "available" ? "available" : "unavailable";
+}
+export function summarize(packed: number, hour: number, now: number, latest: Latest | null = null) {
   const slots = readSlots(packed);
   const passed = slots.filter((slot) => slot === "available").length;
   const failed = slots.filter((slot) => slot === "unreachable" || slot === "not-functional").length;
-  const pending = hour === hourStart(now);
+  const pending = now >= hour && now < hour + hourDuration;
   const expected = pending ? Math.min(12, Math.floor((now - hour) / interval) + 1) : 12;
   const missing = slots.slice(0, expected).filter((slot) => slot === "missing").length;
   const status = pending
-    ? "in-progress"
+    ? currentStatus(latest, now)
     : missing > 0
       ? "unknown"
       : failed === 0
@@ -33,5 +37,5 @@ export function summarize(packed: number, hour: number, now: number) {
         : failed > 6
           ? "mostly-unavailable"
           : "degraded";
-  return { slots, passed, failed, missing, expected, status } as const;
+  return { slots, passed, failed, missing, expected, status, current: pending } as const;
 }

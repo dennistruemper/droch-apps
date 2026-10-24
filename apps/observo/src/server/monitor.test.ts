@@ -14,7 +14,9 @@ describe("five-minute scheduler", () => {
     const record = vi.fn();
     const prune = vi.fn();
     const hasSlot = vi.fn().mockReturnValueOnce(true).mockReturnValue(false);
-    const store = { record, prune, hasSlot } as unknown as ReturnType<typeof createStore>;
+    const store = { record, prune, hasSlot, isActivated: () => true } as unknown as ReturnType<
+      typeof createStore
+    >;
     let complete: ((result: Latest) => void) | undefined;
     let signal: AbortSignal | undefined;
     const check = vi.fn((_site, activeSignal: AbortSignal) => {
@@ -23,7 +25,7 @@ describe("five-minute scheduler", () => {
         complete = resolve;
       });
     });
-    const stop = startMonitor({
+    const { stop } = startMonitor({
       store,
       sites,
       check,
@@ -57,11 +59,19 @@ describe("five-minute scheduler", () => {
       record: vi.fn(),
       prune: vi.fn(),
       hasSlot: () => false,
+      isActivated: () => true,
     } as unknown as ReturnType<typeof createStore>;
     let ready = false;
     const onError = vi.fn();
     const check = vi.fn().mockRejectedValue(new Error("browser unavailable"));
-    const stop = startMonitor({ store, sites, check, ready: () => ready, now: Date.now, onError });
+    const { stop } = startMonitor({
+      store,
+      sites,
+      check,
+      ready: () => ready,
+      now: Date.now,
+      onError,
+    });
     expect(check).not.toHaveBeenCalled();
     ready = true;
     await vi.advanceTimersByTimeAsync(interval);

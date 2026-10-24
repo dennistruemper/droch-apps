@@ -419,12 +419,15 @@ browser workflows live in `apps/observo/src/server/sites.ts`; changing a target 
 its success conditions should use a new ID to start fresh history. The first target
 is the Rendsburg-Eckernförde TischtennisLive website.
 
-A scheduler explicitly started by server composition runs immediately and then on
-five-minute UTC boundaries, independently of visitors. It checks migration readiness,
+All environments start dormant. The dashboard sends a same-origin POST to
+`/api/observo/activate` on its first load; an idempotent singleton in SQLite persists
+activation across redeployments, independently of history retention. Reads, health
+checks and other apps do not activate monitoring. Once activated, a scheduler runs
+immediately and then on five-minute UTC boundaries, independently of visitors. It checks migration readiness,
 skips already recorded slots, serializes browser runs, and aborts on shutdown before
 database closure. Missed observations are never backfilled. `OBSERVO_CHECKS=false`
 disables outbound checks for isolated browser test stacks; ordinary runtime defaults
-to enabled. Each run creates and closes a fresh headless Chromium browser/context;
+to first-visit activation (`OBSERVO_CHECKS=auto`; legacy `true` behaves identically). Each run creates and closes a fresh headless Chromium browser/context;
 there are no persistent cookies, screenshots, response bodies or traces.
 
 The TischtennisLive workflow submits the current tokenized human-confirmation form
@@ -447,8 +450,11 @@ duration and safe reason; historical individual diagnostics are discarded.
 
 Complete hours are available when all twelve checks pass, degraded with one to six
 failures, and mostly unavailable with seven to twelve failures. Missing coverage is
-unknown; the running hour is in progress. The dashboard shows 24-hour slices with
-five-minute drill-down, local timestamps/timezone, 30-day navigation and automatic
-refresh/recovery. A fixed neutral history panel uses green/amber/red with symbols,
+unknown. The current hour shows the latest result, becoming unknown after ten minutes
+without a fresh observation. The dashboard shows a 30-day hourly grid using local
+calendar days from midnight to midnight, including 23/25-hour clock-change days.
+Future cells are muted; mobile dates expand to reveal hours. Five-minute drill-down
+remains available. Data refreshes every two minutes and on returning to the page;
+there is no manual refresh button or footer. A fixed neutral history panel uses green/amber/red with symbols,
 labels and counts independently of the surrounding Drochsign theme. A feature-local
 model/message/update/command flow guards duplicate refreshes and stale results.

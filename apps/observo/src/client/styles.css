@@ -4,7 +4,6 @@
   font-size: 0.75rem;
 }
 .observo-heading,
-.observo-controls,
 .observo-range {
   display: flex;
   justify-content: space-between;
@@ -26,14 +25,6 @@
 .observo-latest {
   font-size: 0.85rem;
 }
-.observo-controls [role="group"] {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-.observo-controls button {
-  padding: 0.5rem 0.7rem;
-}
 /* A deliberate fixed palette, scoped to monitoring history, independent of themes. */
 .observo-status-panel {
   --color-bg: #f8fafc;
@@ -51,8 +42,8 @@
 }
 .observo-hours {
   display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 0.35rem;
+  grid-template-columns: repeat(var(--hours), minmax(0, 1fr));
+  gap: 0.18rem;
 }
 .observo-hours button {
   display: flex;
@@ -61,11 +52,11 @@
   justify-content: center;
   gap: 0.15rem;
   padding: 0.5rem 0;
-  min-height: 3.25rem;
+  min-height: 2.5rem;
   border: 1px solid #64748b;
   color: #172033;
   border-radius: 0.2rem;
-  font-size: 0.68rem;
+  font-size: 0.52rem;
   box-shadow: none;
 }
 .observo-hours button:hover,
@@ -85,18 +76,14 @@
   background: #ffe7a3;
   color: #624400;
 }
-.observo-status-panel [data-status="mostly-unavailable"] {
+.observo-status-panel [data-status="mostly-unavailable"],
+.observo-status-panel [data-status="unavailable"] {
   background: #ffd1d1;
   color: #761d27;
 }
 .observo-status-panel [data-status="unknown"] {
   background: repeating-linear-gradient(135deg, #f8fafc, #f8fafc 4px, #e2e8f0 4px, #e2e8f0 6px);
   color: #334155;
-}
-.observo-status-panel [data-status="in-progress"] {
-  background: #dbeafe;
-  color: #1e3a5f;
-  border-style: dashed;
 }
 .observo-legend {
   display: flex;
@@ -110,7 +97,7 @@
 .observo-legend li {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.18rem;
 }
 .observo-legend i {
   display: inline-block;
@@ -155,10 +142,95 @@
   .observo-status-panel {
     padding: 0.65rem;
   }
+
+  .observo-slots {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.observo-history {
+  display: grid;
+  gap: 0.4rem;
+}
+.observo-day {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #172033;
+}
+.observo-day summary {
+  font-size: 0.78rem;
+  padding: 0.2rem 0;
+  cursor: pointer;
+}
+.observo-status-panel [data-status="upcoming"] {
+  background: #e2e8f0;
+  color: #64748b;
+  opacity: 0.55;
+}
+@media (max-width: 600px) {
   .observo-hours {
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
-  .observo-slots {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .observo-hours button {
+    font-size: 0.7rem;
+  }
+}
+
+@media (min-width: 601px) {
+  .observo-history {
+    gap: 0.2rem;
+  }
+  .observo-day > summary {
+    float: left;
+    width: 5.5rem;
+    border: 0;
+    padding: 0.15rem 0;
+    font-size: 0.7rem;
+    line-height: 1.5rem;
+  }
+  .observo-day .observo-hours {
+    margin-left: 5.75rem;
+  }
+  .observo-hours button {
+    min-height: 1.7rem;
+    padding: 0;
+  }
+  .observo-hours button > span {
+    display: none;
+  }
+  .observo-hours button b {
+    font-size: 0.75rem;
+  }
+}
+.observo-hours [data-current="true"] {
+  outline: 2px solid #172033;
+  outline-offset: 1px;
+}
+.observo-axis {
+  display: grid;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  gap: 0.18rem;
+  margin: 0 0 0.4rem 5.75rem;
+  font-size: 0.58rem;
+  text-align: center;
+}
+@media (max-width: 600px) {
+  .observo-axis {
+    display: none;
+  }
+}
+
+.observo-day > .observo-hours {
+  padding: 0;
+}
+.observo-day[open] > summary {
+  margin-bottom: 0;
+  border-bottom: 0;
+}
+@media (min-width: 601px) {
+  .observo-day > summary::after {
+    display: none;
   }
 }

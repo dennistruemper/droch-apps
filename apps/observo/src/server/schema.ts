@@ -19,3 +19,9 @@ export const latest = sqliteTable("latest", {
   statusCode: integer("status_code"),
   durationMs: integer("duration_ms").notNull(),
 });
+
+// Absence means dormant. This singleton is independent of history retention.
+export const monitoring = sqliteTable("monitoring", {
+  id: integer("id").primaryKey(),
+  activatedAt: integer("activated_at").notNull(),
+});

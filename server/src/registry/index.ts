@@ -1,9 +1,7 @@
 import { appDefinition as schlezaz } from "@repo/schlezaz/contracts";
-
 import {
   appDefinition as observo,
   createRoutes as createObservoRoutes,
-  start as startObservo,
   type ObservoOptions,
 } from "@repo/observo/server";
 import { appDefinition as poker, createRoutes as createPokerRoutes } from "@repo/poker/server";
@@ -14,8 +12,7 @@ export const applications = [
   { ...poker, createRoutes: createPokerRoutes },
   { ...words, createRoutes: createWordsRoutes },
   schlezaz,
-
-  { ...observo, createRoutes: createObservoRoutes, start: startObservo },
+  { ...observo, createRoutes: createObservoRoutes },
 ] as const;
 
 export function validateApplications(apps: readonly { id: string }[]) {

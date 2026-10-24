@@ -2,7 +2,7 @@ import { and, asc, eq, lt, notInArray } from "drizzle-orm";
 import type { connectDatabase } from "@repo/shared/database";
 import { hourStart, oldestHour, recordSlot, slotStart } from "../domain/index.ts";
 import { latestSchema, type Latest } from "../contracts/index.ts";
-import { hours, latest } from "./schema.ts";
+import { hours, latest, monitoring } from "./schema.ts";
 import type { Site } from "./sites.ts";
 
 export function createStore(db: ReturnType<typeof connectDatabase>["db"], sites: readonly Site[]) {
@@ -26,6 +26,19 @@ export function createStore(db: ReturnType<typeof connectDatabase>["db"], sites:
   }
   return {
     prune,
+    isActivated() {
+      return !!db.select().from(monitoring).where(eq(monitoring.id, 1)).get();
+    },
+    activate(now: number) {
+      return (
+        db
+          .insert(monitoring)
+          .values({ id: 1, activatedAt: now })
+          .onConflictDoNothing()
+          .returning({ id: monitoring.id })
+          .all().length > 0
+      );
+    },
     hasSlot(siteId: string, time: number) {
       const row = db
         .select()

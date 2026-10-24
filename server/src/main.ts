@@ -89,7 +89,7 @@ const applicationOptions = (id: string): ApplicationOptions => {
     origin: configuration.APP_ORIGIN,
     cookieName: configuration.SESSION_COOKIE_NAME,
     secureCookies: configuration.NODE_ENV === "production",
-    checksEnabled: configuration.OBSERVO_CHECKS,
+    checksDisabled: !configuration.OBSERVO_CHECKS,
     registerCleanup: (cleanup) => {
       cleanupHandlers.add(cleanup);
     },
@@ -108,9 +108,6 @@ const app = createApplication({
   readFrontend,
   applicationOptions,
 });
-for (const application of applications) {
-  if ("start" in application) application.start(applicationOptions(application.id));
-}
 const listener = getRequestListener(app.fetch);
 server.on("request", (request, response) => {
   const originalUrl = request.url;

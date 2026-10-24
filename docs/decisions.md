@@ -394,5 +394,17 @@ Implementation defaults: one sequential browser run per target/slot, a fresh con
 per run, same-origin requests, bounded waits, no retries within a recorded slot, and
 no backfill after outages. Complete-hour thresholds are zero failures for available,
 one to six for degraded, seven to twelve for mostly unavailable. Missing data stays
-unknown, and the running hour remains in progress. Use the proposed fixed-color
+unknown. The current hour uses the latest check, with a ten-minute freshness limit. Use the proposed fixed-color
 status panel with labels/symbols, while surrounding UI follows Drochsign themes.
+
+The user chose identical first-visit activation for every environment: initially no
+outbound checks, then permanent activation in that environment's SQLite after the
+first rendered dashboard visit. Redeployments preserve activation. Preview visits
+also activate monitoring; most previews never visit this app. A test-only hard-off
+remains available. Activation is separate from the 30-day history cleanup.
+
+The user chose a 30-day grid with hourly cells, each row a local calendar day from
+midnight to midnight, rather than clicking through rolling 24-hour slices. Clock
+changes preserve repeated/skipped hours; mobile dates expand for usable hour targets.
+Remove the manual refresh control and footer. Refresh dashboard data automatically
+every two minutes and when the page becomes visible again; checks remain five-minute.

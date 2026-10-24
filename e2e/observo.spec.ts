@@ -8,7 +8,11 @@ test("Observo shows public history, slot details, recovery, and a theme-independ
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  const now = hourStart(Date.now()) + 2 * interval;
+  const now = Date.parse("2026-10-24T12:10:00Z");
+  await page.clock.install({ time: now });
+  await page.clock.pauseAt(now + 1000);
+  let requests = 0;
+  let outcome: "available" | "unreachable" = "available";
   let healthy = 0,
     degraded = 0,
     down = 0;
@@ -18,8 +22,9 @@ test("Observo shows public history, slot details, recovery, and a theme-independ
     down = recordSlot(down, now + i * interval, i < 7 ? "unreachable" : "available");
   }
   let fail = true;
-  await page.route("**/api/observo/sites", (route) =>
-    fail
+  await page.route("**/api/observo/*", (route) => {
+    requests++;
+    return fail
       ? route.fulfill({ status: 503 })
       : route.fulfill({
           json: {
@@ -34,8 +39,8 @@ test("Observo shows public history, slot details, recovery, and a theme-independ
                 latest: {
                   slot: now,
                   checkedAt: now,
-                  outcome: "available",
-                  reason: "ok",
+                  outcome,
+                  reason: outcome === "available" ? "ok" : "network-error",
                   statusCode: 200,
                   durationMs: 1500,
                 },
@@ -47,27 +52,32 @@ test("Observo shows public history, slot details, recovery, and a theme-independ
               },
             ],
           },
-        }),
-  );
+        });
+  });
   await page.goto("/observo/");
   await expect(page.getByRole("heading", { name: "Is it working?" })).toBeVisible();
   await expect(page.getByRole("alert")).toBeVisible();
   fail = false;
-  await page.getByRole("button", { name: "Refresh", exact: true }).click();
-  const cells = page
-    .getByRole("group", { name: "Hourly availability", exact: true })
-    .getByRole("button");
-  await expect(cells).toHaveCount(24);
-  await expect(page.locator('button[data-status="available"]')).toHaveCount(1);
+  await page.clock.fastForward(120_000);
+  const groups = page.getByRole("group", { name: /^Hourly availability ·/ });
+  await expect(groups).toHaveCount(30);
+  await expect(groups.first().getByRole("button")).toHaveCount(24);
+  await expect(page.getByRole("button", { name: "Refresh", exact: true })).toHaveCount(0);
+  await expect(page.locator("footer")).toHaveCount(0);
+  await expect(page.locator('button[data-current="true"]')).toHaveAttribute(
+    "data-status",
+    "available",
+  );
+  await expect(page.locator('button[data-status="available"]:not([data-current])')).toHaveCount(1);
   await expect(page.locator('button[data-status="degraded"]')).toHaveCount(1);
   await expect(page.locator('button[data-status="mostly-unavailable"]')).toHaveCount(1);
-  await page.locator('button[data-status="available"]').click();
+  await page.locator('button[data-status="available"]:not([data-current])').click();
   await expect(
     page.getByRole("list", { name: "Five-minute checks" }).getByRole("listitem"),
   ).toHaveCount(12);
   await expect(page.getByText("12 passed · 0 failed · 0 missing", { exact: true })).toBeVisible();
   const palette = () =>
-    page.locator('button[data-status="available"]').evaluate((element) => ({
+    page.locator('button[data-status="available"]:not([data-current])').evaluate((element) => ({
       background: getComputedStyle(element).backgroundColor,
       color: getComputedStyle(element).color,
     }));
@@ -76,9 +86,27 @@ test("Observo shows public history, slot details, recovery, and a theme-independ
   await page.getByLabel("Your theme").selectOption("ink");
   await page.getByRole("button", { name: "Close settings" }).click();
   expect(await palette()).toEqual(original);
-  await page.getByRole("button", { name: "← Older" }).click();
-  await expect(page.getByRole("button", { name: "Newer →" })).toBeEnabled();
-  await page.getByRole("button", { name: "Latest", exact: true }).click();
+  const before = requests;
+  await page.clock.fastForward(119_000);
+  expect(requests).toBe(before);
+  outcome = "unreachable";
+  await page.clock.fastForward(1000);
+  await expect(page.locator('button[data-current="true"]')).toHaveAttribute(
+    "data-status",
+    "unavailable",
+  );
+  outcome = "available";
+  await page.clock.fastForward(120_000);
+  await expect(page.locator('button[data-current="true"]')).toHaveAttribute(
+    "data-status",
+    "available",
+  );
+  fail = true;
+  await page.clock.fastForward(360_000);
+  await expect(page.locator('button[data-current="true"]')).toHaveAttribute(
+    "data-status",
+    "unknown",
+  );
   await page.setViewportSize({ width: 320, height: 640 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.locator('button[data-status="mostly-unavailable"]').click();

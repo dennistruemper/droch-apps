@@ -172,20 +172,19 @@ inspected, with no browser errors. Hosted preview verification remains to be don
   readiness, restart recovery, bounded sequential work and cancellation on shutdown.
 - Dedicated SQLite file/migrations, one compact row per hour, latest diagnostics only,
   automatic 30-day retention, and cleanup for deconfigured sites.
-- Theme-independent status panel, accessible hourly timeline/five-minute drill-down,
-  local timezone display, 30-day browsing and feature-local client transitions.
+- Theme-independent 30-day hourly grid/five-minute drill-down, local calendar days,
+  mobile date expansion and feature-local client transitions.
+- Persistent first-visit activation in every environment, latest-check current status,
+  two-minute automatic data refresh and no footer or manual refresh control.
 - Verify aggregation thresholds, privacy/public reads, duplicate/late results, pruning,
   scheduler recovery, a realistic local browser fixture, mobile layout and themes.
 
 Implemented and verified locally: `pnpm check` passes type checking, boundaries,
-formatting and 162 tests in the isolated Observo worktree. Four targeted Playwright checks pass for Observo and the
-existing app shells. The checker fixture requires a fresh confirmation token and
-rejects HTTP-200 pages without standings rows. A live run through the implemented
-checker in headless Chrome passes the actual TischtennisLive workflow (HTTP 200,
-about 4.3 seconds). The production Docker image builds, and an isolated container
-without external networking passes migrations, public API and bundled-dashboard
-rendering using its installed Chromium. Desktop/mobile views are inspected.
-
-Deployment follow-up: verify the browser workflow from the hosted server's network.
-The approved local live test reaches league standings after one confirmation click;
-that does not establish whether the site permits the production server's traffic.
+formatting and 174 tests in the isolated Observo worktree. Targeted Playwright checks
+cover the 30-day grid, two-minute automatic recovery, fresh/current/stale states,
+mobile layout, themes, app shells, and a realistic browser-check fixture. Calendar
+tests cover Berlin clock changes and UTC bucket reassembly in fractional timezones.
+Activation tests prove reads remain dormant, concurrent visits start one check,
+activation survives database reopening and retention, and the test hard-off stays off.
+All four apps build. Hosted checker access was previously verified successfully;
+verify the updated dashboard after deployment.
