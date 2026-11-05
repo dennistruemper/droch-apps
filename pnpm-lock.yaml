@@ -54,6 +54,21 @@ importers:
         specifier: 5.0.3
         version: 5.0.3(@types/node@24.19.1)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.2)(tsx@4.23.15))
 
+  apps/enigmo:
+    dependencies:
+      '@repo/shared':
+        specifier: workspace:*
+        version: link:../../shared
+      '@solidjs/web':
+        specifier: 2.0.0-rc.13
+        version: 2.0.0-rc.13(solid-js@2.0.0-rc.13)
+      solid-js:
+        specifier: 2.0.0-rc.13
+        version: 2.0.0-rc.13
+      zod:
+        specifier: 4.6.5
+        version: 4.6.5
+
   apps/observo:
     dependencies:
       '@repo/shared':
@@ -143,6 +158,9 @@ importers:
       '@hono/node-server':
         specifier: 2.1.3
         version: 2.1.3(hono@4.13.12)
+      '@repo/enigmo':
+        specifier: workspace:*
+        version: link:../apps/enigmo
       '@repo/observo':
         specifier: workspace:*
         version: link:../apps/observo

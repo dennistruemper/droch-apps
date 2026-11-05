@@ -1,3 +1,4 @@
+import { appDefinition as enigmo } from "@repo/enigmo/contracts";
 import { appDefinition as schlezaz } from "@repo/schlezaz/contracts";
 import {
   appDefinition as observo,
@@ -12,6 +13,7 @@ export const applications = [
   { ...poker, createRoutes: createPokerRoutes },
   { ...words, createRoutes: createWordsRoutes },
   schlezaz,
+  enigmo,
   { ...observo, createRoutes: createObservoRoutes },
 ] as const;
 
