@@ -49,6 +49,13 @@ describe("HTTP composition", () => {
     expect(databaseDefinitions.map(({ id }) => id)).not.toContain("schlezaz");
     expect(await (await composed.request("/")).text()).toContain('href="/schlezaz/"');
   });
+  it("serves Enigmo QR targets without API or database provisioning", async () => {
+    expect((await app.request("/enigmo")).headers.get("location")).toBe("/enigmo/");
+    expect(await (await app.request("/enigmo/?code=YMIR")).text()).toBe("frontend");
+    expect((await app.request("/api/enigmo/status")).status).toBe(404);
+    expect(databaseDefinitions.map(({ id }) => id)).not.toContain("enigmo");
+    expect(await (await app.request("/")).text()).toContain('href="/enigmo/"');
+  });
   it("keeps liveness separate from database readiness", async () => {
     const unready = createApplication({
       ready: async () => {
