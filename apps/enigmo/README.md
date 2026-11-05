@@ -31,7 +31,7 @@ Do not put credentials or other secrets in puzzle definitions.
 
 Nine questions cover Star Trek, The Hitchhiker's Guide to the Galaxy, immutable
 Linux, PC gaming, Pokémon, Magic, 3D printing, Ymir and knitting. The correct
-letters are `GINGER RAN`; the final word is `GARNERING`, combining the
+letters are `ER GING RAN`; the final word is `GARNERING`, combining the
 Magic evening with yarn/knitting. The final message points to the player's wife
 without naming her directly; the prize is handed over in person.
 

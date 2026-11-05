@@ -78,10 +78,10 @@ describe("Enigmo content and puzzle transitions", () => {
     );
     expect(
       parseProgress(
-        { answers: { trek: "G", pokemon: "X", removed: "R" }, solution: "gar" },
+        { answers: { trek: "E", pokemon: "X", removed: "R" }, solution: "gar" },
         puzzle,
       ),
-    ).toEqual({ answers: { trek: "G" }, solution: "gar" });
+    ).toEqual({ answers: { trek: "E" }, solution: "gar" });
     expect(init("YMIR", () => ({ answers: {}, solution: "GARNERING" }))).toMatchObject({
       feedback: "none",
     });

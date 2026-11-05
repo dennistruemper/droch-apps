@@ -1,12 +1,12 @@
 import { expect, test } from "@playwright/test";
 
 const correct = {
-  trek: "G",
-  galaxy: "I",
-  linux: "N",
-  gaming: "G",
-  pokemon: "E",
-  magic: "R",
+  trek: "E",
+  galaxy: "R",
+  linux: "G",
+  gaming: "I",
+  pokemon: "N",
+  magic: "G",
   printing: "R",
   ymir: "A",
   knitting: "N",
@@ -32,13 +32,13 @@ test("Enigmo code entry, answering, reload, final word and treasure on a phone",
   for (const [name, value] of Object.entries(correct)) {
     if (name !== "trek") await page.locator(`input[name="${name}"][value="${value}"]`).check();
   }
-  await expect(page.locator(".letter-slots")).toHaveText("KINGERRAN");
+  await expect(page.locator(".letter-slots")).toHaveText("KRGINGRAN");
   await page.getByLabel("Dein Lösungswort", { exact: true }).fill("garnering");
   await page.getByRole("button", { name: "Lösung prüfen" }).click();
   await expect(page.locator(".feedback")).toContainText("Prüfe deine Antworten");
   await expect(page.locator(".treasure")).toHaveCount(0);
-  await page.locator('input[name="trek"][value="G"]').check();
-  await expect(page.locator(".letter-slots")).toHaveText("GINGERRAN");
+  await page.locator('input[name="trek"][value="E"]').check();
+  await expect(page.locator(".letter-slots")).toHaveText("ERGINGRAN");
   await page.getByLabel("Dein Lösungswort", { exact: true }).fill(" gAr neR iNg ");
   await page.getByRole("button", { name: "Lösung prüfen" }).click();
   await expect(page.getByRole("heading", { name: "Finde den Schatzmeister." })).toBeVisible();
@@ -61,7 +61,7 @@ test("Enigmo handles unknown codes, malformed saves and unavailable storage", as
   await page.goto("/enigmo/?code=unknown");
   await expect(page.getByRole("heading", { name: "Keine Spur gefunden." })).toBeVisible();
   await page.getByRole("link", { name: "Anderen Code eingeben" }).click();
-  await page.evaluate(() => localStorage.setItem("droch:enigmo:YMIR:v3", "{broken"));
+  await page.evaluate(() => localStorage.setItem("droch:enigmo:YMIR:v4", "{broken"));
   await page.goto("/enigmo/?code=ymir");
   await expect(page.locator(".letter-slots")).toHaveText("_________");
   await page.evaluate(() => {
@@ -69,7 +69,7 @@ test("Enigmo handles unknown codes, malformed saves and unavailable storage", as
       throw new Error("Disabled");
     };
   });
-  await page.locator('input[name="trek"][value="G"]').check();
-  await expect(page.locator(".letter-slots")).toHaveText("G________");
+  await page.locator('input[name="trek"][value="E"]').check();
+  await expect(page.locator(".letter-slots")).toHaveText("E________");
   await expect(page.getByRole("status").filter({ hasText: "Dein Browser kann" })).toBeVisible();
 });

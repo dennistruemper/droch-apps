@@ -1,10 +1,10 @@
 import type { Puzzle } from "./index.ts";
 
-// Correct letters spell GINGER RAN, an anagram of the final word GARNERING.
+// Correct letters spell ER GING RAN, an anagram of the final word GARNERING.
 export const puzzles = [
   {
     code: "YMIR",
-    revision: 3,
+    revision: 4,
     title: "Die neun Spuren",
     introduction:
       "Eine kleine Expedition durch vertraute Welten. Wähle pro Frage eine Antwort und sammle ihren Buchstaben. Die Buchstaben stehen noch nicht in der richtigen Reihenfolge. Am Ende wartet ein Wortspiel – und danach ein Schatz.",
@@ -20,23 +20,23 @@ export const puzzles = [
         text: "Spitze Ohren, ein hochgezogener Augenbrauenbogen und ein sehr logischer Blick: Zu welchem Volk gehört Spocks Vater?",
         options: [
           { letter: "K", text: "Klingonen" },
-          { letter: "G", text: "Vulkanier" },
+          { letter: "E", text: "Vulkanier" },
           { letter: "S", text: "Ferengi" },
           { letter: "T", text: "Borg" },
         ],
-        answer: "G",
+        answer: "E",
       },
       {
         id: "galaxy",
         topic: "02 / Keine Panik",
         text: "Deep Thought hat lange nachgedacht. Welche Antwort liefert der Computer auf die große Frage nach dem Leben, dem Universum und dem ganzen Rest?",
         options: [
-          { letter: "I", text: "42" },
+          { letter: "R", text: "42" },
           { letter: "B", text: "Eine Tasse Tee" },
           { letter: "M", text: "404" },
           { letter: "Z", text: "Ein Handtuch" },
         ],
-        answer: "I",
+        answer: "R",
       },
       {
         id: "linux",
@@ -45,13 +45,13 @@ export const puzzles = [
         options: [
           { letter: "O", text: "Nach der Installation gibt es keine Updates mehr." },
           {
-            letter: "N",
+            letter: "G",
             text: "Die Systembasis ist im normalen Betrieb schreibgeschützt; Updates ersetzen sie als zusammenhängenden Stand.",
           },
           { letter: "L", text: "Auch persönliche Dateien dürfen nie verändert werden." },
           { letter: "U", text: "Das Hintergrundbild lässt sich nur mit root-Rechten ändern." },
         ],
-        answer: "N",
+        answer: "G",
       },
       {
         id: "gaming",
@@ -60,10 +60,10 @@ export const puzzles = [
         options: [
           { letter: "D", text: "STRG, ALT, ENTF, ESC" },
           { letter: "H", text: "Q, E, R, T" },
-          { letter: "G", text: "W, A, S, D" },
+          { letter: "I", text: "W, A, S, D" },
           { letter: "F", text: "F1, F2, F3, F4" },
         ],
-        answer: "G",
+        answer: "I",
       },
       {
         id: "pokemon",
@@ -71,11 +71,11 @@ export const puzzles = [
         text: "Ein wildes Pikachu erscheint! Welchen Typ hat dieses gelbe Pokémon normalerweise?",
         options: [
           { letter: "P", text: "Feuer" },
-          { letter: "E", text: "Elektro" },
+          { letter: "N", text: "Elektro" },
           { letter: "C", text: "Pflanze" },
           { letter: "V", text: "Wasser" },
         ],
-        answer: "E",
+        answer: "N",
       },
       {
         id: "magic",
@@ -84,10 +84,10 @@ export const puzzles = [
         options: [
           { letter: "W", text: "Insel" },
           { letter: "J", text: "Gebirge" },
-          { letter: "R", text: "Wald" },
+          { letter: "G", text: "Wald" },
           { letter: "Q", text: "Ebene" },
         ],
-        answer: "R",
+        answer: "G",
       },
       {
         id: "printing",

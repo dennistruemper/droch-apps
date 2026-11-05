@@ -464,7 +464,6 @@ who awards the prize in person. Implementation defaults require correct answers
 as well as the final word; whitespace and case do not affect word validation.
 
 The intermediate anagram may contain multiple German or English words and must
-be sufficiently distinct from the final answer. The correct option letters now spell GINGER RAN
-(English: “Ginger rannte”, using Ginger as a name), with GARNERING remaining the
-final wordplay. Puzzle revision 3 separates the new letter assignments from
-previous browser saves.
+be sufficiently distinct from the final answer. The correct option letters spell
+ER GING RAN, with GARNERING remaining the final wordplay. The user selected this German phrase to replace GINGER RAN. Puzzle
+revision 4 separates the new letter assignments from previous browser saves.
