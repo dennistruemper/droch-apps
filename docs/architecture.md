@@ -1,6 +1,14 @@
 # Architecture
 
-The foundation, poker, email-code accounts, and Vortoj gameplay with SSE are implemented.
+Shared infrastructure and email-code accounts are implemented. App behavior and
+verification history live in the app directories:
+
+- [Poker](../apps/poker/AGENTS.md)
+- [Vortoj](../apps/vortoj/AGENTS.md)
+- [Schlezaz](../apps/schlezaz/AGENTS.md)
+- [Observo](../apps/observo/AGENTS.md)
+- [Enigmo](../apps/enigmo/AGENTS.md)
+
 See [decisions](decisions.md) for fixed choices versus proposed defaults.
 
 ## Stack
@@ -45,13 +53,13 @@ development stacks. Worktree identity coverage remains in the ordinary unit test
 
 ```text
 apps/
-  poker/                 # one workspace package
+  <app>/                 # one workspace package per app
+    AGENTS.md            # scoped contributor rules and local doc links
+    docs/                # app architecture, decisions and implementation status
     src/client/
-    src/server/
+    src/server/          # optional; browser-only apps omit server/storage
     src/contracts/
     src/domain/
-  vortoj/                # same internal structure
-  schlezaz/              # browser-only generator: client, contracts, domain
 server/                  # backend entry point, app registration, composition
 shared/
   src/auth/              # server-only account API and schema
@@ -79,36 +87,29 @@ with explicit persistence, clock, randomness, and external service dependencies.
 Expected rule failures are handled at the HTTP boundary; runtime schemas validate external data.
 
 New client features with coupled state or asynchronous workflows use feature-local
-typed models and messages from the beginning. The Vortoj account, lobby, tile editor and
-room provide the reference implementations. They use typed models and message
-unions. Pure update functions return models and commands; explicit adapters execute
-HTTP, confirmation, randomness and browser operations. A synchronous current model
-orders transitions independently of Solid's deferred rendering. Request IDs reject
-stale completions; room snapshot versions protect drafts from outdated updates.
-Removed/expired room states cannot be revived by in-flight responses. Editor rows
-have stable keys to preserve focus while model-owned inputs change. Board geometry
-and focus stay browser-local, and simple independent UI controls retain signals.
-The lobby model handles atomic collection loads and pending room creation; its
-checkbox and editor visibility remain local controls. Failed collection refreshes
-retain previous data and propagate to the tile editor. Creation ignores repeated
-submissions while pending or navigating. Approval commands explicitly describe
-show, close or keep, leaving the room adapter to execute dialog operations.
+typed models, discriminated messages and pure updates returning models and explicit
+commands. Adapters execute effects and validate responses. Synchronous dispatch,
+request IDs and server versions guard ordering, stale completions and disposal.
+Simple independent controls and browser layout state can stay local to the view.
+See [the contributor rules](../AGENTS.md#client-state-style) for the shared policy
+and [Vortoj's examples](../apps/vortoj/docs/architecture.md#client-state-reference-implementations)
+when an implementation reference is needed.
 
 ## Routing and adding apps
 
 ```text
-/poker/          poker frontend
-/vortoj/          word-game frontend
-/schlezaz/        browser-only random-choice frontend
+/<app>/          app frontend
 /api/auth/       shared account API
-/api/poker/      poker commands, queries, and event stream
-/api/vortoj/      word-game commands, queries, and event stream
+/api/<app>/      optional app commands, queries and event stream
 ```
 
 One domain and one application ingress. A typed registry supplies app IDs, URL
 prefixes, and frontend build locations. Explicit server registration lives in one
 composition file. Build and static-serving configuration derive from registration
 rather than maintaining separate app lists.
+Registry entries without server routes still participate in builds and hosting,
+but do not provision a database, migrations or accounts. Only persisted apps own
+SQLite files. Consult the registry for the current app inventory.
 
 Each frontend configures its router and asset base for its prefix. SPA fallbacks are
 scoped to the appropriate app. Unknown app paths, API endpoints, and missing assets
@@ -121,22 +122,20 @@ No extra DNS, domains, Coolify resources, or per-app ingress rules.
 
 Clients submit commands over HTTP. The server authorizes and validates them, commits
 the resulting state, and then notifies connected clients over SSE. Connections carry
-authorized snapshots and versioned updates. Reconnection reloads authoritative state;
-Poker updates carry full snapshots, so version gaps are safe; older snapshots are ignored.
+authorized snapshots and versioned updates. Reconnection reloads authoritative state.
 Periodic snapshots and browser visibility changes reconcile missed updates. Account or room access must be checked on
 event streams as well as commands.
 
-One backend process owns `auth.sqlite`, `poker.sqlite`, and `vortoj.sqlite` under
+One backend process owns `auth.sqlite` and each persisted app's `<app>.sqlite` under
 `DATA_DIRECTORY`. Every persisted app and auth owns its table declarations, queries, and
 migration history (`migrations/<id>/`). Shared database infrastructure opens files
 through better-sqlite3/Drizzle, enables WAL and foreign keys, sets a busy timeout,
 and applies migrations. Native-driver binaries are built for the image platform.
-Poker owns rooms and participants. Auth owns users, verification codes, and sessions.
-Vortoj owns rooms, members, saved tile sets, and command receipts. Its room record holds
-an immutable tile-set copy and durable game state; private JSON is never sent directly.
+Auth owns users, verification codes, and sessions. App-specific table ownership
+is documented in each app's architecture.
 
 App code does not open or attach another module's file. The backend resolves
-sessions through the public in-process auth API and pass stable user IDs to app
+sessions through the public in-process auth API and passes stable user IDs to app
 services. Apps check their own room/match permissions. User IDs are never reused;
 cross-file references cannot use foreign keys. Account deletion must preserve
 coherent game history through an explicit policy. No account-deletion API exists yet.
@@ -148,29 +147,8 @@ SQLite holds durable state. Connections and presence can be transient. Online
 notifications are not the durable record of a move. Handle subscription/snapshot
 races and missed notifications with version checks and reconciliation.
 
-Word-game moves include a unique command ID and expected match version. Acceptance
-is atomic so simultaneous submissions, retries, and stale clients cannot duplicate
-a move or overwrite another turn. A move history and current match state are stored;
-this does not require a general event-sourcing framework.
-
-Unrevealed votes and opponents' tile racks are filtered by the server, not merely
-hidden by UI. Poker room membership uses anonymous credentials. A worktree-specific,
-HttpOnly guest cookie is scoped to `/api/poker`, SameSite Lax, and Secure in production.
-POST requests require the configured origin. Room membership authorizes both reads
-and SSE, and every member can reveal/reset the round. Invite links permit joining,
-not reading existing votes without membership. Guest identity lasts 30 days from its
-last accepted command; clearing cookies loses membership; the participant may rejoin.
-
-Room commands include the expected round. Synchronous SQLite transactions apply
-votes, reveal, and reset together with monotonically increasing snapshot versions.
-Rooms expire after 30 days without joining, voting, revealing, or resetting. Requests
-lazily remove expired rooms and their memberships; views/streams do not extend expiry.
-The 50-participant limit and 4 KiB request-body limit bound individual room requests.
-SSE subscriptions authorize before opening, subscribe before the initial snapshot,
-and use bounded queues with 10-second full-snapshot reconciliation. Shutdown closes
-streams before database connections. Expired streams notify clients and close.
-
-Storage readiness blocks poker requests during pending migrations. Expected failures
+Private app state is filtered by the server for every HTTP and SSE payload.
+Storage readiness blocks app requests during pending migrations. Expected failures
 have actionable messages; unexpected failures return a reference and log error names
 and codes without SQL parameters, request bodies, or credentials.
 
@@ -195,81 +173,15 @@ verification internals.
 
 Account creation happens on first verification. Shared identity
 does not imply access to every app or match; app authorization remains explicit.
-Poker has a separate guest flow with no registration requirement.
 
 Codes have ten-minute expiry, five verification attempts, a one-minute resend interval,
 and five requests per address per hour. Thirty active addresses per minute bound mail
 requests across addresses. Failed deliveries invalidate the code but retain all resend
 and hourly/global throttling records. Consumption and attempt tracking commit synchronously.
 The auth cookie is scoped to `/api`; sessions expire after 30 days and logout revokes
-the digest. Auth APIs, game reads and game streams require active sessions; streams
-recheck them before sending. Emails never appear in game snapshots.
-
-## Vortoj rules and data
-
-English and German presets each contain 100 tiles, including two zero-point jokers.
-They use Vortoj's adjusted common-letter distributions; the exact changes are recorded
-in [decisions](decisions.md). Users can copy or replace them with saved custom sets.
-Room creation freezes the distribution, so preset changes do not alter existing games.
-
-Each account retains up to 100 rooms it created. Creation at the limit deletes the
-least recently updated owned room, finished or unfinished, including memberships
-and command receipts. Deletion and creation share one transaction, so failures
-roll back pruning. Successful new joins and game commands update a durable timestamp;
-reads, streams, duplicate joins, retries and rejected commands do not. Lists sort
-by updated time descending, with creation time and ID as stable tie-breakers;
-pruning uses the reverse order. A Show finished games checkbox filters a single activity-ordered list;
-checking it includes finished games and shows the retention explanation. Removal applies to all players. Existing rooms'
-timestamps are backfilled from their latest game history or creation time.
-
-Two to four players join through a room link after sign-in. Membership closes when the
-creator starts the game. The creator plays first. Seven tiles are dealt per player on
-an empty 15×15 board. Moves must form a connected line, cover the centre on the first
-turn, and create words of at least two tiles. New tiles activate letter/word premiums;
-playing seven tiles adds 50 points. `*` is a zero-point joker assigned to a letter in
-the selected set, fixed when accepted.
-
-All words formed by a move, including cross-words, receive independent opponent votes.
-The author cannot vote. Each word needs `ceil(opponents / 2)` approvals: one approval
-with two or three players, two with four. A move commits when every word meets its
-threshold; it is rejected as soon as any word can no longer meet its threshold.
-Rejected moves leave the rack and board unchanged and end the turn. There is no
-external word validation, vote timeout, or turn deadline.
-
-Exchanges require seven tiles left in the bag, draw before returned tiles re-enter,
-and end the turn. Games end when the bag is empty and a player empties their rack,
-or after twice the player count in consecutive scoreless turns. Remaining tile points
-are deducted; a player who goes out receives opponents' remaining points.
-
-English/German presets and per-user named custom sets define letters, quantities, and
-points. Unicode letters (with combining marks) are normalised to NFC uppercase; `ß`
-becomes `ẞ`. Symbols, digits, duplicate letters, and multi-letter tiles are rejected,
-except `*` for jokers. Custom sets contain 28–500 tiles, at most 80 different letters,
-1–100 copies per letter and 0–20 points per tile; jokers score zero. Users can keep
-50 saved sets. Editing/deleting a saved set leaves existing rooms' copies intact.
-
-Synchronous SQLite transactions apply commands with a request ID and expected version.
-Repeated IDs with the same body return the current snapshot without applying the action
-again. Changed bodies or stale versions are rejected. HTTP/SSE project a viewer's own
-rack and opponents' counts; the bag and internal state are private. Game history retains
-the latest 100 entries. Streams reconcile every five seconds; client queries/visibility
-changes recover missed updates. Pending votes and state persist across backend restarts.
-
-The active room uses a viewport-sized board workspace with a persistent private rack
-and move controls. Small screens begin in overview, then zoom to 44-pixel squares for
-panning and placement. Accepted moves restore overview. A `ResizeObserver` sizes the
-board from the available space; sufficiently large screens support direct placement
-without zoom controls. Wider screens place the rack beside the board. Camera changes
-are client-only and preserve draft placements. The board uses one roving tab stop;
-arrow keys navigate squares, Home/End navigate a row, and Ctrl+Home/End navigate
-the board corners. Enter/Space activate the focused square. The header shows the current player's score explicitly.
-Scores/history, rules, extra actions, joker letters and word approval use native dialogs;
-Rules is available in the side panel and includes a visual bonus legend. History list
-padding keeps three-digit numbering and wrapped text inside its accordion. Opponents can dismiss approval to
-inspect the board and reopen it from the rack area. Bonus squares display `2×` or `3×`,
-with word labels filling the square and letter labels at half that size. The centre
-also keeps a small starting-square star. Screen-reader labels name the multiplier
-and whether it applies to a letter or word.
+the digest. Auth APIs requiring an account check active sessions. Account-based apps also
+authorize reads and streams and recheck sessions before sending. Emails never
+appear in game snapshots.
 
 ## Styles and browser storage
 
@@ -277,33 +189,22 @@ Drochsign is vendored as an unmodified snapshot in `shared/src/styles/drochsign.
 its revision and update process are recorded in `UPSTREAM.md`. Integration overrides
 are separate in `index.css`. Use its semantic styles and two-color theme variables. Each app has its own
 default theme and may add theme definitions and styles for specialized UI.
-Antique paper is available in the shared picker and is Vortoj’s default: warm
-aged-paper background `#f3e8c8`, near-black ink `#231f18`, and system sans-serif.
-Saved per-app theme choices take precedence over the default.
+Saved per-app theme choices take precedence over the app default.
 
 Adapt direct-body layout selectors to the Solid mount structure, scope field-specific
 alert visibility rules, and extend reduced-motion handling to all animations. Preserve
 the semantic design approach; avoid introducing a CSS framework by default.
 
 Shared storage helpers automatically prefix app keys and implement app-only deletion.
-Theme choices are app-specific. Poker and Vortoj keep their theme pickers in a shared
-native Settings dialog, opened from Poker’s header and Vortoj’s side panel, with keyboard focus management and Escape dismissal.
-Every Vortoj page uses the app-owned Shell around the shared
-`@repo/shared/navigation` SidePanel, including sign-in, lobby, invitations, active
-rooms and missing pages. The single outlined burger appears in a compact page
-header; active rooms retain their room name, player identity, turn status and
-personal score while sharing the same burger. The old app links and account row
-are removed. The native panel is a modal left drawer below 1280px and a nonmodal
-240px column at wider widths. The drawer has an X close button on mobile; desktop uses only the menu toggle to
-collapse or expand the column. Its icon morphs from a burger when closed to an X
-when open; reduced-motion preferences disable the transition. The desktop column starts expanded unless the
-app-prefixed `side-panel` preference records collapse; mobile always starts closed.
-Rules, Your rooms and Settings are consistent on every page; authenticated users
-also get Sign out. All apps remains a separated return link at the bottom.
-Game-specific scores and history stay behind the room score button. Rules is one
-app-wide dialog, available without a game or account. Shell owns one Settings
-dialog. Native modal focus containment, Escape and backdrop dismissal restore focus
-to the burger. Resizing switches modes without saving a mobile open state.
+Theme choices are app-specific. Apps host the shared native Settings dialog,
+with keyboard focus management and Escape dismissal, in their own navigation.
+The browser-safe `@repo/shared/navigation` SidePanel provides a native modal drawer
+below 1280px and a nonmodal 240px desktop column. Apps own navigation content.
+Desktop collapse is remembered under the app-prefixed `side-panel` preference;
+mobile starts closed. Native focus containment, Escape and backdrop dismissal
+restore focus to the toggle. Resizing changes modes without persisting mobile state.
+The outlined toggle morphs between burger and X, respecting reduced motion;
+the separate drawer close button appears only on mobile.
 The Custom option edits background/foreground colors and selects a local font stack
 (system sans-serif, serif, or monospace). Changes preview immediately and save as
 validated preferences under the app storage prefix. Preset hex shorthand from production
@@ -314,25 +215,12 @@ a light/dark color scheme derived from the custom background. Preset selection r
 custom color/font inline overrides; saved customization remains available for later use. Direct `localStorage.clear()` is forbidden in app code.
 Prefixes prevent collisions but do not isolate same-origin apps from each other.
 
-Poker adds app-specific content to the shared Settings dialog through its children
-slot. Its optional Attention mode stores a validated boolean under
-`droch:poker:attention-mode` and mounts decorative Canvas scenes around the
-voting area. Wide screens use full-width side panels around a compact voting
-column; narrower screens show three full-width scenes: above the participants,
-between the participant table and estimate controls, and below round controls. Settings shows only
-the Attention mode switch. Nine procedural scenes live in the poker
-client; the standalone experiment and recorded media are not bundled. A new group
-is chosen after 60 visible seconds, excluding all three outgoing effects. Scene rendering
-accepts time explicitly and is independent of votes, room snapshots, and network
-requests. The client owns a capped 30 fps loop and cleans it up on unmount; hidden
-tabs and offscreen scenes suspend animation, and reduced motion renders static art.
-
 ## Compose, production, and migrations
 
 One Compose stack has a migration step and one application container, sharing a
 persistent `sqlite-data` volume at `/data`. The image includes the shared backend,
 all compiled frontends, and its native SQLite driver. No database service, password,
-or connection pool is needed. Adding an app creates another file within this volume.
+or connection pool is needed. Adding a persisted app creates another file within this volume.
 
 Coolify uses the Git repository's Docker Compose build pack with `compose.yaml`.
 Its proxy routes one HTTPS domain to `application` on internal port 3000; the
@@ -373,115 +261,9 @@ prints its URL. Local runtime settings are ignored, never committed.
 - Different host ports isolate browser storage; cookies need distinct worktree names
   because cookies are not port-scoped.
 - Pass the runtime origin into auth and development proxy/HMR configuration.
-- Both app frontends reload through Vite middleware on the backend port; backend
+- App frontends reload through Vite middleware on the backend port; backend
   imports are watched by tsx. Polling supports Docker bind mounts on macOS.
 - Stop commands affect only the current checkout and preserve its database.
 
 Use the same migrations and database conventions locally and in production. The
 development Compose override adds source mounts and hot reload.
-
-## Account UI state
-
-Vortoj's account flow uses a local typed model (`account-model.ts`), messages and
-pure `init`/`update` functions that return the next model and explicit commands.
-The component holds one model signal; synchronous dispatch keeps transitions ordered
-independently of Solid's deferred rendering. `account-commands.ts` executes HTTP
-commands and validates responses. Requests carry IDs, duplicate submissions are
-ignored while pending, and component cleanup aborts requests and ignores late results.
-Email entry, code entry and signed-in screens are discriminated states. Resending
-keeps code entry available if delivery fails. This is a reference implementation of the default client style for coupled state
-and asynchronous workflows. Simple independent controls retain local signals;
-models remain feature-local rather than becoming one global store.
-
-## Schlezaz
-
-SchleZaZ is a German browser-only random-choice app at `/schlezaz/`, ported from
-an existing Lamdera app to TypeScript and Solid 2. Its registry entry participates
-in the common landing page, development server and production build. Entries without
-`createRoutes` have no backend API or database; database registration includes only
-server-backed apps. No deployment or ingress configuration is needed.
-
-The feature-local generator model owns options, mode, sequence memory and request
-phases. Pure rules implement XKCD (fourth option, wrapping), standard random,
-SchleZaZ (pairs of identical results), unique-value shuffle and Random-Random
-(one random concrete mode per draw). The adapter supplies browser crypto randomness
-and a random 2–10 second timer. Edits and mode changes reset sequence memory;
-controls freeze during a draw. Request IDs reject stale callbacks and disposal
-aborts timers. Options stay in the current tab; there is no account or persistence.
-Drochsign provides the base styling with an independent retro theme, German copy,
-keyboard-accessible controls, live result announcements and reduced-motion support.
-
-## Observo
-
-Observo is a public website-monitoring dashboard at `/observo/`, with read-only data
-at `/api/observo/sites`. It has no accounts or admin UI. Trusted targets and their
-browser workflows live in `apps/observo/src/server/sites.ts`; changing a target or
-its success conditions should use a new ID to start fresh history. The first target
-is the Rendsburg-Eckernförde TischtennisLive website.
-
-All environments start dormant. The dashboard sends a same-origin POST to
-`/api/observo/activate` on its first load; an idempotent singleton in SQLite persists
-activation across redeployments, independently of history retention. Reads, health
-checks and other apps do not activate monitoring. Once activated, a scheduler runs
-immediately and then on five-minute UTC boundaries, independently of visitors. It checks migration readiness,
-skips already recorded slots, serializes browser runs, and aborts on shutdown before
-database closure. Missed observations are never backfilled. `OBSERVO_CHECKS=false`
-disables outbound checks for isolated browser test stacks; ordinary runtime defaults
-to first-visit activation (`OBSERVO_CHECKS=auto`; legacy `true` behaves identically). Each run creates and closes a fresh headless Chromium browser/context;
-there are no persistent cookies, screenshots, response bodies or traces.
-
-The TischtennisLive workflow submits the current tokenized human-confirmation form
-if shown, follows Spielbetrieb and Kreisliga links, then requires the league heading,
-Mannschaft/Punkte labels and a visible standings row containing a team link and scores.
-It follows current navigation instead of hardcoding a season or league ID. Requests
-are restricted to the configured origin, GET/HEAD and the observed confirmation POST;
-images, media, fonts, service workers and downloads are disabled. Navigation, element
-waits and the whole run have bounded timeouts. Launch/crash failures leave missing
-observations; exhausting the overall 60-second deadline records a not-functional
-timeout. Shutdown cancellation remains missing even if it coincides with the deadline.
-HTTP, network and workflow failures are recorded with safe reason codes.
-The pinned Playwright runtime and Chromium headless shell are included in Docker.
-
-`observo.sqlite` owns `migrations/observo/`. Twelve two-bit outcomes fit in one integer
-per website/hour: missing, available, unreachable or not functional. Transactional
-updates make each slot immutable and prevent old completions replacing the latest
-result. At most 720 UTC hourly buckets per configured site are retained, including
-the running hour. Cleanup runs on startup/check cycles and reads, removes old latest
-results, and deletes deconfigured sites. The latest check alone retains an HTTP code,
-duration and safe reason; historical individual diagnostics are discarded.
-
-Complete hours are available when all twelve checks pass, degraded with one to six
-failures, and mostly unavailable with seven to twelve failures. Missing coverage is
-unknown. The current hour shows the latest result, becoming unknown after ten minutes
-without a fresh observation. The dashboard shows a 30-day hourly grid using local
-calendar days from midnight to midnight, including 23/25-hour clock-change days.
-Only today is shown by default; Show history reveals older recorded dates. Dates
-without observations are omitted, and the control is absent when no older data exists.
-Future cells are muted; mobile dates expand to reveal hours. Five-minute drill-down
-remains available. Data refreshes every two minutes and on returning to the page;
-there is no manual refresh button or footer. Product copy shows status and check time;
-local time is implicit. Refresh cadence, retention and checker internals stay in
-developer documentation. Quiet accents keep all surfaces and text in the app theme;
-small green/amber/red status underlines and a current-status dot provide emphasis.
-Accents adapt to the native light/dark scheme, including custom themes. Hour cells
-and legends retain symbols and labels; slot details retain outcome text, so meaning
-survives a theme with a similar accent colour. A feature-local
-model/message/update/command flow guards duplicate refreshes and stale results.
-
-## Enigmo
-
-Enigmo is a browser-only puzzle app at `/enigmo/`, registered through the common
-app registry with no API, account or database. Its entry page accepts a code;
-`/enigmo/?code=YMIR` opens the first puzzle directly for QR-code invitations.
-Typed puzzle definitions live in `apps/enigmo/src/domain/puzzles.ts`. Each option
-has a fixed authored letter; correct answers contribute a scrambled anagram.
-All questions are freely editable, with a persistent bottom letter strip and
-underscores for unanswered questions. Only the final submission grades the
-answers and solution; there is no time limit or attempt limit. A final message
-points to a person who hands over the prize offline.
-
-A feature-local model/update/command flow owns answers, solution and feedback.
-The adapter validates browser saves and scopes them by app, code and content
-revision. Storage failures retain the current playable state. No server state
-or cross-device synchronization is needed. Codes are invitation shortcuts, not
-access controls; puzzle solutions are included in the frontend build.
