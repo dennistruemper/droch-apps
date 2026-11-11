@@ -90,7 +90,7 @@ describe("poker HTTP and persistence", () => {
     const reader = stream.body!.getReader();
     expect(stream.headers.get("content-type")).toBe("text/event-stream");
     expect((await event(reader)).participants).toHaveLength(2);
-    await f.request(`${host.path}/vote`, host.cookie, { round: 1, vote: "13" });
+    await f.request(`${host.path}/vote`, host.cookie, { round: 1, vote: "0.5" });
     const update = await event(reader);
     expect(update.participants.find((p) => p.isCreator)).toMatchObject({
       hasVoted: true,
@@ -98,13 +98,13 @@ describe("poker HTTP and persistence", () => {
     });
     expect(update.you.vote).toBeNull();
     const own = roomSnapshotSchema.parse(await (await f.request(host.path, host.cookie)).json());
-    expect(own.you.vote).toBe("13");
+    expect(own.you.vote).toBe("0.5");
     expect(own.participants.every((p) => p.vote === null)).toBe(true);
     await f.request(`${host.path}/vote`, guest, { round: 1, vote: "☕" });
     expect((await event(reader)).you.vote).toBe("☕");
     const revealed = await f.request(`${host.path}/reveal`, guest, { round: 1 });
     expect(revealed.status).toBe(200);
-    expect((await event(reader)).participants.map((p) => p.vote).sort()).toEqual(["13", "☕"]);
+    expect((await event(reader)).participants.map((p) => p.vote).sort()).toEqual(["0.5", "☕"]);
     expect((await f.request(`${host.path}/vote`, guest, { round: 1, vote: "8" })).status).toBe(409);
     const resets = await Promise.all([
       f.request(`${host.path}/reset`, guest, { round: 1 }),

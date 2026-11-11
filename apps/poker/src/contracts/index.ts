@@ -6,7 +6,7 @@ export const appDefinition = {
   description: "Estimate together. No accounts needed.",
   theme: "paper",
 } as const;
-export const deck = ["0", "1", "2", "3", "5", "8", "13", "21", "?", "☕"] as const;
+export const deck = ["0", "0.5", "1", "2", "3", "5", "8", "13", "21", "?", "☕"] as const;
 export const voteSchema = z.enum(deck);
 export const roomIdSchema = z.string().regex(/^[a-f0-9]{24}$/);
 export const nameSchema = z.string().trim().min(1).max(32);
