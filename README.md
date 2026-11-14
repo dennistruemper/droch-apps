@@ -12,22 +12,17 @@ without a turn deadline.
 - [Architecture](docs/architecture.md): stack, boundaries, deployment, and development.
 - [Decisions](docs/decisions.md): agreed choices and their rationale.
 - [Implementation plan](docs/implementation-plan.md): milestones and verification.
-- [Agent instructions](AGENTS.md): rules for contributors and AI agents.
+- [Agent instructions](AGENTS.md): shared rules and routing to app-specific guidance.
 
-## Status
+## Apps
 
-The foundation and scrum poker are implemented. Create a room, share its invite link,
-and vote anonymously. Votes stay private until someone reveals them. Anyone
-in the room can reveal votes or start the next round. Rooms and guest identities survive backend restarts, and live
-updates reconnect automatically. Rooms expire after 30 days without activity.
+Product rules, app architecture and implementation status live with each app:
 
-Persistence uses `auth.sqlite`, `poker.sqlite`, and `vortoj.sqlite`, each with its own
-Drizzle migration history. Vortoj supports two to four signed-in players, room invitations,
-private seven-tile racks, a 15×15 board, bonuses, jokers, passing, exchanges, and final scores.
-Every word formed by a move needs approval from at least half the opponents (rounded up).
-There is no dictionary lookup or turn deadline. Rejected moves return the tiles and end
-that turn. English and German tile sets are included; each user can save named custom
-sets for future games. Games keep the set selected at room creation.
+- [Poker](apps/poker/AGENTS.md): account-free planning poker.
+- [Vortoj](apps/vortoj/AGENTS.md): multiplayer word board game.
+- [Schlezaz](apps/schlezaz/AGENTS.md): random-choice generator.
+- [Observo](apps/observo/AGENTS.md): website monitoring dashboard.
+- [Enigmo](apps/enigmo/AGENTS.md): code-based anagram puzzles; see its [authoring guide](apps/enigmo/README.md).
 
 ## Local development
 
@@ -199,10 +194,6 @@ both deployment stages and does not select the code behavior.
 First verification creates an account. Display names are visible in rooms; email addresses
 stay private. Sessions last 30 days and can be revoked by signing out. Account deletion,
 email changes, and account recovery beyond requesting another code are not implemented.
-
-The former `/words/` frontend redirects to `/vortoj/`. The previous `words.sqlite` file
-was an empty scaffold: it is left on existing volumes, while migrations create
-`vortoj.sqlite`. There is no gameplay data to convert.
 
 ## Preview deployments
 

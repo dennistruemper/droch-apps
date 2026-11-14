@@ -27,9 +27,8 @@ to understand the intended order of work.
 
 - Keep user-facing text brief and focused on useful status and actions.
 - Do not expose implementation or operational details in app copy unless they help
-  the user make a meaningful decision. For example, Observo should not advertise
-  its refresh interval, history retention policy, real-browser checks, HTTP codes,
-  request durations, storage, accounts or deployment environments.
+  the user make a meaningful decision. Keep app-specific copy constraints in the
+  app's instructions.
 - Keep such details in developer documentation. Prefer clear interface labels to
   explanatory paragraphs and omit redundant footers or instructions.
 
@@ -42,13 +41,23 @@ to understand the intended order of work.
   edge-case optimization until the user selects a solution.
 - Apply normal implementation and verification standards to the chosen solution.
 
-## Vortoj product rules
+## App-specific instructions
 
-- The word app is Vortoj, at `/vortoj/`, with two to four authenticated room members.
-- Keep racks private in HTTP and event-stream payloads; filtering is server-side.
-- No external dictionary: opponents approve every newly formed word. At least half
-  the opponents, rounded up, must approve. Turns and votes have no deadline.
-- Include English/German presets and per-user named reusable custom tile sets.
+Read only the app instructions relevant to the task, including when changing its
+migrations, external tests, or shared integrations:
+
+- [Poker](apps/poker/AGENTS.md)
+- [Vortoj](apps/vortoj/AGENTS.md)
+- [Schlezaz](apps/schlezaz/AGENTS.md)
+- [Observo](apps/observo/AGENTS.md)
+- [Enigmo](apps/enigmo/AGENTS.md)
+
+App product rules, implementation details, decisions and verification history live
+in each app directory. Do not load every app's docs for unrelated work. For new apps,
+add an app-local `AGENTS.md` and link it here; keep shared policy in the root docs.
+
+## Shared authentication modes
+
 - Local tests use the no-op mail implementation and code `9999`, even with a token.
   Coolify previews use `AUTH_MODE=test` (`9999` plus Mailtrap delivery); production
   uses random codes. Keep preview data separate from real accounts.
@@ -65,7 +74,7 @@ to understand the intended order of work.
 - Keep domain logic pure. Inject database, mail, time, randomness, and other effects
   where needed. Do not perform side effects during module import.
 - Validate external data at runtime. Do not treat TypeScript types as validation.
-- Keep secrets, unrevealed poker votes, and opponents' tile racks out of client payloads.
+- Keep secrets and app-private state out of client payloads; filter on the server.
 - Do not add packages or abstraction layers solely to match a theoretical architecture.
 - Do not modify the separate Drochsign repository as part of this project unless asked.
 
@@ -88,10 +97,10 @@ to understand the intended order of work.
 - Simple independent controls, such as a checkbox or open/closed panel, can use
   local signals. Browser layout measurements, scrolling and focus stay in the
   view adapter. Use stable keys for editable rows so updates preserve focus.
-- Follow the Vortoj examples: `apps/vortoj/src/client/account-model.ts`,
-  `tiles-model.ts`, `room-model.ts`, `lobby-model.ts`, their command adapters and transition tests.
-  Test meaningful invariants and recovery races, plus affected browser flows;
-  avoid tests that merely restate every switch case.
+- Test meaningful invariants and recovery races, plus affected browser flows;
+  avoid tests that merely restate every switch case. For implementation examples,
+  see [Vortoj's client references](apps/vortoj/AGENTS.md#client-reference-implementations)
+  when needed.
 - Read the installed Solid 2 `CHEATSHEET.md` when changing reactive or lifecycle
   code; do not assume Solid 1 APIs or synchronous signal writes.
 
@@ -110,6 +119,8 @@ to understand the intended order of work.
 
 ## Documentation maintenance
 
-Update the relevant documents when an agreed decision changes. Keep rationale in
-`docs/decisions.md`, current architecture in `docs/architecture.md`, and remaining work
-in `docs/implementation-plan.md`. A proposed default is not a settled user decision.
+Update the relevant documents when an agreed decision changes. Keep shared rationale,
+architecture and remaining work in `docs/decisions.md`, `docs/architecture.md` and
+`docs/implementation-plan.md`. Keep app-specific equivalents in `apps/<app>/docs/`
+and instructions in its `AGENTS.md`; shared files should link to these details.
+A proposed default is not a settled user decision.

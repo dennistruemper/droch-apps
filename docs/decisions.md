@@ -21,18 +21,15 @@ in the implementation plan.
 | Drochsign CSS starting point                  | Semantic HTML, minimal classes, two-color themes; themes can differ by app.                                      |
 | Independent worktree development              | Multiple apps/branches can be worked on and run concurrently.                                                    |
 
-## Product requirements
+## App-specific documentation
 
-### Scrum poker
+Read only the app documentation relevant to the task:
 
-No accounts. Participants join rooms anonymously. Guest identity and room membership
-need server enforcement; no registration should be required.
-
-### Word game
-
-Accounts are required. Matches are turn-based with live updates. Players can be online
-together or make moves days apart. There is no time limit per turn. Durable match
-state must not depend on a browser or live connection remaining open.
+- [Poker](../apps/poker/AGENTS.md)
+- [Vortoj](../apps/vortoj/AGENTS.md)
+- [Schlezaz](../apps/schlezaz/AGENTS.md)
+- [Observo](../apps/observo/AGENTS.md)
+- [Enigmo](../apps/enigmo/AGENTS.md)
 
 ## Tradeoffs accepted
 
@@ -56,7 +53,6 @@ not additional fixed product requirements.
 - Oxc-based Solid compilation, Oxlint, Oxfmt, Vitest, and Playwright.
 - One shared workspace package with folder modules for auth, mail, database,
   browser storage, and styles; one server composition package.
-- Persist poker rooms across deployments and expire inactive rooms.
 - One backend instance, with SQLite as the durable source of truth.
 
 ## Foundation implementation choices
@@ -90,35 +86,9 @@ network calls. Apps receive stable user IDs and own authorization and game state
 - Backups cover all files coherently. The old local PostgreSQL volume is retained,
   but the container and PostgreSQL dependencies are removed.
 
-## Poker implementation — 2026-10-03
-
-- The user chose expiry after **30 days of inactivity**. Joining (including rejoining),
-  voting/clearing, revealing, and starting a round refresh activity. Viewing a room
-  or keeping an SSE connection open does not. Expired rooms are removed on subsequent
-  poker requests, including their participant records.
-- The deck is `0, 1, 2, 3, 5, 8, 13, 21, ?, ☕`. The user requested the coffee
-  symbol for a break vote on 2026-10-04; it follows normal vote privacy and reveal rules. The numeric deck and a 50-participant room limit are implementation defaults.
-- The user chose collaborative control: **every room member can reveal or start the
-  next round**. Reveal requires at least one vote, without waiting for everyone.
-  Revealed votes cannot change. Reset clears all votes and increments the round.
-  Creator disconnection cannot block play, so host takeover/heartbeat leases are not needed.
-  The creator label is informational and grants no extra permissions.
-- Anonymous membership uses a random HttpOnly cookie scoped to `/api/poker`, with
-  its digest stored in each membership row. The same browser can belong to multiple
-  rooms. There is no guest account recovery in this slice.
-- Commands include their round number. Transactions serialize voting and revealing;
-  stale votes and repeated resets cannot change the following round.
-- SSE sends full, viewer-specific, versioned snapshots immediately on subscription,
-  after accepted commands, and every 10 seconds for reconciliation. Queues are
-  bounded; skipped updates are recovered from a later snapshot. No event log is needed.
-- Unrevealed participant vote fields are null for everyone; the viewer's own vote
-  is available only in `you`. The server applies this to both HTTP and SSE.
-- User-facing errors explain recovery. Unexpected errors include a reference linked
-  to redacted server logs; request bodies and guest credentials are not logged.
-
 ## Custom themes — 2026-10-04
 
-The shared Settings picker includes a Custom option for Poker and Vortoj. The initial
+The shared Settings picker includes a Custom option for each app. The initial
 editor exposes background and foreground colors to match Drochsign's two-color design.
 The first Custom selection copies the active preset's colors and font family. Edits preview immediately
 and persist per app in browser storage; switching presets keeps the customization saved.
@@ -153,83 +123,6 @@ setup without duplicating runner/tool/dependency setup. The prior hosted run spe
 runner contention and must be measured on the next hosted run. Persistent CI Docker
 caching remains an option to evaluate.
 
-## Poker Attention mode — 2026-10-15
-
-The owner requested an ironic “Attention mode” option in Poker Settings, using
-locally generated, unrelated animations around the voting elements. All prototype
-effects except number 6 (the olive machine) were selected. Each effect may run for
-one minute before random rotation; the twelve-second comparison clips do not limit
-animation duration. No external videos, assets, or data sources are involved.
-
-The implementation starts disabled, saves the choice under poker browser storage,
-and shows two distinct scenes on wide screens and three on mobile. The owner
-requested mobile placement above the participants, between the table and estimate
-controls, and below round controls. Scene groups rotate each minute. Device reduced-motion preference keeps the artwork static. Animation time
-pauses when the page or all visible scenes are out of view, and work stops when disabled.
-
-## Vortoj and accounts — 2026-10-04
-
-User decisions:
-
-- The word game is named **Vortoj**, with `/vortoj/` as its path.
-- Two to four logged-in players join a room link. Any logged-in user can create rooms.
-- Familiar board, scoring, rack, exchange, and joker rules; no deadline per turn.
-- No dictionary service. Opponents vote on words, and at least half must approve.
-- German and English tile sets plus an editor for named, per-user reusable custom sets.
-  Unicode letters and `*` jokers are supported.
-- Local tests always use **9999** without sending mail. Coolify test/preview stages use
-  **9999** and send through Mailtrap. Production sends random codes through Mailtrap.
-
-Implementation defaults (adjustable, not additional user decisions):
-
-- Vote on each newly formed word, including cross-words. Round the threshold up,
-  resolve early when accepted/impossible, and keep votes immutable. Rejected moves end
-  the turn while preserving the player's tiles. Unanswered votes have no deadline.
-- Creator starts and takes the first turn. No spectators or late joining after start.
-- Fifteen-square board, seven-tile racks, zero-point jokers, 50-point seven-tile bonus.
-  Two consecutive scoreless rounds end a match; deduct remaining tiles and award their
-  points only to a player who actually emptied their rack with the bag empty.
-- Freeze the selected tile set at room creation. Users keep up to 50 custom sets, with
-  28–500 total tiles, at most 80 different letters, quantities 1–100 and points 0–20.
-- Six-digit random production codes expire after ten minutes, with five attempts,
-  one-minute resend throttling, five requests per hour per address and thirty active
-  addresses per minute across the service. Sessions expire after 30 days; logout revokes.
-- `AUTH_MODE` explicitly distinguishes local (`local`), preview (`test`) and production
-  (`production`) builds. Local mode never sends, even if a token is present. A missing token
-  on localhost selects no-mail test behavior. Public production without mail credentials
-  has account sign-in disabled. Test mode uses isolated data and does not prove email ownership.
-- The old empty word-game SQLite scaffold is retained on existing volumes; Vortoj gets
-  a new migration history and file. Old frontend links redirect to the renamed app.
-
-## Vortoj board interaction — 2026-10-05
-
-Choose concept A from the mobile exploration: the board stays visible above the rack
-and move controls. Begin with the whole board; tap an area or use the zoom controls to
-reach 44-pixel squares, then pan and place tiles. Keep the close view throughout a
-placement and word approval; return to the overview after an accepted move, rather
-than after each tile. Resizing preserves an unfinished placement.
-
-Use the same interaction on desktop. When the board fits at a comfortable size, place
-directly and omit zoom controls. Mouse pointers use a 32-pixel minimum; touch uses
-44 pixels. Wider desktop and short landscape layouts put the rack beside the board.
-Scores, history, passing, exchanges and word voting remain available through dialogs.
-The alternative mobile concepts and their standalone exploration files are removed.
-
-## Vortoj bonus labels — 2026-10-08
-
-Use `2×` and `3×` instead of language-specific bonus abbreviations. Word bonuses
-fill the square; letter bonus labels are half the size. Preserve the centre marker
-and describe the bonus type explicitly for screen readers. Scoring rules stay the same.
-
-## Vortoj default tile distributions — 2026-10-08
-
-The English and German presets are Vortoj defaults with small distribution changes.
-English: E 12→11, I 9→8, S 4→5, T 6→7; 100 tiles total. German: E 15→14, N 9→8,
-S 7→8, U 6→5; 100 tiles total instead of 102. These changes focus on common letters;
-rare letters, all point values, and two zero-point jokers remain unchanged. Users
-can save their preferred distributions as named custom sets. Existing rooms retain
-the tile set frozen at creation; only new rooms and preset copies get the new defaults.
-
 ## Coolify runtime origin — 2026-10-05
 
 Use Coolify's runtime `SERVICE_URL_APPLICATION` as the canonical public origin when
@@ -253,217 +146,54 @@ accept every preview subdomain.
 - [Drizzle migrations](https://orm.drizzle.team/docs/migrations)
 - [mise](https://mise.jdx.dev/)
 
-## Vortoj Antique paper default — 2026-10-08
-
-The user chose Antique paper after comparing three aged-paper palettes. Add it to
-the shared theme picker and use it as Vortoj’s default: `#f3e8c8` background with
-`#231f18` foreground, using the standard system sans-serif font. Keep existing
-per-app saved choices; changing the default does not reset user preferences.
-The initial HTML uses the same theme so first paint matches the app default.
-
 ## Shared side panel — 2026-10-08
 
-The user selected the side-panel navigation design for Vortoj. Keep room name,
-player identity, turn status and personal score visible, replacing the repeated
-app/account header rows during active games. Use an outlined burger on the left.
-Rules belongs in the panel alongside scores, rooms, settings and sign-out; All
-apps is a separate return link. The panel is extracted as a browser-safe public
-shared module; apps own its navigation content. At 1280px or wider, display it as
-an expanded column by default and remember explicit desktop collapse per app.
-Below that width, overlay it as a native modal drawer, closed initially, to preserve
-board space and keyboard focus behavior. Poker can adopt the component later.
-
-## Elm-style account flow trial — 2026-10-08
-
-The user asked to implement the proposed typed model/message/update/command pattern,
-starting with the account component, and preserve the old file for comparison.
-After comparing the result, the user chose to keep the rewrite and remove the
-local backup. Use ordinary TypeScript and one Solid model signal;
-no new state-management dependency. Keep I/O separate from pure transitions and
-retain feature-local ownership. Evaluate this example before expanding the pattern
-to gameplay; small independent UI controls can continue to use signals.
+Extract navigation as a browser-safe public shared module; apps own the content.
+At 1280px or wider, use an expanded column by default and remember explicit collapse
+per app. Below that width, use a native modal drawer, initially closed, with native
+keyboard focus behavior. The toggle uses an outlined burger/X and respects reduced
+motion. The separate drawer close button appears only on mobile.
+See [Vortoj's navigation decisions](../apps/vortoj/docs/decisions.md#vortoj-navigation-on-every-page--2026-10-09)
+for its app-owned menu and page shell.
 
 ## Review fixes — 2026-10-08
 
 Retain throttling records when mail delivery fails, while making the failed code
 unusable. Match the request timestamp as well as its digest so a late failure does
-not invalidate a newer fixed test code. Retain up to 100 rooms per owner, checked transactionally. Creating another room
-automatically removes the owned room inactive longest, including unfinished games,
-and its related data for all players. Sort room lists most recently updated first
-to match pruning. Only accepted joins and game actions count as updates, not viewing.
-Use a Show finished games checkbox to include finished games in the same sorted
-list and display the retention explanation. The
-user rejected manual site-owner cleanup and finished-only pruning because abandoned
-games may never finish. Keep vote failures visible inside word approval and use roving keyboard focus on
-the board rather than 225 tab stops. Removing another saved tile set preserves the
-active editor's update target and draft.
-
-## Follow-up review fixes — 2026-10-09
-
-Lock tile-editor controls while a save is pending so a late response cannot change
-another edit's identity or overwrite a different saved set. Distinguish a removed
-room from an expired auth session in event streams; clear its game UI, ignore late
-snapshots and provide a return to Your rooms. Treat HTTP 404 the same way. Add an
-explicit change-email message to the account model, retaining the entered address
-for correction without sending another code until the user submits it.
+not invalidate a newer fixed test code.
 
 ## Feature-local Elm-style client models — 2026-10-09
 
-Extend the accepted account pattern to the Vortoj tile editor and room. Each feature
-owns a typed model, message union, pure update function and explicit commands.
-Editor inputs belong to its model; string number drafts preserve incomplete edits,
-and keyed rows preserve focus. Pending saves/deletes freeze editor identity.
-Room screens distinguish loading, invitation, active, expired and removed states;
-placement and exchange are separate modes. Request IDs and snapshot versions guard
-late responses, duplicate submissions and terminal removal. Browser measurements,
-scrolling, keyboard focus and native dialogs remain in the view adapter. Keep simple
-lobby filters, settings and navigation controls local; do not introduce a global
-store or generic state framework. Poker can be evaluated separately later.
+The user chose feature-local typed models, discriminated messages, pure updates and
+explicit commands as the default for new coupled or asynchronous client features.
+Keep I/O in adapters, guard duplicate and stale completions, and retain synchronous
+transition ordering independently of Solid rendering. Simple independent controls
+and browser layout state remain local. Do not introduce a global store or state
+framework. See [AGENTS.md](../AGENTS.md#client-state-style) for the contributor rules
+and [Vortoj's implementation history](../apps/vortoj/docs/decisions.md#feature-local-elm-style-client-models--2026-10-09)
+for the concrete reference.
 
-The user chose this as the default for new client features with coupled state or
-asynchronous workflows, rather than an optional refactor after implementation.
-Use the account, editor and room as concrete examples; keep exceptions for simple
-independent controls and browser layout state. `AGENTS.md` carries the contributor
-instructions so future agents apply the style from the beginning.
+## Account modes and limits — 2026-10-04
 
-The lobby's asynchronous collection loading and room creation also use this pattern.
-Keep its finished-game filter and editor visibility as simple local signals. Loading
-and empty lists are distinct; preserve prior data on refresh failure and propagate
-that failure to callers. Guard pending creation and navigation against duplicate
-submissions. Room updates emit explicit show/close/keep approval-dialog commands;
-the adapter does not decide game policy.
+User decision:
 
-## Vortoj navigation on every page — 2026-10-09
+- Local tests always use **9999** without sending mail. Coolify test/preview stages use
+  **9999** and send through Mailtrap. Production sends random codes through Mailtrap.
 
-The user requested the side panel across Vortoj, rather than only active rooms.
-Use one page shell and a consistent menu: Rules, Your rooms, Settings, authenticated
-Sign out, and a separated All apps return link. The login state changes availability
-of Sign out, not the page. Keep scores and history as a room-specific control next
-to the score. Extract the existing rules into an app-wide dialog so the same Rules
-entry works from sign-in, the lobby and games. Retain the shared panel's desktop
-preference, mobile modality and outlined burger; remove the old header links and
-separate account row.
+Implementation defaults:
 
-Show the panel's X close button only in mobile drawer mode. On desktop the burger
-is the single collapse/expand control, avoiding two simultaneous close controls.
+- Six-digit random production codes expire after ten minutes, with five attempts,
+  one-minute resend throttling, five requests per hour per address and thirty active
+  addresses per minute across the service. Sessions expire after 30 days; logout revokes.
+- `AUTH_MODE` explicitly distinguishes local (`local`), preview (`test`) and production
+  (`production`) builds. Local mode never sends, even if a token is present. A missing token
+  on localhost selects no-mail test behavior. Public production without mail credentials
+  has account sign-in disabled. Test mode uses isolated data and does not prove email ownership.
 
-The outlined menu toggle shows a burger when closed and an X when open, with a
-short morph animation. Respect `prefers-reduced-motion` by switching instantly.
+## Scoped agent documentation — 2026-11-09
 
-## Schlezaz port — 2026-10-24
-
-The user requested Schlezaz in this project with no Lamdera and chose to follow
-the source PLAN.md while preserving its intentionally bad modes. SchleZaZ repeats
-each draw twice, then makes a fresh draw; XKCD always chooses the fourth option,
-wrapping around short lists. Standard mode is random, shuffle exhausts its choices,
-and Random-Random executes one randomly selected concrete mode per draw. All modes
-keep the theatrical 2–10 second wait and German presentation.
-
-The source backend has no behavior, so the port stays browser-only. Registry entries
-without server routes are included in builds and hosting but have no SQLite file,
-migrations or account requirement. No DNS or Coolify changes are needed.
-
-Implementation defaults: shuffle treats distinct trimmed values as choices; option
-and mode edits reset sequence memory. Controls freeze while drawing. Native controls
-and reduced-motion support replace perpetual flashing; Drochsign and an app theme
-replace external Tailwind/font CDNs. Optional features from the source plan, such as
-saved generators, sharing, statistics and sound, are outside this port.
-
-## Observo — 2026-10-24
-
-The user requested Observo for five-minute website availability/functionality checks
-with hourly history, then simplified the original account/quota/admin proposal to a
-public dashboard with code-defined websites. There is no Observo login, per-account
-limit, domain allowlist or admin page. Start with
-`https://rendsburg-eckernfoerde.tischtennislive.de/`.
-
-Keep only 30 days of history and minimize stored data. The implementation uses one
-24-bit value for twelve five-minute outcomes per hour, preserving drill-down without
-individual check rows. Retain only the latest diagnostic; no bodies, screenshots,
-traces or persistent browser sessions. Retain at most 720 hourly buckets including
-the running hour, with no longer-term archive.
-
-The user requested browser-based checks because a banner is insufficient. An approved
-live browser test submitted the site's tokenized confirmation form, navigated through
-Spielbetrieb to populated Kreisliga standings, and retained access after reload. Use
-that functional workflow with a pinned Playwright/Chromium runtime. Passing requires
-real team/score rows, not merely HTTP 200 or a page title. The live test proves local
-browser access; hosted-server access still needs deployment verification.
-
-Implementation defaults: one sequential browser run per target/slot, a fresh context
-per run, same-origin requests, bounded waits, no retries within a recorded slot, and
-no backfill after outages. Complete-hour thresholds are zero failures for available,
-one to six for degraded, seven to twelve for mostly unavailable. Missing data stays
-unknown. The current hour uses the latest check, with a ten-minute freshness limit. Use the proposed fixed-color
-status panel with labels/symbols, while surrounding UI follows Drochsign themes.
-
-The user chose identical first-visit activation for every environment: initially no
-outbound checks, then permanent activation in that environment's SQLite after the
-first rendered dashboard visit. Redeployments preserve activation. Preview visits
-also activate monitoring; most previews never visit this app. A test-only hard-off
-remains available. Activation is separate from the 30-day history cleanup.
-
-The user chose a 30-day grid with hourly cells, each row a local calendar day from
-midnight to midnight, rather than clicking through rolling 24-hour slices. Clock
-changes preserve repeated/skipped hours; mobile dates expand for usable hour targets.
-Remove the manual refresh control and footer. Refresh dashboard data automatically
-every two minutes and when the page becomes visible again; checks remain five-minute.
-
-Product copy must stay brief and describe information useful to visitors. The user
-explicitly rejected implementation explanations such as refresh cadence, retention
-length and real-browser checking. Observo shows site status, check time, timezone
-and explorable history; operational details belong in developer documentation.
-This guidance is also recorded in `AGENTS.md` for future contributors.
-
-Show only today's recorded history by default. A compact Show history control reveals
-older dates on demand, only when older observations exist. Omit any date with no
-recorded checks, including dates before monitoring began; do not fill the page with
-empty rows during the first month. Preserve expansion across automatic updates.
-
-Use the viewer's local time implicitly. The user requested removal of the standalone
-timezone label because local browser time is expected without explanation.
-
-Treat the browser workflow's overall 60-second deadline as a failed check
-(not-functional / timeout), not as a missing observation. Genuine browser crashes,
-launch failures and shutdown cancellation remain missing. The user accepted the
-current calendar behavior for desktop clock-change labels and fractional clock-change
-days; no calendar fixes are requested for those review findings.
-
-For concept comparisons, the user prefers faster results over exhaustive preview
-quality. Show lightweight representative alternatives and sanity-check their main
-interaction. Defer detailed polish, responsive verification and edge cases until
-a solution is chosen. This workflow preference is recorded in `AGENTS.md`.
-
-The user selected “Quiet accents” (colour preview option 5), replacing the earlier
-fixed light status panel. Keep surfaces and text within Drochsign's two-colour theme.
-Use restrained green/amber/red marks rather than status-coloured fills, plus a small
-current-status dot. Preserve symbols, labels and counts so meaning remains clear
-even on a theme whose background resembles a status accent. Light/dark accent
-shades follow the selected theme's native colour scheme, including custom themes.
-
-## Enigmo — 2026-11-05
-
-The user requested a new app with only a code-entry form on its start page and a
-query parameter for direct QR links. Author puzzles in the repository rather
-than an administration UI. Use the existing browser-only registration and typed
-TypeScript data, with no account or database. Persist progress locally per
-puzzle/revision; `/enigmo/?code=YMIR` opens the first authored puzzle.
-
-Every question offers arbitrary letter labels instead of A/B/C/D. Its selected
-letter fills the corresponding slot in a permanently visible bottom strip;
-unanswered slots show underscores. All questions stay freely editable. Feedback
-is deferred until the final word check, with unlimited attempts and no timer.
-The correct letters form an anagram, and the last task is to rearrange them.
-
-The first puzzle takes roughly 10–15 minutes and uses nine accessible questions
-about the recipient's nerd interests, Ymir and knitting. The user clarified that
-GARNERING is intentional: Magic: The Gathering plus Garn (yarn), for a shared
-Magic/knitting evening. No details about the child are included. Solving reveals
-a deliberately indirect clue to the recipient's wife as the “Schatzmeister”,
-who awards the prize in person. Implementation defaults require correct answers
-as well as the final word; whitespace and case do not affect word validation.
-
-The intermediate anagram may contain multiple German or English words and must
-be sufficiently distinct from the final answer. The correct option letters spell
-ER GING RAN, with GARNERING remaining the final wordplay. The user selected this German phrase to replace GINGER RAN. Puzzle
-revision 4 separates the new letter assignments from previous browser saves.
+The user requested app-specific agent context in the app directory to avoid loading
+unrelated product details. Root instructions and shared docs keep cross-project
+constraints and short app links. Each app owns an `AGENTS.md` entry point plus local
+architecture, decisions and implementation status. Read the relevant app instructions
+when working on its code, migrations or external tests; do not read every app by default.
