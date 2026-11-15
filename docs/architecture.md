@@ -157,7 +157,10 @@ and codes without SQL parameters, request bodies, or credentials.
 
 The auth module owns requesting a code, verifying it, session lookup, and logout.
 The mail module owns Mailtrap integration. Apps consume these APIs without handling
-verification internals.
+verification internals. A server-only auth delivery-address lookup resolves stable user
+IDs for app-authorized recipients; emails never enter browser account contracts. The
+backend supplies the same environment-selected mail sender to auth and Kunludo.
+Asynchronous cleanup handlers are awaited before database connections close.
 
 - No passwords or password hashes.
 - Store a keyed digest of codes; keep the key outside the database.

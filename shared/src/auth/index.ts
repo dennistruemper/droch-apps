@@ -162,6 +162,12 @@ export function createAuthService(options: {
         .get();
       return row && row.expiresAt > now() ? { id: row.id, name: row.name } : null;
     },
+    deliveryAddress(userId: string): string | null {
+      return (
+        db.select({ email: users.email }).from(users).where(eq(users.id, userId)).get()?.email ??
+        null
+      );
+    },
     logout(token: string | undefined) {
       if (token)
         db.delete(sessions)

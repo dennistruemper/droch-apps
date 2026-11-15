@@ -169,3 +169,18 @@ missing entries alone do not cancel matches.
 Every file selection invalidates the previous import preview before reading or validating
 it. Selection generations reject late successes and failures. Admin code responses carry
 the app revision so a delayed response cannot restore a PIN invalidated by a newer snapshot.
+
+## Debounced admin email — 2026-11-15
+
+The user requested admin notifications for availability changes, delayed until five
+minutes after the last change to avoid one email per match during initial entry.
+Persist the mail queue in SQLite so pending summaries survive backend restarts.
+Batch across all players per team with separate recipient deliveries. Every actual
+availability change restarts the team-wide quiet period. Include final changes and
+exclude edits made by the recipient; retry failed recipients independently.
+
+Use one app-owned table and a bounded worker in the existing backend. Claims have
+recoverable leases; later changes survive in-flight delivery. Retried summaries merge
+with newer pending edits and wait for their quiet period. Recheck permissions and
+current match data at delivery. Keep shared auth/mail boundaries and local no-op
+mail behavior. No additional queue service, dependency or infrastructure is needed.

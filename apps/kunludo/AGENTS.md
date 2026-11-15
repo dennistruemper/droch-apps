@@ -22,3 +22,7 @@ The original source analysis is in [the plan](docs/plan.md).
 - Success toasts last five seconds with a countdown that remains visible under reduced
   motion. Restart the countdown for new confirmations; stale timers cannot dismiss them.
 - Keep product copy compact. Team create/join actions belong in Teams and empty accounts.
+
+- Availability emails use the persistent app-owned queue and a five-minute quiet period
+  per team across all players. Preserve transactional enqueue, recipient authorization at delivery,
+  independent retries and later edits during delivery. See [the worked example](docs/email-notifications.md).
