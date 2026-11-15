@@ -25,7 +25,7 @@ test("two anonymous players vote privately, reveal, reset, and reconnect", async
     await expect(guest.getByText("Live updates connected")).toBeVisible();
     await expect(host.getByRole("row", { name: /Bob/ })).toContainText("Thinking");
     await expect(guest.getByRole("button", { name: "Reveal votes" })).toBeVisible();
-    await host.getByRole("button", { name: "Vote 13", exact: true }).click();
+    await host.getByRole("button", { name: "Vote 0.5", exact: true }).click();
     await guest.getByRole("button", { name: "Vote for a break", exact: true }).click();
     await expect(host.getByRole("row", { name: /Bob/ })).toContainText("Ready");
     await expect(guest.getByRole("row", { name: /Alice/ })).toContainText("Ready");
@@ -44,7 +44,7 @@ test("two anonymous players vote privately, reveal, reset, and reconnect", async
     await host.goto("/vortoj/"); // Creator disconnects; the team can continue.
     await guest.getByRole("button", { name: "Reveal votes" }).click();
     await expect(guest.getByText("Votes revealed", { exact: true })).toBeVisible();
-    await expect(guest.getByRole("row", { name: /Alice/ }).getByRole("cell")).toHaveText("13");
+    await expect(guest.getByRole("row", { name: /Alice/ }).getByRole("cell")).toHaveText("0.5");
     await expect(guest.getByRole("row", { name: /Bob/ }).getByRole("cell")).toHaveText("☕");
     await guest.getByRole("button", { name: "Start next round" }).click();
     await host.goto(roomUrl);

@@ -2,8 +2,8 @@
 
 Status: implemented locally on 2026-11-14. Source analysis prepared 2026-11-09;
 confirmed requirements and implementation notes have been kept current. See
-[architecture](architecture.md#kunludo) for the shipped design and
-[verification](implementation-plan.md#kunludo--implemented) for checks.
+[architecture](architecture.md) for the shipped design and
+[verification](implementation-plan.md) for checks.
 
 ## Baseline and evidence
 
