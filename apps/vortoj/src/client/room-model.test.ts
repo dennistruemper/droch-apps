@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { init, update, type Model, type Message } from "./room-model.ts";
 import type { Snapshot } from "../contracts/index.ts";
+
 const userId = "alice";
+
 const snapshot: Snapshot = {
   id: "room",
   title: "Sunday",
@@ -32,8 +34,10 @@ const snapshot: Snapshot = {
   pending: null,
   history: [],
 };
+
 const step = (model: Model, event: Message) => update(model, event, userId);
 const active = () => step(init(), { kind: "snapshot", room: snapshot }).model;
+
 describe("room transitions", () => {
   it("keeps exchange and placement mutually exclusive and resets drafts on a newer snapshot", () => {
     const selected = step(active(), { kind: "select-tile", id: "a" }).model;
@@ -56,15 +60,19 @@ describe("room transitions", () => {
   it("validates joker letters, requests the dialog and fixes the letter in each placement", () => {
     const selected = step(active(), { kind: "select-tile", id: "joker" });
     expect(selected.commands).toEqual([{ kind: "joker-dialog", open: true }]);
+
     const invalid = step(step(selected.model, { kind: "joker-changed", letter: "B" }).model, {
       kind: "joker-confirmed",
     });
+
     expect(invalid.model.move).toMatchObject({
       jokerError: "Choose a letter from this tile set for the joker.",
     });
+
     const valid = step(step(invalid.model, { kind: "joker-changed", letter: "a" }).model, {
       kind: "joker-confirmed",
     });
+
     expect(valid.commands).toEqual([{ kind: "joker-dialog", open: false }]);
     const placed = step(valid.model, { kind: "place", row: 7, col: 7 }).model;
     expect(placed.move).toMatchObject({
@@ -80,15 +88,18 @@ describe("room transitions", () => {
     expect(step(pending.model, { kind: "action", action: { kind: "pass" } }).model).toBe(
       pending.model,
     );
+
     const streamed = step(pending.model, {
       kind: "snapshot",
       room: { ...snapshot, version: 3 },
     }).model;
+
     const completed = step(streamed, {
       kind: "loaded",
       id: 1,
       room: { ...snapshot, version: 2 },
     }).model;
+
     expect(completed.screen).toMatchObject({ room: { version: 3 } });
     expect(completed.pending).toBeNull();
     expect(step(completed, { kind: "failed", id: 1, status: 0, error: "Late" }).model).toBe(
@@ -101,12 +112,13 @@ describe("room transitions", () => {
     expect(removed.commands).toEqual([{ kind: "close-stream" }, { kind: "close-dialogs" }]);
     expect(removed.model.screen.kind).toBe("removed");
     expect(removed.model.pending).toBeNull();
+
     for (const event of [
       { kind: "loaded", id: 1, room: snapshot },
       { kind: "snapshot", room: snapshot },
       { kind: "connection", text: "Offline" },
       { kind: "refresh" },
-    ] as Message[])
+    ] satisfies Message[])
       expect(step(removed.model, event).model).toBe(removed.model);
   });
   it("reconciles conflicts, separates expiry from removal, and does not duplicate loads", () => {
@@ -125,11 +137,13 @@ describe("room transitions", () => {
   it("preserves an active room when old invite information arrives after joining", () => {
     const loading = step(init(), { kind: "refresh" }).model;
     const streamed = step(loading, { kind: "snapshot", room: snapshot }).model;
+
     const lateInfo = step(streamed, {
       kind: "invite-loaded",
       id: 1,
       info: { id: "room", title: "Sunday", phase: "waiting", playerCount: 1 },
     });
+
     expect(lateInfo.model.screen).toBe(streamed.screen);
     expect(lateInfo.model.loading).toBeNull();
   });
@@ -147,16 +161,19 @@ describe("room transitions", () => {
         requiredApprovals: 1,
       },
     };
+
     expect(step(active(), { kind: "snapshot", room: voting }).commands).toContainEqual({
       kind: "approval",
       version: 2,
       action: "show",
     });
+
     const voted = {
       ...voting,
       version: 3,
       pending: { ...voting.pending, votes: { w: { [userId]: true } } },
     };
+
     expect(step(active(), { kind: "snapshot", room: voted }).commands).toContainEqual({
       kind: "approval",
       version: 3,
@@ -168,6 +185,7 @@ describe("room transitions", () => {
       version: 2,
       action: "keep",
     });
+
     const accepted = step(step(active(), { kind: "snapshot", room: voting }).model, {
       kind: "snapshot",
       room: {
@@ -176,6 +194,7 @@ describe("room transitions", () => {
         board: [{ id: "b", letter: "A", points: 1, blank: false, row: 7, col: 7 }],
       },
     });
+
     expect(accepted.commands).toContainEqual({ kind: "overview" });
     expect(accepted.commands).toContainEqual({ kind: "approval", version: 3, action: "close" });
   });

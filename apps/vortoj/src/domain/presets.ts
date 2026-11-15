@@ -1,11 +1,14 @@
 import type { TileSet } from "../contracts/index.ts";
+
 const make = (name: string, values: string): TileSet => ({
   name,
   tiles: values.split(" ").map((value) => {
     const [letter, count, points] = value.split(":");
+
     return { letter: letter!, count: Number(count), points: Number(points) };
   }),
 });
+
 // Vortoj defaults use small distribution adjustments for each language.
 export const presets = [
   {

@@ -7,12 +7,17 @@ import { createRequire } from "node:module";
 import { frontendConfig } from "./frontend.ts";
 
 const root = process.cwd();
+
 validateApplications(applications);
+
 await rm(resolve(root, "dist"), { recursive: true, force: true });
+
 for (const app of applications) {
   await buildFrontend(frontendConfig(resolve(root, "apps", app.id), app.id, root));
 }
+
 await mkdir(resolve(root, "dist/server"), { recursive: true });
+
 await buildServer({
   entryPoints: { main: "server/src/main.ts", migrate: "tooling/migrate.ts" },
   outdir: "dist/server",
@@ -28,11 +33,14 @@ await buildServer({
     js: 'import { createRequire as __createRequire } from "node:module"; const require = __createRequire(import.meta.url);',
   },
 });
+
 await cp(resolve(root, "shared/src/styles"), resolve(root, "dist/styles"), { recursive: true });
 
 const requireShared = createRequire(resolve(root, "shared/package.json"));
 const driver = requireShared.resolve("better-sqlite3");
+
 await mkdir(resolve(root, "dist/native"), { recursive: true });
+
 // better-sqlite3 13 ships platform-specific N-API binaries in the package.
 await cp(
   resolve(dirname(driver), `../prebuilds/${process.platform}-${process.arch}.node`),

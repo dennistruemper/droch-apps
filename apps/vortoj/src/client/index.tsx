@@ -11,6 +11,7 @@ import { Room } from "./room.tsx";
 import { Shell } from "./shell.tsx";
 import "@repo/shared/styles";
 import "./vortoj.css";
+
 function layout(user: () => User | null, signOut: () => Promise<void>, content: JSX.Element) {
   return (
     <Shell user={user} signOut={signOut}>
@@ -18,6 +19,7 @@ function layout(user: () => User | null, signOut: () => Promise<void>, content: 
     </Shell>
   );
 }
+
 function Home() {
   return (
     <Account
@@ -39,8 +41,10 @@ function Home() {
     </Account>
   );
 }
+
 function RoomRoute() {
   const params = useParams<{ id: string }>();
+
   return (
     <Account layout={layout}>
       {(user) => (
@@ -53,6 +57,7 @@ function RoomRoute() {
     </Account>
   );
 }
+
 function NotFound() {
   return (
     <Account
@@ -71,6 +76,7 @@ function NotFound() {
     </Account>
   );
 }
+
 function App() {
   const Router = createRouter({
     base: "/vortoj",
@@ -80,10 +86,14 @@ function App() {
       { path: "*404", component: NotFound },
     ],
   });
+
   return <Router />;
 }
+
 const element = document.getElementById("app");
+
 if (!element) throw new Error("Missing app mount element");
+
 render(
   () => (
     <AppAppearance appId={appDefinition.id} defaults={appDefinition.themes}>

@@ -9,22 +9,26 @@ test("custom colors and fonts preview, persist per app, and leave presets intact
   const theme = page.getByLabel("Your theme");
   const font = page.getByLabel("Font", { exact: true });
   const bodyFont = () => page.evaluate(() => getComputedStyle(document.body).fontFamily);
+
   const color = async (label: string, value: string) => {
     await page.getByLabel(label).evaluate((element, hex) => {
-      const input = element as HTMLInputElement;
-      input.value = hex;
-      input.dispatchEvent(new Event("input", { bubbles: true }));
+      if (!(element instanceof HTMLInputElement)) throw new Error("Expected a color input");
+      element.value = hex;
+      element.dispatchEvent(new Event("input", { bubbles: true }));
     }, value);
   };
+
   const palette = () =>
     page.evaluate(() => {
       const root = document.documentElement;
+
       return {
         background: root.style.getPropertyValue("--color-bg"),
         foreground: root.style.getPropertyValue("--color-fg"),
         scheme: getComputedStyle(root).colorScheme,
       };
     });
+
   await page.goto("/poker/");
   await settings.click();
   await theme.selectOption("ink");
@@ -97,6 +101,7 @@ test("older color preferences and invalid fonts have safe defaults", async ({ pa
   await expect(page.getByLabel("Background color")).toHaveValue("#ffffff");
   await expect(page.getByLabel("Text and border color")).toHaveValue("#111111");
   await expect(page.getByLabel("Font", { exact: true })).toHaveValue("sans");
+
   for (const font of [undefined, "invalid font"]) {
     await page.evaluate((value) => {
       localStorage.setItem(
@@ -110,6 +115,7 @@ test("older color preferences and invalid fonts have safe defaults", async ({ pa
     await expect(page.getByLabel("Text and border color")).toHaveValue("#fedcba");
     await expect(page.getByLabel("Font", { exact: true })).toHaveValue("sans");
   }
+
   await page.getByLabel("Font", { exact: true }).selectOption("mono");
   await expect
     .poll(() => page.evaluate(() => getComputedStyle(document.body).fontFamily))

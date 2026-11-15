@@ -7,6 +7,7 @@ import type { Site } from "./sites.ts";
 
 export function createStore(db: ReturnType<typeof connectDatabase>["db"], sites: readonly Site[]) {
   const ids = sites.map((site) => site.id);
+
   function prune(now: number) {
     db.transaction((tx) => {
       tx.delete(hours)
@@ -15,6 +16,7 @@ export function createStore(db: ReturnType<typeof connectDatabase>["db"], sites:
       tx.delete(latest)
         .where(lt(latest.slot, oldestHour(now)))
         .run();
+
       if (ids.length) {
         tx.delete(hours).where(notInArray(hours.siteId, ids)).run();
         tx.delete(latest).where(notInArray(latest.siteId, ids)).run();
@@ -24,6 +26,7 @@ export function createStore(db: ReturnType<typeof connectDatabase>["db"], sites:
       }
     });
   }
+
   return {
     prune,
     isActivated() {
@@ -45,12 +48,15 @@ export function createStore(db: ReturnType<typeof connectDatabase>["db"], sites:
         .from(hours)
         .where(and(eq(hours.siteId, siteId), eq(hours.hour, hourStart(time))))
         .get();
+
       const offset = ((slotStart(time) - hourStart(time)) / (5 * 60 * 1000)) * 2;
+
       return !!row && ((row.slots >>> offset) & 3) !== 0;
     },
     record(siteId: string, input: Latest, now: number) {
       if (!ids.includes(siteId)) throw new Error("Unknown Observo site");
       const result = latestSchema.parse(input);
+
       if (
         result.slot !== slotStart(result.slot) ||
         result.slot > slotStart(now) ||
@@ -59,12 +65,15 @@ export function createStore(db: ReturnType<typeof connectDatabase>["db"], sites:
         return;
       db.transaction((tx) => {
         const hour = hourStart(result.slot);
+
         const existing = tx
           .select()
           .from(hours)
           .where(and(eq(hours.siteId, siteId), eq(hours.hour, hour)))
           .get();
+
         const packed = recordSlot(existing?.slots ?? 0, result.slot, result.outcome);
+
         if (existing?.slots === packed) return;
         tx.insert(hours)
           .values({ siteId, hour, slots: packed })
@@ -74,6 +83,7 @@ export function createStore(db: ReturnType<typeof connectDatabase>["db"], sites:
           })
           .run();
         const previous = tx.select().from(latest).where(eq(latest.siteId, siteId)).get();
+
         if (!previous || previous.slot < result.slot)
           tx.insert(latest)
             .values({ siteId, ...result })
@@ -83,11 +93,13 @@ export function createStore(db: ReturnType<typeof connectDatabase>["db"], sites:
     },
     snapshot(now: number, checksEnabled: boolean) {
       prune(now);
+
       return {
         generatedAt: now,
         checksEnabled,
         sites: sites.map((site) => {
           const result = db.select().from(latest).where(eq(latest.siteId, site.id)).get();
+
           return {
             id: site.id,
             name: site.name,

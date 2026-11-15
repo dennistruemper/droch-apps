@@ -11,12 +11,16 @@ import { createRoutes } from "./index.ts";
 
 const directories: string[] = [];
 const cleanups: (() => void)[] = [];
+
 afterEach(() => {
   for (const cleanup of cleanups.splice(0)) cleanup();
+
   for (const directory of directories.splice(0))
     rmSync(directory, { recursive: true, force: true });
 });
+
 const now = Date.UTC(2026, 9, 24, 10);
+
 const result = (slot: number, outcome: Latest["outcome"] = "available"): Latest => ({
   slot,
   checkedAt: slot + 1000,
@@ -25,13 +29,16 @@ const result = (slot: number, outcome: Latest["outcome"] = "available"): Latest 
   statusCode: outcome === "available" ? 200 : null,
   durationMs: 1000,
 });
+
 function setup() {
   const directory = mkdtempSync(resolve(tmpdir(), "observo-"));
   directories.push(directory);
   migrateDatabase(directory, "observo", resolve("migrations/observo"));
   const connection = connectDatabase(directory, "observo");
+
   return { directory, connection, store: createStore(connection.db, sites) };
 }
+
 describe("Observo persistence and public reads", () => {
   it("preserves results across reopen, ignores duplicates and keeps late results from replacing the latest", () => {
     const { directory, connection, store } = setup();
@@ -41,6 +48,7 @@ describe("Observo persistence and public reads", () => {
     store.record(id, result(now + interval, "unreachable"), now + interval + 2000);
     connection.close();
     const reopened = connectDatabase(directory, "observo");
+
     try {
       const persisted = createStore(reopened.db, sites);
       const snapshot = dashboardSchema.parse(persisted.snapshot(now + interval + 3000, true));
@@ -57,6 +65,7 @@ describe("Observo persistence and public reads", () => {
   });
   it("expires old history and last results, retains the boundary, and removes deconfigured websites", () => {
     const { connection, store } = setup();
+
     try {
       const id = sites[0]!.id;
       const cutoff = oldestHour(now);
@@ -76,8 +85,13 @@ describe("Observo persistence and public reads", () => {
   it("activates only on an explicit same-origin visit, persists across restarts and survives pruning", async () => {
     const { directory, connection, store } = setup();
     let time = now;
-    const check = vi.fn(async () => result(time));
+
+    const check = vi.fn<NonNullable<NonNullable<Parameters<typeof createRoutes>[0]>["check"]>>(
+      async () => result(time),
+    );
+
     let stop = () => {};
+
     const app = createRoutes({
       db: connection.db,
       origin: "http://localhost",
@@ -87,6 +101,7 @@ describe("Observo persistence and public reads", () => {
         stop = cleanup;
       },
     });
+
     try {
       await app.request("/status");
       await app.request("/sites");
@@ -98,7 +113,7 @@ describe("Observo persistence and public reads", () => {
           .status,
       ).toBe(403);
       await Promise.all(
-        Array.from({ length: 3 }, () =>
+        Array.from({ length: 3 }, async () =>
           app.request("/activate", { method: "POST", headers: { Origin: "http://localhost" } }),
         ),
       );
@@ -111,7 +126,9 @@ describe("Observo persistence and public reads", () => {
       stop();
       connection.close();
     }
+
     const reopened = connectDatabase(directory, "observo");
+
     try {
       createRoutes({
         db: reopened.db,
@@ -131,6 +148,7 @@ describe("Observo persistence and public reads", () => {
   });
   it("serves public validated data, rejects writes and unready storage", async () => {
     const { connection } = setup();
+
     try {
       const app = createRoutes({
         db: connection.db,
@@ -139,6 +157,7 @@ describe("Observo persistence and public reads", () => {
         checksDisabled: true,
         registerCleanup: (cleanup) => cleanups.push(cleanup),
       });
+
       const response = await app.request("/sites");
       expect(response.status).toBe(200);
       expect(

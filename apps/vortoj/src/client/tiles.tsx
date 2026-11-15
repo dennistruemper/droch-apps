@@ -2,17 +2,21 @@ import { createSignal, onSettled, Show, For } from "solid-js";
 import { message } from "./api.ts";
 import { init, update, type Message, type SavedSet } from "./tiles-model.ts";
 import { execute } from "./tiles-commands.ts";
+
 export type { SavedSet } from "./tiles-model.ts";
+
 export function TileEditor(props: { sets: SavedSet[]; saved: () => Promise<void> }) {
   let current = init();
   const [model, setModel] = createSignal(current);
   const controller = new AbortController();
   onSettled(() => () => controller.abort());
+
   async function dispatch(event: Message): Promise<void> {
     if (controller.signal.aborted) return;
     const transition = update(current, event);
     current = transition.model;
     setModel(current);
+
     for (const command of transition.commands) {
       try {
         await dispatch(await execute(command, controller.signal, props.saved));
@@ -21,14 +25,17 @@ export function TileEditor(props: { sets: SavedSet[]; saved: () => Promise<void>
       }
     }
   }
+
   const name = () => model().name;
   const rows = () => model().rows;
   const busy = () => model().pending !== null;
   const error = () => model().error;
   const notice = () => model().notice;
+
   function edit(set: SavedSet, copy: boolean) {
     void dispatch({ kind: "edit", set, copy, rowIds: set.tiles.map(() => crypto.randomUUID()) });
   }
+
   return (
     <section aria-label="Tile set editor">
       <div class="tile-editor-actions">

@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { init, update, type Collection } from "./lobby-model.ts";
+
 const data: Collection = {
   rooms: [],
   sets: [{ id: "english", name: "English", tiles: [{ letter: "A", count: 28, points: 1 }] }],
 };
+
 function ready() {
   return update(update(init(), { kind: "refresh" }).model, { kind: "loaded", id: 1, data }).model;
 }
+
 describe("lobby transitions", () => {
   it("ignores stale loads and preserves existing collection on refresh failure", () => {
     const first = update(ready(), { kind: "refresh" }).model;
@@ -44,12 +47,15 @@ describe("lobby transitions", () => {
       title: "Sunday",
       tileSetId: "english",
     }).model;
+
     const refreshing = update(pending, { kind: "refresh" }).model;
+
     const loadFailed = update(refreshing, {
       kind: "failed",
       id: 3,
       error: "Collection offline",
     }).model;
+
     expect(loadFailed.creating).toBe(pending.creating);
     const failed = update(loadFailed, { kind: "failed", id: 2, error: "Create failed" }).model;
     expect(failed.collection).toBe(loadFailed.collection);

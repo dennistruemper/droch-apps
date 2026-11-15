@@ -8,7 +8,9 @@ export const appDefinition = {
 } as const;
 
 export const outcomeSchema = z.enum(["available", "unreachable", "not-functional"]);
+
 export type Outcome = z.infer<typeof outcomeSchema>;
+
 export const reasonSchema = z.enum([
   "ok",
   "http-error",
@@ -18,7 +20,9 @@ export const reasonSchema = z.enum([
   "verification-required",
   "redirect-blocked",
 ]);
+
 export type Reason = z.infer<typeof reasonSchema>;
+
 export const latestSchema = z.object({
   checkedAt: z.number().int().nonnegative(),
   slot: z.number().int().nonnegative(),
@@ -27,7 +31,9 @@ export const latestSchema = z.object({
   statusCode: z.number().int().min(100).max(599).nullable(),
   durationMs: z.number().int().nonnegative(),
 });
+
 export type Latest = z.infer<typeof latestSchema>;
+
 export const dashboardSchema = z.object({
   generatedAt: z.number().int().nonnegative(),
   checksEnabled: z.boolean(),
@@ -49,4 +55,5 @@ export const dashboardSchema = z.object({
     }),
   ),
 });
+
 export type Dashboard = z.infer<typeof dashboardSchema>;

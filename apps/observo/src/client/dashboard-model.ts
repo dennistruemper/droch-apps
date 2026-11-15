@@ -4,6 +4,7 @@ type Request =
   | { kind: "idle" }
   | { kind: "loading"; id: number }
   | { kind: "failed"; error: string };
+
 export type Model = {
   data: Dashboard | null;
   request: Request;
@@ -11,13 +12,16 @@ export type Model = {
   now: number;
   selected: { siteId: string; hour: number } | null;
 };
+
 export type Message =
   | { kind: "refresh" }
   | { kind: "clock"; now: number }
   | { kind: "loaded"; id: number; data: Dashboard }
   | { kind: "failed"; id: number; error: string }
   | { kind: "select"; siteId: string; hour: number };
+
 export type Command = { kind: "activate" | "load"; id: number };
+
 export const init = (): Model => ({
   data: null,
   request: { kind: "idle" },
@@ -25,11 +29,14 @@ export const init = (): Model => ({
   now: 0,
   selected: null,
 });
+
 export function update(model: Model, message: Message): { model: Model; commands: Command[] } {
   const unchanged = { model, commands: [] };
+
   switch (message.kind) {
     case "refresh":
       if (model.request.kind === "loading") return unchanged;
+
       return {
         model: {
           ...model,
@@ -40,6 +47,7 @@ export function update(model: Model, message: Message): { model: Model; commands
       };
     case "loaded":
       if (model.request.kind !== "loading" || model.request.id !== message.id) return unchanged;
+
       return {
         model: {
           ...model,
@@ -54,6 +62,7 @@ export function update(model: Model, message: Message): { model: Model; commands
       };
     case "failed":
       if (model.request.kind !== "loading" || model.request.id !== message.id) return unchanged;
+
       return {
         model: { ...model, request: { kind: "failed", error: message.error } },
         commands: [],

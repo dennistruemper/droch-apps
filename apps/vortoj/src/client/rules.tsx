@@ -1,7 +1,9 @@
 import { For } from "solid-js";
 import type { JSX } from "@solidjs/web";
+
 export function Rules(props: { trigger: (open: () => void) => JSX.Element }) {
   let rulesDialog: HTMLDialogElement | undefined;
+
   return (
     <>
       {props.trigger(() => rulesDialog?.showModal())}

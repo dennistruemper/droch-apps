@@ -14,9 +14,11 @@ const AttentionContext = createContext<{
   enabled: Accessor<boolean>;
   setEnabled: (enabled: boolean) => void;
 }>();
+
 export function AttentionProvider(props: { children: Element }) {
   const storage = createAppStorage("poker", localStorage);
   const [enabled, setEnabled] = createSignal(storage.get("attention-mode") === "true");
+
   return (
     <AttentionContext
       value={{
@@ -31,8 +33,10 @@ export function AttentionProvider(props: { children: Element }) {
     </AttentionContext>
   );
 }
+
 export function AttentionSettings() {
   const attention = useContext(AttentionContext);
+
   return (
     <section>
       <label for="poker-attention-mode">
@@ -47,11 +51,14 @@ export function AttentionSettings() {
     </section>
   );
 }
+
 function chooseScenes(previous: readonly Effect[]): readonly [Effect, Effect, Effect] {
   const available = effects.filter((effect) => !previous.includes(effect));
   const take = () => available.splice(Math.floor(Math.random() * available.length), 1)[0]!;
+
   return [take(), take(), take()];
 }
+
 function AttentionScenes() {
   const [scenes, setScenes] = createSignal(chooseScenes([]));
   const canvases: HTMLCanvasElement[] = [];
@@ -60,48 +67,62 @@ function AttentionScenes() {
     () => {
       const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
       const visible = new Set<HTMLCanvasElement>();
+
       let frame = 0,
         last: number | undefined,
         elapsed = 0,
         lastDraw = -Infinity;
+
       function draw() {
         canvases.forEach((canvas, index) => {
           if (visible.has(canvas)) render(canvas, scenes()[index]!, elapsed);
         });
       }
+
       function tick(now: number) {
         if (last !== undefined) elapsed += (now - last) / 1000;
         last = now;
+
         if (elapsed >= 60) {
           setScenes(chooseScenes(scenes()));
           elapsed = 0;
         }
+
         if (now - lastDraw >= 1000 / 30) {
           draw();
           lastDraw = now;
         }
+
         frame = requestAnimationFrame(tick);
       }
+
       function sync() {
         cancelAnimationFrame(frame);
         last = undefined;
         draw();
+
         if (!document.hidden && !reducedMotion.matches && visible.size)
           frame = requestAnimationFrame(tick);
       }
+
       const observer = new IntersectionObserver((entries) => {
         for (const entry of entries) {
-          if (entry.isIntersecting) visible.add(entry.target as HTMLCanvasElement);
-          else visible.delete(entry.target as HTMLCanvasElement);
+          if (!(entry.target instanceof HTMLCanvasElement)) continue;
+
+          if (entry.isIntersecting) visible.add(entry.target);
+          else visible.delete(entry.target);
         }
+
         sync();
       });
+
       canvases.forEach((canvas, index) => {
         render(canvas, scenes()[index]!, 0);
         observer.observe(canvas);
       });
       document.addEventListener("visibilitychange", sync);
       reducedMotion.addEventListener("change", sync);
+
       return () => {
         cancelAnimationFrame(frame);
         observer.disconnect();
@@ -110,6 +131,7 @@ function AttentionScenes() {
       };
     },
   );
+
   return (
     <>
       <aside
@@ -157,8 +179,10 @@ function AttentionScenes() {
     </>
   );
 }
+
 export function AttentionFrame(props: { children: Element }) {
   const attention = useContext(AttentionContext);
+
   return (
     <div class="attention-frame" data-active={attention.enabled() ? "true" : undefined}>
       <div class="attention-voting">{props.children}</div>

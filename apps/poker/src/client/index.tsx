@@ -17,6 +17,7 @@ import "./poker.css";
 import { AttentionProvider, AttentionSettings, AttentionFrame } from "./attention.tsx";
 
 const storage = createAppStorage("poker", localStorage);
+
 class RequestError extends Error {
   constructor(
     message: string,
@@ -25,6 +26,7 @@ class RequestError extends Error {
     super(message);
   }
 }
+
 async function request(path: string, body?: unknown, signal?: AbortSignal): Promise<unknown> {
   const response = await fetch(`/api/poker${path}`, {
     ...(body === undefined
@@ -42,30 +44,39 @@ async function request(path: string, body?: unknown, signal?: AbortSignal): Prom
       0,
     );
   });
+
   const data: unknown = await response.json().catch(() => {
     throw new RequestError(
       "The poker server returned an unreadable response. Refresh the page and try again.",
       response.status,
     );
   });
+
   if (!response.ok) {
     const message =
       typeof data === "object" && data !== null && "error" in data && typeof data.error === "string"
         ? data.error
         : "Request failed";
+
     throw new RequestError(message, response.status);
   }
+
   return data;
 }
+
 const message = (error: unknown) =>
   error instanceof RequestError
     ? error.message
     : "Could not read the room update. Refresh the page and try again.";
+
 function saveName(form: HTMLFormElement) {
-  const name = String(new FormData(form).get("name") ?? "").trim();
+  const value = new FormData(form).get("name");
+  const name = typeof value === "string" ? value.trim() : "";
   storage.set("name", name);
+
   return name;
 }
+
 function NameField() {
   return (
     <>
@@ -84,10 +95,36 @@ function NameField() {
 
 function Home() {
   let defaultTitle = true;
+
   const [busy, setBusy] = createSignal(false),
     [error, setError] = createSignal("");
+
   const controller = new AbortController();
   onCleanup(() => controller.abort());
+
+  async function createRoom(form: HTMLFormElement) {
+    const title = new FormData(form).get("title");
+    setBusy(true);
+    setError("");
+
+    try {
+      const room = roomSnapshotSchema.parse(
+        await request(
+          "/rooms",
+          { title: typeof title === "string" ? title : "", name: saveName(form) },
+          controller.signal,
+        ),
+      );
+
+      window.location.assign(`/poker/room/${room.id}`);
+    } catch (cause) {
+      if (!controller.signal.aborted) {
+        setError(message(cause));
+        setBusy(false);
+      }
+    }
+  }
+
   return (
     <main>
       <section>
@@ -95,26 +132,9 @@ function Home() {
         <p>{appDefinition.description}</p>
       </section>
       <form
-        onSubmit={async (event) => {
+        onSubmit={(event) => {
           event.preventDefault();
-          const form = event.currentTarget;
-          setBusy(true);
-          setError("");
-          try {
-            const room = roomSnapshotSchema.parse(
-              await request(
-                "/rooms",
-                { title: String(new FormData(form).get("title")), name: saveName(form) },
-                controller.signal,
-              ),
-            );
-            window.location.assign(`/poker/room/${room.id}`);
-          } catch (cause) {
-            if (!controller.signal.aborted) {
-              setError(message(cause));
-              setBusy(false);
-            }
-          }
+          void createRoom(event.currentTarget);
         }}
       >
         <h2>Bring your team together</h2>
@@ -153,25 +173,35 @@ function Home() {
 
 function Room(props: { id: string }) {
   const id = props.id;
+
   const [room, setRoom] = createSignal<RoomSnapshot | null>(null),
     [info, setInfo] = createSignal<RoomInfo | null>(null);
+
   const [joining, setJoining] = createSignal(false),
     [busy, setBusy] = createSignal(false),
     [error, setError] = createSignal("");
+
   const [connection, setConnection] = createSignal("Connecting…"),
     [copied, setCopied] = createSignal(false);
+
   const controller = new AbortController();
   let events: EventSource | undefined;
+
   const apply = (data: unknown) => {
     const next = roomSnapshotSchema.parse(data);
+
     if (!room() || next.version >= room()!.version) setRoom(next);
   };
+
   const connect = () => {
     events?.close();
     events = new EventSource(`/api/poker/rooms/${id}/events`);
     events.addEventListener("snapshot", (event) => {
       try {
-        apply(JSON.parse((event as MessageEvent<string>).data));
+        if (!(event instanceof MessageEvent) || typeof event.data !== "string")
+          throw new Error("Invalid snapshot event");
+
+        apply(JSON.parse(event.data));
         setConnection("Live updates connected");
       } catch {
         setConnection("Unable to read live updates");
@@ -186,6 +216,7 @@ function Room(props: { id: string }) {
     });
     events.onerror = () => setConnection("Connection lost. Reconnecting…");
   };
+
   const refresh = async () => {
     try {
       apply(await request(`/rooms/${id}`, undefined, controller.signal));
@@ -193,9 +224,11 @@ function Room(props: { id: string }) {
       if (!controller.signal.aborted) setError(message(cause));
     }
   };
+
   const resume = () => {
     if (!document.hidden && room()) void refresh();
   };
+
   document.addEventListener("visibilitychange", resume);
   onCleanup(() => {
     controller.abort();
@@ -207,6 +240,7 @@ function Room(props: { id: string }) {
       setInfo(
         roomInfoSchema.parse(await request(`/rooms/${id}/info`, undefined, controller.signal)),
       );
+
       try {
         apply(await request(`/rooms/${id}`, undefined, controller.signal));
         connect();
@@ -218,11 +252,14 @@ function Room(props: { id: string }) {
       if (!controller.signal.aborted) setError(message(cause));
     }
   })();
+
   const command = async (kind: "vote" | "reveal" | "reset", vote?: Vote | null) => {
     const current = room();
+
     if (!current || busy()) return;
     setBusy(true);
     setError("");
+
     try {
       apply(
         await request(
@@ -240,7 +277,34 @@ function Room(props: { id: string }) {
       setBusy(false);
     }
   };
+
+  async function joinRoom(form: HTMLFormElement) {
+    const name = saveName(form);
+    setBusy(true);
+    setError("");
+
+    try {
+      apply(await request(`/rooms/${id}/join`, { name }, controller.signal));
+      setJoining(false);
+      connect();
+    } catch (cause) {
+      if (!controller.signal.aborted) setError(message(cause));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const invite = new URL(`/poker/room/${id}`, window.location.origin).href;
+
+  async function copyInvite() {
+    try {
+      await navigator.clipboard.writeText(invite);
+      setCopied(true);
+    } catch {
+      setError("Select the invite link and copy it to share.");
+    }
+  }
+
   return (
     <main>
       <section>
@@ -255,20 +319,9 @@ function Room(props: { id: string }) {
       </Show>
       <Show when={joining()}>
         <form
-          onSubmit={async (event) => {
+          onSubmit={(event) => {
             event.preventDefault();
-            const name = saveName(event.currentTarget);
-            setBusy(true);
-            setError("");
-            try {
-              apply(await request(`/rooms/${id}/join`, { name }, controller.signal));
-              setJoining(false);
-              connect();
-            } catch (cause) {
-              if (!controller.signal.aborted) setError(message(cause));
-            } finally {
-              setBusy(false);
-            }
+            void joinRoom(event.currentTarget);
           }}
         >
           <h2>Join the team</h2>
@@ -372,17 +425,7 @@ function Room(props: { id: string }) {
             value={invite}
             onFocus={(event) => event.currentTarget.select()}
           />
-          <button
-            type="button"
-            onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(invite);
-                setCopied(true);
-              } catch {
-                setError("Select the invite link and copy it to share.");
-              }
-            }}
-          >
+          <button type="button" onClick={() => void copyInvite()}>
             {copied() ? "Link copied" : "Copy invite link"}
           </button>
           <small>
@@ -394,14 +437,17 @@ function Room(props: { id: string }) {
     </main>
   );
 }
+
 function RoomRoute() {
   const params = useParams<{ id: string }>();
+
   return (
     <Show when={params.id} keyed>
       {(id) => <Room id={id} />}
     </Show>
   );
 }
+
 function NotFound() {
   return (
     <main>
@@ -410,8 +456,11 @@ function NotFound() {
     </main>
   );
 }
+
 const element = document.getElementById("app");
+
 if (!element) throw new Error("Missing app mount element");
+
 const Router = createRouter({
   base: "/poker",
   routes: [
@@ -420,6 +469,7 @@ const Router = createRouter({
     { path: "*404", component: NotFound },
   ],
 });
+
 function App() {
   return (
     <AttentionProvider>
@@ -439,6 +489,7 @@ function App() {
     </AttentionProvider>
   );
 }
+
 render(
   () => (
     <AppAppearance appId={appDefinition.id} defaults={appDefinition.themes}>

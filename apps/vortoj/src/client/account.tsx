@@ -4,6 +4,7 @@ import type { User } from "@repo/shared/contracts/auth";
 import { init, update, type Message, type Transition } from "./account-model.ts";
 import { execute } from "./account-commands.ts";
 import { message } from "./api.ts";
+
 export function Account(props: {
   children: (user: User, signOut: () => Promise<void>) => JSX.Element;
   layout: (
@@ -19,44 +20,58 @@ export function Account(props: {
 
   function dispatch(event: Message): Promise<void> {
     if (controller.signal.aborted) return Promise.resolve();
+
     return apply(update(current, event));
   }
+
   async function apply(transition: Transition): Promise<void> {
     // Keep transition ordering synchronous even when Solid batches rendering.
     current = transition.model;
     setModel(current);
+
     for (const command of transition.commands) {
       try {
         await dispatch(await execute(command, controller.signal));
       } catch (error) {
-        await dispatch({ kind: "failed", id: command.id, error: message(error) });
+        void dispatch({ kind: "failed", id: command.id, error: message(error) });
       }
     }
   }
+
   const screen = () => model().screen;
+
   const user = () => {
     const value = screen();
+
     return value.kind === "signed-in" ? value.user : null;
   };
+
   const email = () => {
     const value = screen();
+
     return value.kind === "email" || value.kind === "code" || value.kind === "name"
       ? value.email
       : "";
   };
+
   const sent = () => screen().kind === "code" || screen().kind === "name";
   const naming = () => screen().kind === "name";
+
   const instructions = () => {
     const value = screen();
+
     return value.kind === "code" ? value.instructions : { codeLength: 6, message: "" };
   };
+
   const busy = () => model().pending !== null;
   const error = () => model().error;
   const signOut = () => dispatch({ kind: "sign-out" });
   onSettled(() => {
     void apply(initial);
+
     return () => controller.abort();
   });
+
   const content = (
     <Show when={screen().kind !== "loading"} fallback={<p>Loading your account…</p>}>
       <Show
@@ -67,14 +82,21 @@ export function Account(props: {
             <h2>Sign in to play</h2>
             <p>Sign in with a code. No passwords.</p>
             <form
-              onSubmit={async (event) => {
+              onSubmit={(event) => {
                 event.preventDefault();
                 const form = new FormData(event.currentTarget);
-                await dispatch({
+
+                const text = (key: string, fallback: string) => {
+                  const value = form.get(key);
+
+                  return typeof value === "string" ? value : fallback;
+                };
+
+                void dispatch({
                   kind: "submit",
-                  email: String(form.get("email") ?? email()),
-                  code: String(form.get("code") ?? ""),
-                  name: String(form.get("name") ?? ""),
+                  email: text("email", email()),
+                  code: text("code", ""),
+                  name: text("name", ""),
                 });
               }}
             >
@@ -161,5 +183,6 @@ export function Account(props: {
       </Show>
     </Show>
   );
+
   return props.layout(user, signOut, content);
 }

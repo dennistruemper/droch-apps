@@ -1,4 +1,5 @@
 import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
+
 export const users = sqliteTable("users", {
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),
@@ -6,6 +7,7 @@ export const users = sqliteTable("users", {
   nameConfirmed: integer("name_confirmed", { mode: "boolean" }).notNull().default(false),
   createdAt: integer("created_at").notNull(),
 });
+
 export const codes = sqliteTable("codes", {
   email: text("email").primaryKey(),
   digest: text("digest").notNull(),
@@ -15,6 +17,7 @@ export const codes = sqliteTable("codes", {
   requests: integer("requests").notNull().default(1),
   windowStart: integer("window_start").notNull(),
 });
+
 export const sessions = sqliteTable(
   "sessions",
   {

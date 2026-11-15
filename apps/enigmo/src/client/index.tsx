@@ -15,24 +15,32 @@ function App() {
   onSettled(() => () => {
     disposed = true;
   });
+
   function dispatch(message: Message) {
     if (disposed) return;
     const transition = update(current, message);
     current = transition.model;
     setModel(current);
+
     for (const command of transition.commands) {
       const result = execute(command);
+
       if (result) dispatch(result);
     }
   }
+
   const entry = () => {
     const value = model();
+
     return value.kind === "entry" ? value : undefined;
   };
+
   const active = () => {
     const value = model();
+
     return value.kind === "puzzle" ? value : undefined;
   };
+
   return (
     <>
       <Show when={entry()}>
@@ -219,6 +227,7 @@ function App() {
     </>
   );
 }
+
 render(
   () => (
     <AppAppearance appId={appDefinition.id} defaults={appDefinition.themes}>

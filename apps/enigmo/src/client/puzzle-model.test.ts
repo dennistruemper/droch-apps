@@ -11,25 +11,32 @@ import {
 import { init, update, type Model } from "./puzzle-model.ts";
 
 const puzzle = findPuzzle("ymir")!;
+
 const answers = Object.fromEntries(
   puzzle.questions.map((question) => [question.id, question.answer]),
 );
+
 function active(): Extract<Model, { kind: "puzzle" }> {
   const model = init(" ymIR ", () => emptyProgress());
+
   if (model.kind !== "puzzle") throw new Error("Expected puzzle");
+
   return model;
 }
+
 describe("Enigmo content and puzzle transitions", () => {
   it("keeps every authored puzzle consistent and contributes an actual scrambled anagram", () => {
     expect(new Set(puzzles.map((item) => item.code)).size).toBe(puzzles.length);
+
     for (const item of puzzles) {
       expect(item.code).toMatch(/^[A-Z0-9-]+$/);
       expect(new Set(item.questions.map((question) => question.id)).size).toBe(
         item.questions.length,
       );
       const correct = item.questions.map((question) => question.answer).join("");
-      expect([...correct].sort()).toEqual([...normalize(item.solution)].sort());
+      expect(Array.from(correct).sort()).toEqual(Array.from(normalize(item.solution)).sort());
       expect(correct).not.toBe(normalize(item.solution));
+
       for (const question of item.questions) {
         expect(new Set(question.options.map((option) => option.letter)).size).toBe(
           question.options.length,
@@ -37,6 +44,7 @@ describe("Enigmo content and puzzle transitions", () => {
         expect(question.options.filter((option) => option.letter === question.answer)).toHaveLength(
           1,
         );
+
         for (const option of question.options) expect(option.letter).toMatch(/^[A-Z]$/);
       }
     }
@@ -61,10 +69,12 @@ describe("Enigmo content and puzzle transitions", () => {
     expect(update(start, { kind: "check" }).model).toMatchObject({ feedback: "incomplete" });
     const complete = { ...start, progress: { answers, solution: " gAr nEr iNg " } };
     expect(update(complete, { kind: "check" }).model).toMatchObject({ feedback: "solved" });
+
     const edited = update(
       { ...complete, feedback: "solved" },
       { kind: "answer", id: "trek", letter: "K" },
     );
+
     expect(edited.model).toMatchObject({ feedback: "none" });
     expect(update(edited.model, { kind: "check" }).model).toMatchObject({ feedback: "incorrect" });
     const wrongWord = { ...complete, progress: { answers, solution: "gathering" } };

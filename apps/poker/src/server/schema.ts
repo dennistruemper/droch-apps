@@ -10,6 +10,7 @@ export const rooms = sqliteTable("rooms", {
   revealed: integer("revealed", { mode: "boolean" }).notNull().default(false),
   lastActivity: integer("last_activity").notNull(),
 });
+
 export const participants = sqliteTable(
   "participants",
   {

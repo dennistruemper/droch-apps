@@ -1,6 +1,7 @@
 import { snapshotSchema, roomListSchema, savedTileSetSchema } from "../contracts/index.ts";
 import { api } from "./api.ts";
 import type { Command, Message } from "./lobby-model.ts";
+
 export async function execute(
   command: Exclude<Command, { kind: "navigate" }>,
   signal: AbortSignal,
@@ -11,12 +12,14 @@ export async function execute(
         api("/tile-sets", undefined, "GET", signal),
         api("/rooms", undefined, "GET", signal),
       ]);
+
       return {
         kind: "loaded",
         id: command.id,
         data: { sets: savedTileSetSchema.array().parse(sets), rooms: roomListSchema.parse(rooms) },
       };
     }
+
     case "create": {
       const room = snapshotSchema.parse(
         await api(
@@ -26,6 +29,7 @@ export async function execute(
           signal,
         ),
       );
+
       return { kind: "created", id: command.id, roomId: room.id };
     }
   }

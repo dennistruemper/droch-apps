@@ -1,4 +1,20 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  "ignorePatterns": ["pnpm-lock.yaml", "shared/src/styles/drochsign.css", "migrations/**"]
+  "ignorePatterns": [
+    "pnpm-lock.yaml",
+    "shared/src/styles/drochsign.css",
+    "migrations/**",
+    ".agent/**",
+    ".agents/**",
+    ".claude/**",
+    ".codex/**",
+    ".continue/**",
+    ".cursor/**",
+    ".gemini/**",
+    ".opencode/**",
+    ".pi/**",
+    ".roo/**",
+    ".windsurf/**",
+    "tools/oxlint/anti-slop/**"
+  ]
 }

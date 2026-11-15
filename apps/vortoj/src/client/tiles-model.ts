@@ -1,11 +1,15 @@
 import { tileSetSchema, type TileSet } from "../contracts/index.ts";
+
 export type SavedSet = TileSet & { id: string };
+
 export type Row = { id: string; letter: string; count: string; points: string };
+
 export type Command = { requestId: number } & (
   | { kind: "save"; setId: string | undefined; value: TileSet }
   | { kind: "remove"; set: SavedSet }
   | { kind: "reload"; notice: string }
 );
+
 export type Model = {
   name: string;
   rows: Row[];
@@ -15,6 +19,7 @@ export type Model = {
   error: string;
   notice: string;
 };
+
 export type Message =
   | { kind: "edit"; set: SavedSet; copy: boolean; rowIds: readonly string[] }
   | { kind: "new" }
@@ -29,7 +34,9 @@ export type Message =
   | { kind: "reloaded"; requestId: number }
   | { kind: "cancelled"; requestId: number }
   | { kind: "failed"; requestId: number; error: string };
+
 export type Transition = { model: Model; commands: Command[] };
+
 export function init(): Model {
   return {
     name: "My tile set",
@@ -41,20 +48,26 @@ export function init(): Model {
     notice: "",
   };
 }
+
 export function update(model: Model, message: Message): Transition {
   const unchanged: Transition = { model, commands: [] };
+
   const change = (patch: Partial<Model>): Transition => ({
     model: { ...model, ...patch },
     commands: [],
   });
+
   const start = (command: Command): Transition => ({
     model: { ...model, pending: command, nextId: model.nextId + 1, error: "", notice: "" },
     commands: [command],
   });
+
   const reload = (patch: Partial<Model>, notice: string): Transition => {
     const command: Command = { kind: "reload", requestId: model.pending!.requestId, notice };
+
     return { model: { ...model, ...patch, pending: command }, commands: [command] };
   };
+
   switch (message.kind) {
     case "saved":
     case "removed":
@@ -62,12 +75,16 @@ export function update(model: Model, message: Message): Transition {
     case "cancelled":
     case "failed": {
       if (!model.pending || model.pending.requestId !== message.requestId) return unchanged;
+
       if (message.kind === "failed") return change({ pending: null, error: message.error });
+
       if (message.kind === "reloaded")
         return model.pending.kind === "reload"
           ? change({ pending: null, notice: model.pending.notice })
           : unchanged;
+
       if (message.kind === "cancelled") return change({ pending: null });
+
       if (message.kind === "saved")
         return model.pending.kind === "save"
           ? reload(
@@ -75,6 +92,7 @@ export function update(model: Model, message: Message): Transition {
               "Tile set saved for your future games.",
             )
           : unchanged;
+
       return model.pending.kind === "remove"
         ? reload(
             { setId: model.setId === model.pending.set.id ? undefined : model.setId },
@@ -82,8 +100,17 @@ export function update(model: Model, message: Message): Transition {
           )
         : unchanged;
     }
-    default:
+
+    case "edit":
+    case "new":
+    case "name-changed":
+    case "add-row":
+    case "row-changed":
+    case "remove-row":
+    case "remove":
+    case "save":
       if (model.pending) return unchanged;
+
       switch (message.kind) {
         case "edit":
           return change({
@@ -125,6 +152,7 @@ export function update(model: Model, message: Message): Transition {
               points: Number(row.points),
             })),
           });
+
           return parsed.success
             ? start({
                 kind: "save",

@@ -1,14 +1,18 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { localDays, localSummary } from "./history.ts";
 import { hourStart, interval, recordSlot } from "../domain/index.ts";
+
 const originalTimezone = process.env.TZ;
+
 afterEach(() => {
   if (originalTimezone === undefined) delete process.env.TZ;
   else process.env.TZ = originalTimezone;
 });
+
 describe("local calendar history", () => {
   it("shows midnight to midnight across both clock changes without losing repeated hours", () => {
     process.env.TZ = "Europe/Berlin";
+
     for (const [date, count] of [
       ["2026-03-29T12:00:00Z", 23],
       ["2026-10-25T12:00:00Z", 25],
@@ -26,6 +30,7 @@ describe("local calendar history", () => {
     process.env.TZ = "Asia/Kolkata";
     const hour = localDays(Date.parse("2026-10-24T12:00:00Z"))[0]!.start;
     const observations = new Map<number, number>();
+
     for (let i = 0; i < 12; i++) {
       const slot = hour + i * interval;
       observations.set(
@@ -33,11 +38,13 @@ describe("local calendar history", () => {
         recordSlot(observations.get(hourStart(slot)) ?? 0, slot, "available"),
       );
     }
+
     expect(localSummary(observations, hour, hour + 12 * interval, null)).toMatchObject({
       passed: 12,
       failed: 0,
       status: "available",
     });
+
     const latest = {
       slot: hour,
       checkedAt: hour,
@@ -46,6 +53,7 @@ describe("local calendar history", () => {
       statusCode: 200,
       outcome: "available",
     } as const;
+
     expect(localSummary(observations, hour, hour + interval, latest)).toMatchObject({
       current: true,
       status: "available",

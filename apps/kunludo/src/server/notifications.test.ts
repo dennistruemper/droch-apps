@@ -10,14 +10,18 @@ import type { Action } from "../contracts/index.ts";
 import { createTeamService } from "./service.ts";
 import { createNotificationWorker, notificationDelay } from "./notifications.ts";
 import { mailQueue, memberships } from "./schema.ts";
+
 const disposers: (() => void)[] = [];
+
 afterEach(() => {
   for (const close of disposers.splice(0)) close();
   vi.restoreAllMocks();
 });
+
 const a = { id: "admin", name: "Anna" },
   b = { id: "player", name: "Ben" },
   d = { id: "other-admin", name: "Dora" };
+
 function fixture() {
   vi.spyOn(console, "error").mockImplementation(() => {});
   const directory = mkdtempSync(join(tmpdir(), "kunludo-mails-"));
@@ -30,13 +34,17 @@ function fixture() {
   let clock = Date.parse("2026-08-01T00:00Z");
   const options = { secret: "s".repeat(64), now: () => clock };
   let service = createTeamService(connection.db, options);
+
   const send = (user: typeof a, action: Action, commandId: string = randomUUID()) =>
     service.command(user, { commandId, version: service.snapshot(user).version, action });
+
   const teamId = send(a, {
     kind: "create-team",
     team: { name: "TT 4", club: "Club", needed: 4, timezone: "Europe/Berlin" },
   }).teamId!;
+
   for (const user of [b, d]) send(user, { kind: "join", teamId, pin: service.code(teamId, a).pin });
+
   const game = (opponent: string) => {
     send(a, {
       kind: "create-game",
@@ -52,11 +60,15 @@ function fixture() {
         },
       },
     });
+
     return service.snapshot(a).games.find((g) => g.opponent === opponent)!;
   };
+
   const first = game("First"),
     second = game("Second");
+
   const sent: Mail[] = [];
+
   const worker = (
     transport: SendMail = async (mail) => {
       sent.push(mail);
@@ -68,6 +80,7 @@ function fixture() {
       send: transport,
       deliveryAddress: (id) => `${id}@example.test`,
     });
+
   return {
     teamId,
     first,
@@ -91,6 +104,7 @@ function fixture() {
     },
   };
 }
+
 it("batches the team's matches until five minutes after the last real change", async () => {
   const f = fixture();
   f.answer("yes");
@@ -118,9 +132,11 @@ it("batches the team's matches until five minutes after the last real change", a
   await worker.run();
   expect(f.sent).toHaveLength(1);
 });
+
 it("does not extend a batch for unchanged answers or duplicate command IDs, and removes reverted edits", async () => {
   const f = fixture(),
     id = randomUUID();
+
   f.answer("yes", f.first.id, id);
   const due = f.rows()[0]!.dueAt;
   f.advance(240_000);
@@ -135,6 +151,7 @@ it("does not extend a batch for unchanged answers or duplicate command IDs, and 
   f.answer("yes");
   expect(f.rows()).toHaveLength(0);
 });
+
 it("persists batches and due times through database reopen", async () => {
   const f = fixture();
   f.answer("maybe");
@@ -145,14 +162,17 @@ it("persists batches and due times through database reopen", async () => {
   await f.worker().run();
   expect(f.sent).toHaveLength(1);
 });
+
 it("saves no notification or answer when the surrounding command rolls back", () => {
   const f = fixture();
+
   const broken = createTeamService(f.db(), {
     ...f.options,
     id: () => {
       throw new Error("injected failure");
     },
   });
+
   expect(() =>
     broken.command(b, {
       commandId: randomUUID(),
@@ -168,6 +188,7 @@ it("saves no notification or answer when the surrounding command rolls back", ()
       .games.find((g) => g.id === f.first.id)!.mine,
   ).toBe("unanswered");
 });
+
 it("retries only the failed recipient and backs off persistently", async () => {
   const f = fixture();
   f.send(a, { kind: "promote", teamId: f.teamId, userId: d.id });
@@ -175,13 +196,16 @@ it("retries only the failed recipient and backs off persistently", async () => {
   f.advance(notificationDelay);
   let failed = false;
   const delivered: string[] = [];
+
   const worker = f.worker(async (mail) => {
     if (mail.to === "admin@example.test" && !failed) {
       failed = true;
       throw new Error("private provider details");
     }
+
     delivered.push(mail.to);
   });
+
   await worker.run();
   expect(delivered).toEqual(["other-admin@example.test"]);
   expect(f.rows()).toHaveLength(1);
@@ -201,20 +225,26 @@ it("retries only the failed recipient and backs off persistently", async () => {
     "private provider details",
   );
 });
+
 it.each(["admin removed", "admin demoted", "player removed", "game cancelled", "game rescheduled"])(
   "suppresses queued information when %s before delivery",
   async (reason) => {
     const f = fixture();
     f.answer("yes");
+
     if (reason === "admin removed") {
       f.send(a, { kind: "promote", teamId: f.teamId, userId: d.id });
       f.send(d, { kind: "remove", teamId: f.teamId, userId: a.id });
     }
+
     if (reason === "admin demoted")
       f.db().update(memberships).set({ role: "member" }).where(eq(memberships.userId, a.id)).run();
+
     if (reason === "player removed") f.send(a, { kind: "remove", teamId: f.teamId, userId: b.id });
+
     if (reason === "game cancelled")
       f.send(a, { kind: "cancel", teamId: f.teamId, gameId: f.first.id });
+
     if (reason === "game rescheduled")
       f.send(a, {
         kind: "edit-game",
@@ -228,6 +258,7 @@ it.each(["admin removed", "admin demoted", "player removed", "game cancelled", "
     expect(f.rows()).toHaveLength(0);
   },
 );
+
 it("excludes the acting admin and identifies admin-entered responses to other admins", async () => {
   const f = fixture();
   f.send(a, { kind: "promote", teamId: f.teamId, userId: d.id });
@@ -243,15 +274,18 @@ it("excludes the acting admin and identifies admin-entered responses to other ad
   await f.worker().run();
   expect(f.sent[0]!.text).toContain("geändert von Anna");
 });
+
 it("preserves changes arriving during delivery and serializes concurrent worker runs", async () => {
   const f = fixture();
   f.answer("yes");
   f.advance(notificationDelay);
   let release!: () => void;
   let markEntered!: () => void;
+
   const entered = new Promise<void>((resolve) => {
     markEntered = resolve;
   });
+
   const worker = f.worker(async (mail) => {
     f.sent.push(mail);
     markEntered();
@@ -259,6 +293,7 @@ it("preserves changes arriving during delivery and serializes concurrent worker 
       release = r;
     });
   });
+
   const first = worker.run();
   await entered;
   const concurrent = worker.run();
@@ -273,6 +308,7 @@ it("preserves changes arriving during delivery and serializes concurrent worker 
   expect(f.sent).toHaveLength(2);
   expect(f.sent[1]!.text).toContain("Ja → Nein");
 });
+
 it("recovers expired sending leases and never processes failed jobs automatically", async () => {
   const f = fixture();
   f.answer("yes");
@@ -293,19 +329,23 @@ it("recovers expired sending leases and never processes failed jobs automaticall
   await f.worker().run();
   expect(f.sent).toHaveLength(1);
 });
+
 it("stops after eight failed deliveries without blocking saved availability", async () => {
   const f = fixture();
   f.answer("yes");
   f.advance(notificationDelay);
   let attempts = 0;
+
   const worker = f.worker(async () => {
     attempts++;
     throw new Error("offline");
   });
+
   for (let i = 0; i < 8; i++) {
     await worker.run();
     f.advance(3_600_000);
   }
+
   expect(attempts).toBe(8);
   expect(f.rows()[0]).toMatchObject({ status: "failed", attempts: 8 });
   expect(
@@ -342,20 +382,24 @@ it("merges a failed delivery with later edits and waits for the new quiet period
 
 it("keeps team batches separate even for the same player and does not leak the other schedule", async () => {
   const f = fixture();
+
   const other = f.send(d, {
     kind: "create-team",
     team: { name: "Other club", club: "Private", needed: 4, timezone: "Europe/Berlin" },
   }).teamId!;
+
   f.send(b, { kind: "join", teamId: other, pin: f.service().code(other, d).pin });
   f.send(d, {
     kind: "create-game",
     teamId: other,
     game: { opponent: "Private opponent", venue: "Secret", home: true, window: f.first.window },
   });
+
   const gameId = f
     .service()
     .snapshot(d)
     .games.find((g) => g.teamId === other)!.id;
+
   f.answer("yes");
   f.advance(240_000);
   f.send(b, { kind: "answer", teamId: other, gameId, answer: "maybe" });
@@ -376,15 +420,18 @@ it("aborts and awaits in-flight delivery on shutdown, preserving its recoverable
   f.answer("yes");
   f.advance(notificationDelay);
   let markEntered!: () => void;
+
   const entered = new Promise<void>((resolve) => {
     markEntered = resolve;
   });
+
   const worker = f.worker(async (_mail, signal) => {
     markEntered();
     await new Promise<void>((_resolve, reject) =>
       signal!.addEventListener("abort", () => reject(new Error("aborted")), { once: true }),
     );
   });
+
   const run = worker.run();
   await entered;
   await worker.stop();
@@ -407,6 +454,7 @@ it("does not retry an older change to an admin who subsequently edited that answ
       throw new Error("offline");
     })
     .run();
+
   for (const answer of ["no", "yes"] as const)
     f.send(a, { kind: "set-answer", teamId: f.teamId, gameId: f.first.id, userId: b.id, answer });
   f.advance(notificationDelay);
@@ -417,13 +465,16 @@ it("does not retry an older change to an admin who subsequently edited that answ
 
 it("sends Anna and Bob one combined digest after the last team change across Charlie/Dave G1–G5 sequences", async () => {
   const f = fixture();
+
   const bob = { id: "bob", name: "Bob" },
     charlie = { id: "charlie", name: "Charlie" },
     dave = { id: "dave", name: "Dave" };
+
   for (const user of [bob, charlie, dave])
     f.send(user, { kind: "join", teamId: f.teamId, pin: f.service().code(f.teamId, a).pin });
   f.send(a, { kind: "promote", teamId: f.teamId, userId: bob.id });
   const games = new Map<string, string>();
+
   for (let i = 1; i <= 5; i++) {
     const start = f.first.window.start + i * 86400000;
     f.send(a, {
@@ -444,6 +495,7 @@ it("sends Anna and Bob one combined digest after the last team change across Cha
         .games.find((g) => g.opponent === `G${i}`)!.id,
     );
   }
+
   const sequence = [
     [0, charlie, "G1", "yes"],
     [0, dave, "G5", "no"],
@@ -457,12 +509,15 @@ it("sends Anna and Bob one combined digest after the last team change across Cha
     [5, charlie, "G1", "maybe"],
     [6, dave, "G3", "no"],
   ] as const;
+
   let minute = 0;
+
   for (const [at, user, game, answer] of sequence) {
     f.advance((at - minute) * 60_000);
     minute = at;
     f.send(user, { kind: "answer", teamId: f.teamId, gameId: games.get(game)!, answer });
   }
+
   f.advance(4 * 60_000);
   await f.worker().run();
   expect(f.sent).toHaveLength(0);

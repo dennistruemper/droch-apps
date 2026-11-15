@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { Browser } from "playwright";
-import { checkSite } from "./check.ts";
+import type { Browser, Page } from "playwright";
+import { checkSite, type CheckBrowser, type CheckPage } from "./check.ts";
 import { sites } from "./sites.ts";
 import { slotStart } from "../domain/index.ts";
 
@@ -13,27 +13,49 @@ function fixture() {
   vi.setSystemTime(Date.UTC(2026, 9, 24, 10));
   let connected = true;
   let rejectNavigation: ((error: Error) => void) | undefined;
+
   const page = {
-    setDefaultTimeout: vi.fn(),
-    on: vi.fn(),
-    goto: vi.fn(
+    setDefaultTimeout: vi.fn<Page["setDefaultTimeout"]>(),
+    on: vi.fn<CheckPage["on"]>(),
+    getByRole: vi.fn<Page["getByRole"]>(),
+    waitForLoadState: vi.fn<Page["waitForLoadState"]>(),
+    getByText: vi.fn<Page["getByText"]>(),
+    locator: vi.fn<Page["locator"]>(),
+    mainFrame: vi.fn<Page["mainFrame"]>(),
+    goto: vi.fn<Page["goto"]>(
       () =>
-        new Promise<void>((_resolve, reject) => {
+        new Promise<null>((_resolve, reject) => {
           rejectNavigation = reject;
         }),
     ),
-  };
-  const close = vi.fn(async () => {
+  } satisfies CheckPage;
+
+  const close = vi.fn<Browser["close"]>(async () => {
     connected = false;
     rejectNavigation?.(new Error("Browser disconnected"));
   });
-  const browser = {
+
+  const browser: CheckBrowser = {
     close,
     isConnected: () => connected,
-    newContext: async () => ({ route: async () => {}, newPage: async () => page }),
-  } as unknown as Browser;
+    newContext: async () => ({
+      route: async () => ({
+        dispose: async () => {},
+        [Symbol.dispose]() {},
+        [Symbol.asyncDispose]: async () => {},
+      }),
+      newPage: async () => page,
+    }),
+  };
+
   const controller = new AbortController();
-  const options = { now: Date.now, signal: controller.signal, launch: async () => browser };
+
+  const options = {
+    now: Date.now,
+    signal: controller.signal,
+    launch: async () => browser,
+  };
+
   return { close, page, controller, options };
 }
 
@@ -58,22 +80,20 @@ describe("browser check deadline", () => {
 
   it("keeps unexpected browser disconnects as missing observations", async () => {
     const { close, options } = fixture();
-    const pending = checkSite(sites[0]!, options);
-    const rejected = expect(pending).rejects.toThrow("Browser disconnected");
+    const pending = checkSite(sites[0]!, options).catch((cause: unknown) => cause);
     await vi.advanceTimersByTimeAsync(0);
     await close();
-    await rejected;
+    await expect(pending).resolves.toMatchObject({ message: "Browser disconnected" });
     expect(vi.getTimerCount()).toBe(0);
   });
 
   it("keeps shutdown cancellation missing even when it coincides with the deadline", async () => {
     const { controller, options } = fixture();
-    const pending = checkSite(sites[0]!, options);
-    const rejected = expect(pending).rejects.toThrow("Browser disconnected");
+    const pending = checkSite(sites[0]!, options).catch((cause: unknown) => cause);
     await vi.advanceTimersByTimeAsync(0);
     vi.advanceTimersByTime(60_000);
     controller.abort();
-    await rejected;
+    await expect(pending).resolves.toMatchObject({ message: "Browser disconnected" });
     expect(vi.getTimerCount()).toBe(0);
   });
 

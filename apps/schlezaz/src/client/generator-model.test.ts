@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { init, update, type Model } from "./generator-model.ts";
+
 function ready(): Model {
-  let model = update(init(), { kind: "edit", id: 0, value: "Pizza" }).model;
+  const model = update(init(), { kind: "edit", id: 0, value: "Pizza" }).model;
+
   return update(model, { kind: "edit", id: 1, value: "Pasta" }).model;
 }
+
 describe("generator transitions", () => {
   it("requires two values and guards synchronous double submission and pending edits", () => {
     expect(update(init(), { kind: "generate" }).commands).toEqual([]);
@@ -17,6 +20,7 @@ describe("generator transitions", () => {
   });
   it("reveals only after its own timer and ignores old completions", () => {
     const started = update(ready(), { kind: "generate" }).model;
+
     const sampled = update(started, {
       kind: "sampled",
       requestId: 1,
@@ -24,6 +28,7 @@ describe("generator transitions", () => {
       modeRandom: 0,
       delayRandom: 0.5,
     });
+
     expect(sampled.commands).toEqual([{ kind: "wait", requestId: 1, milliseconds: 6000 }]);
     expect(sampled.model.phase.kind).toBe("loading");
     expect(update(sampled.model, { kind: "complete", requestId: 0 }).model).toBe(sampled.model);

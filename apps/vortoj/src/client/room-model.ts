@@ -5,17 +5,20 @@ import {
   type RoomInfo,
   type GameCommand,
 } from "../contracts/index.ts";
+
 export type Action = GameCommand extends infer C
   ? C extends GameCommand
     ? Omit<C, "version" | "commandId">
     : never
   : never;
+
 export type Screen =
   | { kind: "loading" }
   | { kind: "invite"; info: RoomInfo }
   | { kind: "active"; room: Snapshot }
   | { kind: "expired" }
   | { kind: "removed" };
+
 export type Move =
   | {
       kind: "placement";
@@ -25,11 +28,13 @@ export type Move =
       jokerError: string;
     }
   | { kind: "exchange"; tiles: string[] };
+
 export type Request = { id: number } & (
   | { kind: "load" }
   | { kind: "join"; playerName?: string | undefined }
   | { kind: "action"; action: Action; version: number }
 );
+
 export type Command =
   | Request
   | { kind: "subscribe" }
@@ -38,6 +43,7 @@ export type Command =
   | { kind: "overview" }
   | { kind: "approval"; version: number; action: "show" | "close" | "keep" }
   | { kind: "joker-dialog"; open: boolean };
+
 export type Model = {
   screen: Screen;
   move: Move;
@@ -47,6 +53,7 @@ export type Model = {
   error: string;
   connection: string;
 };
+
 export type Message =
   | { kind: "refresh" }
   | { kind: "join"; playerName?: string | undefined }
@@ -66,7 +73,9 @@ export type Message =
   | { kind: "joker-changed"; letter: string }
   | { kind: "joker-confirmed" }
   | { kind: "joker-cancelled" };
+
 export type Transition = { model: Model; commands: Command[] };
+
 const emptyMove = (): Move => ({
   kind: "placement",
   selected: null,
@@ -74,6 +83,7 @@ const emptyMove = (): Move => ({
   joker: "",
   jokerError: "",
 });
+
 export function init(): Model {
   return {
     screen: { kind: "loading" },
@@ -85,17 +95,22 @@ export function init(): Model {
     connection: "",
   };
 }
+
 export function update(model: Model, message: Message, userId: string): Transition {
   const unchanged: Transition = { model, commands: [] };
+
   const change = (patch: Partial<Model>, commands: Command[] = []): Transition => ({
     model: { ...model, ...patch },
     commands,
   });
+
   const room = model.screen.kind === "active" ? model.screen.room : null;
   const terminal = model.screen.kind === "removed" || model.screen.kind === "expired";
   const turn = room?.phase === "playing" && room.turnId === userId;
+
   const accept = (next: Snapshot): Transition => {
     if (room && next.version <= room.version) return unchanged;
+
     return change({ screen: { kind: "active", room: next }, move: emptyMove() }, [
       ...(room && next.board.length > room.board.length ? [{ kind: "overview" } as const] : []),
       {
@@ -112,9 +127,12 @@ export function update(model: Model, message: Message, userId: string): Transiti
       },
     ]);
   };
+
   const request = (command: Request): Transition =>
     change({ pending: command, nextId: model.nextId + 1, error: "" }, [command]);
+
   if (terminal) return unchanged;
+
   switch (message.kind) {
     case "removed":
       return change(
@@ -144,8 +162,10 @@ export function update(model: Model, message: Message, userId: string): Transiti
     case "refresh": {
       if (model.loading !== null) return unchanged;
       const command: Request = { kind: "load", id: model.nextId };
+
       return change({ loading: command.id, nextId: model.nextId + 1 }, [command]);
     }
+
     case "join":
       return !model.pending &&
         model.screen.kind === "invite" &&
@@ -164,6 +184,7 @@ export function update(model: Model, message: Message, userId: string): Transiti
     case "loaded": {
       if (message.id !== model.loading && message.id !== model.pending?.id) return unchanged;
       const next = accept(message.room);
+
       return {
         model: {
           ...next.model,
@@ -173,30 +194,39 @@ export function update(model: Model, message: Message, userId: string): Transiti
         commands: [...next.commands, { kind: "subscribe" }],
       };
     }
+
     case "invite-loaded":
       return message.id === model.loading
         ? change({
-            ...(room ? {} : { screen: { kind: "invite", info: message.info } as Screen }),
+            ...(room ? {} : { screen: { kind: "invite", info: message.info } satisfies Screen }),
             loading: null,
           })
         : unchanged;
     case "failed": {
       if (message.id !== model.loading && message.id !== model.pending?.id) return unchanged;
+
       if (message.status === 404) return update(model, { kind: "removed" }, userId);
+
       if (message.status === 401) return update(model, { kind: "expired" }, userId);
+
       const next = change({
         loading: message.id === model.loading ? null : model.loading,
         pending: message.id === model.pending?.id ? null : model.pending,
         error: message.error,
       });
+
       if (message.status !== 409) return next;
       const recovery = update(next.model, { kind: "refresh" }, userId);
+
       return recovery;
     }
+
     case "snapshot": {
       const next = accept(message.room);
+
       return { ...next, model: { ...next.model, connection: "" } };
     }
+
     case "connection":
       return change({ connection: message.text });
     case "error":
@@ -214,7 +244,9 @@ export function update(model: Model, message: Message, userId: string): Transiti
     case "select-tile": {
       if (!turn || model.pending) return unchanged;
       const tile = room.you.rack.find((tile) => tile.id === message.id);
+
       if (!tile) return unchanged;
+
       if (model.move.kind === "exchange")
         return change({
           error: "",
@@ -226,11 +258,13 @@ export function update(model: Model, message: Message, userId: string): Transiti
           },
         });
       const selected = model.move.selected === tile.id ? null : tile.id;
+
       return change(
         { error: "", move: { ...model.move, selected, jokerError: "" } },
         tile.letter === "*" && selected ? [{ kind: "joker-dialog", open: true }] : [],
       );
     }
+
     case "place": {
       if (
         !turn ||
@@ -241,14 +275,17 @@ export function update(model: Model, message: Message, userId: string): Transiti
         return unchanged;
       const move = model.move;
       const old = move.draft.find((tile) => tile.row === message.row && tile.col === message.col);
+
       if (old)
         return change({
           move: { ...move, draft: move.draft.filter((tile) => tile !== old), selected: old.tileId },
         });
       const tile = room.you.rack.find((tile) => tile.id === move.selected);
+
       if (!tile)
         return change({ error: "Select a tile from your rack, then choose a board square." });
       const parsed = letterSchema.safeParse(move.joker);
+
       if (
         tile.letter === "*" &&
         (!parsed.success ||
@@ -256,12 +293,14 @@ export function update(model: Model, message: Message, userId: string): Transiti
           !room.tileSet.tiles.some((tile) => tile.letter === parsed.data))
       )
         return change({ error: "Choose a letter from this set for your joker." });
+
       const placement: Placement = {
         tileId: tile.id,
         row: message.row,
         col: message.col,
         ...(tile.letter === "*" && parsed.success ? { letter: parsed.data } : {}),
       };
+
       return change({
         error: "",
         move: {
@@ -271,6 +310,7 @@ export function update(model: Model, message: Message, userId: string): Transiti
         },
       });
     }
+
     case "joker-changed":
       return model.move.kind === "placement"
         ? change({ move: { ...model.move, joker: message.letter, jokerError: "" } })
@@ -284,6 +324,7 @@ export function update(model: Model, message: Message, userId: string): Transiti
     case "joker-confirmed": {
       if (!room || model.move.kind !== "placement") return unchanged;
       const parsed = letterSchema.safeParse(model.move.joker);
+
       return parsed.success &&
         parsed.data !== "*" &&
         room.tileSet.tiles.some((tile) => tile.letter === parsed.data)

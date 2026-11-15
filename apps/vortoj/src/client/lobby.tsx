@@ -4,25 +4,33 @@ import { init, update, type Message } from "./lobby-model.ts";
 import { execute } from "./lobby-commands.ts";
 import { TileEditor } from "./tiles.tsx";
 import { message } from "./api.ts";
+
 export function Lobby(props: { user: User }) {
   let current = init();
   const [model, setModel] = createSignal(current);
+
   const [editing, setEditing] = createSignal(false),
     [showFinished, setShowFinished] = createSignal(false);
+
   const controller = new AbortController();
+
   async function dispatch(event: Message, propagateFailure = false): Promise<void> {
     if (controller.signal.aborted) return;
     const transition = update(current, event);
     current = transition.model;
     setModel(current);
+
     for (const command of transition.commands) {
       if (command.kind === "navigate") {
         location.href = `/vortoj/room/${command.roomId}`;
         continue;
       }
+
       try {
         const result = await execute(command, controller.signal);
+
         if (controller.signal.aborted) return;
+
         if (
           result.kind === "loaded" &&
           (current.collection.kind !== "loading" || current.collection.id !== result.id)
@@ -31,32 +39,43 @@ export function Lobby(props: { user: User }) {
             throw new Error("A newer collection refresh replaced this request. Please try again.");
           continue;
         }
+
         await dispatch(result);
       } catch (error) {
         if (controller.signal.aborted) return;
         await dispatch({ kind: "failed", id: command.id, error: message(error) });
+
         if (propagateFailure) throw error;
       }
     }
   }
+
   onSettled(() => {
     void dispatch({ kind: "refresh" });
+
     return () => controller.abort();
   });
   const sets = () => model().collection.data?.sets ?? [];
   const rooms = () => model().collection.data?.rooms ?? [];
   const loading = () => model().collection.kind === "loading";
+
   const creating = () =>
     model().creating.kind === "pending" || model().creating.kind === "navigating";
+
   const createError = () => {
     const value = model().creating;
+
     return value.kind === "failed" ? value.error : "";
   };
+
   const loadError = () => {
     const value = model().collection;
+
     return value.kind === "failed" ? value.error : "";
   };
+
   const visibleRooms = () => rooms().filter((room) => showFinished() || room.phase !== "finished");
+
   return (
     <>
       <section aria-label="Your rooms">
@@ -115,11 +134,18 @@ export function Lobby(props: { user: User }) {
         onSubmit={(event) => {
           event.preventDefault();
           const data = new FormData(event.currentTarget);
+
+          const text = (key: string) => {
+            const value = data.get(key);
+
+            return typeof value === "string" ? value : "";
+          };
+
           void dispatch({
             kind: "create",
-            title: String(data.get("title") ?? ""),
-            playerName: String(data.get("playerName") ?? ""),
-            tileSetId: String(data.get("tiles") ?? ""),
+            title: text("title"),
+            playerName: text("playerName"),
+            tileSetId: text("tiles"),
           });
         }}
       >

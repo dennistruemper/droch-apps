@@ -5,6 +5,7 @@ import type { User } from "@repo/shared/auth";
 import { tileSets, rooms, members, commands } from "./schema.ts";
 import { decideGame, newGame, projectGame, presets, RuleError } from "../domain/index.ts";
 import type { GameCommand, TileSet } from "../contracts/index.ts";
+
 export class VortojError extends Error {
   constructor(
     message: string,
@@ -13,15 +14,19 @@ export class VortojError extends Error {
     super(message);
   }
 }
+
 export function createVortojService(
   db: ReturnType<typeof connectDatabase>["db"],
   effects = { now: Date.now, draw: randomInt, id: randomUUID },
 ) {
   const room = (id: string) => {
     const row = db.select().from(rooms).where(eq(rooms.id, id)).get();
+
     if (!row) throw new VortojError("Room not found. Check the invitation link.", 404);
+
     return row;
   };
+
   const membership = (id: string, user: User) => {
     if (
       !db
@@ -32,20 +37,26 @@ export function createVortojService(
     )
       throw new VortojError("Join this room before viewing the game.", 403);
   };
+
   const snapshot = (id: string, user: User) => {
     const row = room(id);
     membership(id, user);
+
     return projectGame(row.state, user.id, row);
   };
+
   const ownedSet = (id: string, user: User) => {
     const set = db
       .select()
       .from(tileSets)
       .where(and(eq(tileSets.id, id), eq(tileSets.ownerId, user.id)))
       .get();
+
     if (!set) throw new VortojError("Tile set not found in your collection.", 404);
+
     return set;
   };
+
   return {
     snapshot,
     sets(user: User) {
@@ -62,14 +73,17 @@ export function createVortojService(
       if (id) {
         ownedSet(id, user);
         db.update(tileSets).set(value).where(eq(tileSets.id, id)).run();
+
         return { id, ...value };
       }
+
       if (db.select().from(tileSets).where(eq(tileSets.ownerId, user.id)).all().length >= 50)
         throw new VortojError("Your collection is full. Edit or remove a saved set first.", 429);
       const nextId = effects.id();
       db.insert(tileSets)
         .values({ id: nextId, ownerId: user.id, ...value })
         .run();
+
       return { id: nextId, ...value };
     },
     deleteSet(user: User, id: string) {
@@ -101,14 +115,17 @@ export function createVortojService(
     create(user: User, title: string, tileSetId: string, playerName = user.name) {
       const set = presets.find((p) => p.id === tileSetId) ?? ownedSet(tileSetId, user),
         id = effects.id();
+
       db.transaction(() => {
         const owned = db
           .select({ count: count() })
           .from(rooms)
           .where(eq(rooms.ownerId, user.id))
           .get()!;
+
         if (owned.count >= 100) {
           const needed = owned.count - 99;
+
           const oldest = db
             .select({ id: rooms.id })
             .from(rooms)
@@ -116,6 +133,7 @@ export function createVortojService(
             .orderBy(asc(rooms.updatedAt), asc(rooms.createdAt), asc(rooms.id))
             .limit(needed)
             .all();
+
           // Deletion and creation commit together; foreign keys remove memberships and receipts.
           db.delete(rooms)
             .where(
@@ -126,6 +144,7 @@ export function createVortojService(
             )
             .run();
         }
+
         db.insert(rooms)
           .values({
             id,
@@ -139,10 +158,12 @@ export function createVortojService(
           .run();
         db.insert(members).values({ roomId: id, userId: user.id }).run();
       });
+
       return snapshot(id, user);
     },
     info(id: string) {
       const row = room(id);
+
       return {
         id,
         title: row.title,
@@ -153,12 +174,15 @@ export function createVortojService(
     join(id: string, user: User, playerName = user.name) {
       db.transaction(() => {
         const row = room(id);
+
         if (row.state.players.some((p) => p.id === user.id)) return;
+
         if (row.state.phase !== "waiting")
           throw new VortojError(
             "This game has already started. Ask for a new room invitation.",
             409,
           );
+
         if (row.state.players.length >= 4)
           throw new VortojError("This room already has four players.", 409);
         const state = structuredClone(row.state);
@@ -167,6 +191,7 @@ export function createVortojService(
         db.insert(members).values({ roomId: id, userId: user.id }).run();
         db.update(rooms).set({ state, updatedAt: effects.now() }).where(eq(rooms.id, id)).run();
       });
+
       return snapshot(id, user);
     },
     command(id: string, user: User, command: GameCommand) {
@@ -174,6 +199,7 @@ export function createVortojService(
         db.transaction(() => {
           const row = room(id);
           membership(id, user);
+
           const digest = createHash("sha256").update(JSON.stringify(command)).digest("hex"),
             old = db
               .select()
@@ -186,16 +212,20 @@ export function createVortojService(
                 ),
               )
               .get();
+
           if (old) {
             if (old.digest !== digest)
               throw new VortojError("This request ID was already used for another action.", 409);
+
             return;
           }
+
           const state = decideGame(row.state, row.ownerId, user.id, command, row.tileSet, {
             now: effects.now(),
             draw: effects.draw,
             id: effects.id,
           });
+
           db.update(rooms).set({ state, updatedAt: effects.now() }).where(eq(rooms.id, id)).run();
           db.insert(commands)
             .values({ roomId: id, userId: user.id, commandId: command.commandId, digest })
@@ -205,6 +235,7 @@ export function createVortojService(
         if (error instanceof RuleError) throw new VortojError(error.message, 409);
         throw error;
       }
+
       return snapshot(id, user);
     },
   };

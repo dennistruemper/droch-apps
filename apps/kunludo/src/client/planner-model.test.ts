@@ -1,7 +1,9 @@
 import { it, expect } from "vitest";
 import { init, update, emptyFields, calendarTeam } from "./planner-model.ts";
 import type { Snapshot } from "../contracts/index.ts";
+
 const empty: Snapshot = { version: 2, teams: [], games: [] };
+
 it("ignores stale results, preserves drafts on live updates and clears removed-team data", () => {
   let m = update(init(0), { kind: "loaded", id: 1, data: empty }).model;
   m = update(m, {
@@ -19,7 +21,8 @@ it("ignores stale results, preserves drafts on live updates and clears removed-t
   }).model;
   m = update(m, { kind: "snapshot", data: { ...empty, version: 4 } }).model;
   expect(m.editor.kind).toBe("join");
-  if (m.editor.kind !== "none") expect(m.editor.version).toBe(2);
+
+  expect(m.editor).toMatchObject({ kind: "join", version: 2 });
   m = update(m, {
     kind: "save",
     commandId: "test-command",
@@ -40,6 +43,7 @@ it("ignores stale results, preserves drafts on live updates and clears removed-t
   expect(expired.data).toBeNull();
   expect(update(expired, { kind: "snapshot", data: empty }).model.screen).toBe("expired");
 });
+
 it("uses union filters and empty selection means all", () => {
   let m = init(0);
   m = update(m, { kind: "filter", teamId: "a" }).model;
@@ -85,6 +89,7 @@ it("detects a calendar's common team on either side and refuses ambiguous guesse
     { uid: "a", home: "Visitor", away: "Our team", summary: "", start: 0, end: 1, venue: "" },
     { uid: "b", home: "Our team", away: "Other", summary: "", start: 2, end: 3, venue: "" },
   ];
+
   expect(calendarTeam(events)).toBe("Our team");
   expect(calendarTeam(events.slice(0, 1))).toBe("");
   expect(calendarTeam(events.slice(0, 1), "Our team")).toBe("Our team");
@@ -94,6 +99,7 @@ it("detects a calendar's common team on either side and refuses ambiguous guesse
 
 it("an older toast dismissal cannot clear a newer confirmation", () => {
   let m = update(init(0), { kind: "loaded", id: 1, data: empty }).model;
+
   const save = () => {
     m = update(m, {
       kind: "save",
@@ -102,8 +108,10 @@ it("an older toast dismissal cannot clear a newer confirmation", () => {
     }).model;
     const id = m.pending!.id;
     m = update(m, { kind: "saved", id, data: empty, notice: "Gespeichert." }).model;
+
     return id;
   };
+
   const old = save();
   const current = save();
   m = update(m, { kind: "dismiss-notice", id: old }).model;
@@ -122,6 +130,7 @@ it("rejects a delayed PIN response after a newer snapshot and allows reopening",
     role: "admin" as const,
     members: [],
   };
+
   const snapshot: Snapshot = { version: 2, teams: [team], games: [] };
   let m = update(init(0), { kind: "loaded", id: 1, data: snapshot }).model;
   m = update(m, { kind: "code", teamId: "t" }).model;

@@ -2,16 +2,20 @@ import { describe, expect, it } from "vitest";
 import { hourDuration, interval, oldestHour, readSlots, recordSlot, summarize } from "./index.ts";
 
 const hour = Date.UTC(2026, 9, 24, 10);
+
 function filled(failures: number) {
   let packed = 0;
+
   for (let index = 0; index < 12; index++)
     packed = recordSlot(
       packed,
       hour + index * interval,
       index < failures ? "not-functional" : "available",
     );
+
   return packed;
 }
+
 describe("compact hourly observations", () => {
   it("keeps twelve independent outcomes in 24 bits, including the last slot", () => {
     const packed = recordSlot(
@@ -19,6 +23,7 @@ describe("compact hourly observations", () => {
       hour + 11 * interval,
       "not-functional",
     );
+
     expect(readSlots(packed)).toEqual([
       "unreachable",
       ...Array(10).fill("missing"),
@@ -45,6 +50,7 @@ describe("compact hourly observations", () => {
       statusCode: 200,
       durationMs: 1000,
     } as const;
+
     expect(summarize(0, hour, hour, latest).status).toBe("available");
     expect(summarize(0, hour, hour, { ...latest, outcome: "unreachable" }).status).toBe(
       "unavailable",

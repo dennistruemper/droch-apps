@@ -1,5 +1,6 @@
 import { it, expect } from "vitest";
 import { playerReadiness } from "./index.ts";
+
 it("marks enough players green and distinguishes the exact two-week boundary", () => {
   const now = Date.parse("2026-11-14T12:00Z");
   const boundary = now + 14 * 86400000;

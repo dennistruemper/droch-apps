@@ -13,22 +13,28 @@ function App() {
   const [model, setModel] = createSignal(current);
   const controller = new AbortController();
   onSettled(() => () => controller.abort());
+
   function dispatch(message: Message) {
     if (controller.signal.aborted) return;
     const transition = update(current, message);
     current = transition.model;
     setModel(current);
+
     for (const command of transition.commands) {
       void execute(command, controller.signal)
         .then(dispatch)
         .catch(() => dispatch({ kind: "failed", requestId: command.requestId }));
     }
   }
+
   const ready = () => validOptions(model().rows.map((row) => row.value)).length >= 2;
+
   const result = () => {
     const phase = model().phase;
+
     return phase.kind === "result" ? phase : null;
   };
+
   return (
     <>
       <header class="site-header">
@@ -194,6 +200,7 @@ function App() {
     </>
   );
 }
+
 render(
   () => (
     <AppAppearance appId={appDefinition.id} defaults={appDefinition.themes}>

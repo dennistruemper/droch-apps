@@ -6,12 +6,15 @@ import {
   type Memory,
   type ConcreteMode,
 } from "../domain/index.ts";
+
 export type Row = { id: number; value: string };
+
 type Phase =
   | { kind: "idle" }
   | { kind: "sampling"; requestId: number }
   | { kind: "loading"; requestId: number; value: string; mode: ConcreteMode }
   | { kind: "result"; value: string; mode: ConcreteMode };
+
 export type Model = {
   rows: Row[];
   nextRowId: number;
@@ -21,6 +24,7 @@ export type Model = {
   requestId: number;
   error: string | null;
 };
+
 export type Message =
   | { kind: "add" }
   | { kind: "remove"; id: number }
@@ -31,9 +35,11 @@ export type Message =
   | { kind: "complete"; requestId: number }
   | { kind: "failed"; requestId: number }
   | { kind: "clear" };
+
 export type Command =
   | { kind: "sample"; requestId: number }
   | { kind: "wait"; requestId: number; milliseconds: number };
+
 export function init(): Model {
   return {
     rows: [
@@ -48,15 +54,19 @@ export function init(): Model {
     error: null,
   };
 }
+
 export const busy = (model: Model) =>
   model.phase.kind === "sampling" || model.phase.kind === "loading";
+
 export function update(model: Model, message: Message): { model: Model; commands: Command[] } {
   const stay = { model, commands: [] };
   const changed = (next: Model) => ({ model: next, commands: [] });
+
   switch (message.kind) {
     case "sampled": {
       if (model.phase.kind !== "sampling" || model.phase.requestId !== message.requestId)
         return stay;
+
       if (
         !Number.isFinite(message.delayRandom) ||
         message.delayRandom < 0 ||
@@ -67,6 +77,7 @@ export function update(model: Model, message: Message): { model: Model; commands
           phase: { kind: "idle" },
           error: "Der Zufall streikt. Bitte erneut versuchen.",
         });
+
       const result = draw(
         model.rows.map((row) => row.value),
         model.mode,
@@ -74,6 +85,7 @@ export function update(model: Model, message: Message): { model: Model; commands
         message.random,
         message.modeRandom,
       );
+
       return {
         model: {
           ...model,
@@ -94,15 +106,18 @@ export function update(model: Model, message: Message): { model: Model; commands
         ],
       };
     }
+
     case "complete":
       if (model.phase.kind !== "loading" || model.phase.requestId !== message.requestId)
         return stay;
+
       return changed({
         ...model,
         phase: { kind: "result", value: model.phase.value, mode: model.phase.mode },
       });
     case "failed":
       if (!busy(model) || model.requestId !== message.requestId) return stay;
+
       return changed({
         ...model,
         phase: { kind: "idle" },
@@ -111,20 +126,29 @@ export function update(model: Model, message: Message): { model: Model; commands
     case "generate": {
       if (busy(model) || validOptions(model.rows.map((row) => row.value)).length < 2) return stay;
       const requestId = model.requestId + 1;
+
       return {
         model: { ...model, requestId, phase: { kind: "sampling", requestId }, error: null },
         commands: [{ kind: "sample", requestId }],
       };
     }
-    default: {
+
+    case "add":
+    case "clear":
+    case "edit":
+    case "mode":
+    case "remove": {
       if (busy(model)) return stay;
+
       if (message.kind === "clear") return changed({ ...model, phase: { kind: "idle" } });
+
       const reset = {
         ...model,
         memory: emptyMemory(),
         phase: { kind: "idle" } as const,
         error: null,
       };
+
       switch (message.kind) {
         case "mode":
           return changed({ ...reset, mode: message.mode });

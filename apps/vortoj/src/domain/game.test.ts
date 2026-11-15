@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+
 const randomUUID = () => crypto.randomUUID();
+
 import {
   evaluateMove,
   newGame,
@@ -11,13 +13,17 @@ import {
   type Player,
 } from "./index.ts";
 import { tileSetSchema, type GameCommand } from "../contracts/index.ts";
+
 const user = (name: string) => ({ id: randomUUID(), name });
 const tile = (letter: string, points = 1) => ({ id: randomUUID(), letter, points });
 const effects = { now: 1, draw: () => 0, id: randomUUID };
+
 function started(count = 2) {
   const owner = user("Alice"),
     game = newGame(owner);
+
   for (let i = 1; i < count; i++) game.players.push({ ...user(`Player ${i}`), score: 0, rack: [] });
+
   return {
     owner,
     game: decideGame(
@@ -30,6 +36,7 @@ function started(count = 2) {
     ),
   };
 }
+
 function move(game: Game, ownerId: string) {
   return decideGame(
     game,
@@ -49,6 +56,7 @@ function move(game: Game, ownerId: string) {
     effects,
   );
 }
+
 describe("Vortoj board rules", () => {
   it("validates the presets and their tile counts", () => {
     expect(
@@ -63,7 +71,9 @@ describe("Vortoj board rules", () => {
         { letter: "*", count: 2, points: 0 },
       ],
     };
+
     expect(tileSetSchema.parse(set).tiles[0]!.letter).toBe("É");
+
     for (const letter of ["th", "3", "😀", "!"])
       expect(
         tileSetSchema.safeParse({ ...set, tiles: [{ letter, count: 28, points: 1 }] }).success,
@@ -88,6 +98,7 @@ describe("Vortoj board rules", () => {
   it("requires the centre, contiguous placement, connection and owned tiles", () => {
     const a = tile("A"),
       b = tile("B", 3);
+
     expect(() =>
       evaluateMove(
         [],
@@ -138,6 +149,7 @@ describe("Vortoj board rules", () => {
   it("scores the first word and never reapplies old premiums", () => {
     const a = tile("A"),
       b = tile("B", 3);
+
     expect(
       evaluateMove(
         [],
@@ -164,20 +176,24 @@ describe("Vortoj board rules", () => {
         { ...tile("A"), row: 7, col: 6, blank: false },
         { ...tile("B", 3), row: 6, col: 7, blank: false },
       ];
+
     const cross = evaluateMove(board, [c], [{ tileId: c.id, row: 7, col: 7 }], ["C"]);
     expect(cross.words.map((w) => w.points)).toEqual([8, 12]);
     const rack = Array.from({ length: 7 }, () => tile("A"));
+
     const all = evaluateMove(
       [],
       rack,
       rack.map((t, i) => ({ tileId: t.id, row: 7, col: i + 4 })),
       ["A"],
     );
+
     expect(all.bonus).toBe(50);
   });
   it("fixes joker letters and keeps their score at zero", () => {
     const blank = tile("*", 0),
       a = tile("A");
+
     const result = evaluateMove(
       [],
       [blank, a],
@@ -187,6 +203,7 @@ describe("Vortoj board rules", () => {
       ],
       ["A", "Æ"],
     );
+
     expect(result.placed[0]).toMatchObject({ letter: "Æ", points: 0, blank: true });
     expect(result.words[0]!.points).toBe(2);
     expect(() =>
@@ -202,6 +219,7 @@ describe("Vortoj board rules", () => {
     ).toThrow(/joker/);
   });
 });
+
 describe("turns and opponent approval", () => {
   it.each([2, 3, 4])("requires half of %i-player opponents, rounded up", (count) => {
     const { owner, game } = started(count);
@@ -213,12 +231,14 @@ describe("turns and opponent approval", () => {
   it("accepts only after enough approvals and rejects impossible majorities", () => {
     const { owner, game } = started(4);
     let proposed = move(game, owner.id);
+
     const vote = (person: Player, approve: boolean): GameCommand => ({
       kind: "vote",
       commandId: randomUUID(),
       version: proposed.version,
       votes: proposed.pending!.words.map((w) => ({ wordId: w.id, approve })),
     });
+
     proposed = decideGame(
       proposed,
       owner.id,
@@ -241,6 +261,7 @@ describe("turns and opponent approval", () => {
     expect(proposed.turn).toBe(1);
     expect(proposed.players[0]!.rack).toHaveLength(7);
     let rejected = move(game, owner.id);
+
     for (const opponent of rejected.players.slice(1, 3))
       rejected = decideGame(
         rejected,
@@ -262,6 +283,7 @@ describe("turns and opponent approval", () => {
   it("requires approval of every formed word", () => {
     const a = user("A"),
       b = user("B");
+
     const pending = {
       authorId: a.id,
       placements: [],
@@ -273,18 +295,21 @@ describe("turns and opponent approval", () => {
       votes: { "1": { [b.id]: true } },
       requiredApprovals: 1,
     };
+
     expect(voteOutcome(pending, [b.id])).toBe("pending");
   });
   it("prevents self-voting, duplicate votes, stale commands and wrong turns", () => {
     const { owner, game } = started(4),
       proposed = move(game, owner.id),
       wordId = proposed.pending!.words[0]!.id;
+
     const vote: GameCommand = {
       kind: "vote",
       commandId: randomUUID(),
       version: proposed.version,
       votes: [{ wordId, approve: true }],
     };
+
     expect(() => decideGame(proposed, owner.id, owner.id, vote, presets[0]!, effects)).toThrow(
       /Opponents/,
     );
@@ -323,6 +348,7 @@ describe("turns and opponent approval", () => {
   it("draws replacements before returning exchanged tiles", () => {
     const { owner, game } = started();
     const returned = game.players[0]!.rack.slice(0, 3);
+
     const next = decideGame(
       game,
       owner.id,
@@ -336,6 +362,7 @@ describe("turns and opponent approval", () => {
       presets[0]!,
       effects,
     );
+
     expect(next.players[0]!.rack).toHaveLength(7);
     expect(next.players[0]!.rack.some((t) => returned.some((old) => old.id === t.id))).toBe(false);
     expect(next.bag.length).toBe(game.bag.length);
@@ -343,6 +370,7 @@ describe("turns and opponent approval", () => {
   it("finishes after repeated scoreless turns and deducts rack points", () => {
     const { owner, game } = started();
     let next = game;
+
     for (let i = 0; i < 4; i++)
       next = decideGame(
         next,
@@ -368,6 +396,7 @@ describe("turns and opponent approval", () => {
     ];
     game.players[1]!.rack = [tile("Q", 10)];
     const proposed = move(game, owner.id);
+
     const finished = decideGame(
       proposed,
       owner.id,
@@ -381,6 +410,7 @@ describe("turns and opponent approval", () => {
       presets[0]!,
       effects,
     );
+
     expect(finished.phase).toBe("finished");
     expect(finished.players[0]!.score).toBe(goesOut ? 14 : -3);
     expect(finished.players[1]!.score).toBe(-10);
@@ -388,16 +418,19 @@ describe("turns and opponent approval", () => {
   });
   it("projects only the viewer rack, never the secret game state or bag", () => {
     const { owner, game } = started();
+
     const snapshot = projectGame(game, owner.id, {
       id: randomUUID(),
       title: "Test",
       ownerId: owner.id,
       tileSet: presets[0]!,
     });
+
     const wire = JSON.stringify(snapshot);
     expect(snapshot.you.rack).toEqual(game.players[0]!.rack);
     expect(wire).not.toContain('"state"');
     expect(wire).not.toContain('"bag":');
+
     for (const tile of game.players[1]!.rack) expect(wire).not.toContain(tile.id);
   });
 });

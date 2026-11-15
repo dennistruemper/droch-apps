@@ -3,6 +3,7 @@ import { createAppStorage } from "./index.ts";
 
 function memoryStorage(): Storage {
   const entries = new Map<string, string>();
+
   return {
     get length() {
       return entries.size;

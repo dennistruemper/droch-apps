@@ -3,17 +3,21 @@ import type { JSX } from "@solidjs/web";
 import { sessionSchema, codeInstructionsSchema, type User } from "@repo/shared/contracts/auth";
 import { init, update, type Message, type Command } from "./account-model.ts";
 import { request, ApiError, errorText } from "./api.ts";
+
 export function Account(props: { children: (user: User, logout: () => void) => JSX.Element }) {
   let current = init();
   const [model, setModel] = createSignal(current);
   const controller = new AbortController();
+
   function dispatch(msg: Message) {
     if (controller.signal.aborted) return;
     const next = update(current, msg);
     current = next.model;
     setModel(current);
+
     for (const command of next.commands) void execute(command);
   }
+
   async function execute(c: Command) {
     try {
       if (c.kind === "session")
@@ -22,10 +26,12 @@ export function Account(props: { children: (user: User, logout: () => void) => J
           id: c.id,
           user: sessionSchema.parse(await request("/api/auth/session", controller.signal)).user,
         });
+
       if (c.kind === "code") {
         const v = codeInstructionsSchema.parse(
           await request("/api/auth/code", controller.signal, { email: c.email }),
         );
+
         dispatch({
           kind: "code-sent",
           id: c.id,
@@ -36,6 +42,7 @@ export function Account(props: { children: (user: User, logout: () => void) => J
               : "Gib den Code aus deiner E-Mail ein.",
         });
       }
+
       if (c.kind === "verify") {
         const v = sessionSchema.parse(
           await request("/api/auth/verify", controller.signal, {
@@ -44,9 +51,11 @@ export function Account(props: { children: (user: User, logout: () => void) => J
             ...(c.name ? { name: c.name } : {}),
           }),
         );
+
         if (!v.user) throw new Error("Anmeldung fehlgeschlagen.");
         dispatch({ kind: "verified", id: c.id, user: v.user });
       }
+
       if (c.kind === "logout") {
         await request("/api/auth/logout", controller.signal, {});
         dispatch({ kind: "logged-out", id: c.id });
@@ -59,22 +68,31 @@ export function Account(props: { children: (user: User, logout: () => void) => J
       );
     }
   }
+
   onSettled(() => {
     void execute(current.pending!);
+
     return () => controller.abort();
   });
+
   const user = () => {
     const s = model().screen;
+
     return s.kind === "signed-in" ? s.user : null;
   };
+
   const email = () => {
     const s = model().screen;
+
     return "email" in s ? s.email : "";
   };
+
   const hint = () => {
     const s = model().screen;
+
     return s.kind === "code" ? s.hint : "";
   };
+
   return (
     <Show
       when={user()}
@@ -92,11 +110,18 @@ export function Account(props: { children: (user: User, logout: () => void) => J
               onSubmit={(e) => {
                 e.preventDefault();
                 const f = new FormData(e.currentTarget);
+
+                const text = (key: string, fallback = "") => {
+                  const value = f.get(key);
+
+                  return typeof value === "string" ? value : fallback;
+                };
+
                 dispatch({
                   kind: "submit",
-                  email: String(f.get("email") ?? email()),
-                  code: String(f.get("code") ?? ""),
-                  name: String(f.get("name") ?? ""),
+                  email: text("email", email()),
+                  code: text("code", ""),
+                  name: text("name", ""),
                 });
               }}
             >

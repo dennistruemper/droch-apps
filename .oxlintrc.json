@@ -1,8 +1,19 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["typescript", "import"],
-  "jsPlugins": [{ "name": "repo", "specifier": "./tooling/oxlint-boundaries.mjs" }],
-  "categories": { "correctness": "error" },
+  "jsPlugins": [
+    {
+      "name": "repo",
+      "specifier": "./tooling/oxlint-boundaries.mjs"
+    },
+    {
+      "name": "anti-slop",
+      "specifier": "./tools/oxlint/anti-slop/index.ts"
+    }
+  ],
+  "categories": {
+    "correctness": "error"
+  },
   "rules": {
     "repo/boundaries": "error",
     "typescript/no-explicit-any": "error",
@@ -10,7 +21,10 @@
       "error",
       {
         "patterns": [
-          { "group": ["@repo/*/src/**"], "message": "Use an explicit public package export." }
+          {
+            "group": ["@repo/*/src/**"],
+            "message": "Use an explicit public package export."
+          }
         ]
       }
     ],
@@ -21,7 +35,73 @@
         "property": "clear",
         "message": "Use the app-scoped storage helper."
       }
-    ]
+    ],
+    "oxc/no-accumulating-spread": "off",
+    "anti-slop/no-array-filter-map": "off",
+    "anti-slop/no-reduce-accumulator-copy": "off",
+    "anti-slop/no-chained-type-assertions": "error",
+    "anti-slop/no-conditional-empty-object-spread": "off",
+    "anti-slop/no-known-value-widening": "off",
+    "anti-slop/no-module-mocking": "error",
+    "anti-slop/no-object-parameters": "error",
+    "anti-slop/no-reflect-apply": "error",
+    "anti-slop/no-reflect-get": "error",
+    "anti-slop/no-runtime-typeof": "off",
+    "anti-slop/no-unsafe-dictionary-type": "off",
+    "anti-slop/no-shape-in-symbol-names": "off",
+    "anti-slop/no-unknown-parameters": "off",
+    "anti-slop/no-unknown-returns": "off",
+    "anti-slop/no-unknown-type-aliases": "error",
+    "anti-slop/no-widen-then-assert": "error",
+    "anti-slop/require-readable-spacing": "error",
+    "anti-slop/require-safety-comment-for-type-assertion": "error",
+    "eslint/eqeqeq": "error",
+    "eslint/no-var": "error",
+    "eslint/prefer-const": "error",
+    "typescript/consistent-type-imports": "error",
+    "typescript/no-import-type-side-effects": "error",
+    "typescript/ban-ts-comment": [
+      "error",
+      {
+        "ts-ignore": true,
+        "ts-nocheck": true,
+        "ts-expect-error": "allow-with-description",
+        "ts-check": false,
+        "minimumDescriptionLength": 10
+      }
+    ],
+    "typescript/switch-exhaustiveness-check": "error",
+    "typescript/no-floating-promises": "error",
+    "typescript/no-misused-promises": "error"
   },
-  "ignorePatterns": ["**/dist/**", "**/node_modules/**", ".local/**"]
+  "ignorePatterns": [
+    "**/dist/**",
+    "**/node_modules/**",
+    ".local/**",
+    ".agent/**",
+    ".agents/**",
+    ".claude/**",
+    ".codex/**",
+    ".continue/**",
+    ".cursor/**",
+    ".gemini/**",
+    ".opencode/**",
+    ".pi/**",
+    ".roo/**",
+    ".windsurf/**",
+    "tools/oxlint/anti-slop/**"
+  ],
+  "options": {
+    "typeAware": true
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.ts"],
+      "plugins": ["vitest"],
+      "rules": {
+        "vitest/no-focused-tests": "error",
+        "vitest/no-identical-title": "error"
+      }
+    }
+  ]
 }

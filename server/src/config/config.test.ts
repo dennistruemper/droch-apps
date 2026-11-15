@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { createAuthRoutes } from "@repo/shared/auth";
+import { createAuthRoutes, type createAuthService } from "@repo/shared/auth";
+
+type AuthService = ReturnType<typeof createAuthService>;
+
 import { readConfiguration, accountPolicy } from "./index.ts";
 
 describe("runtime configuration", () => {
@@ -59,6 +62,7 @@ describe("runtime configuration", () => {
         SERVICE_URL_APPLICATION: origin,
         COOLIFY_URL: `${origin},https://www.example.test`,
       });
+
       expect(configuration.APP_ORIGIN).toBe(origin);
     },
   );
@@ -69,14 +73,16 @@ describe("runtime configuration", () => {
       APP_ORIGIN: "https://apps.droch.dev",
       SERVICE_URL_APPLICATION: "https://4.apps.droch.dev",
     });
+
     const service = {
       codeInstructions: { codeLength: 4, message: "Use 9999." },
-      request: vi.fn(),
-      verify: vi.fn(),
-      lookup: vi.fn(),
-      deliveryAddress: vi.fn(),
-      logout: vi.fn(),
+      request: vi.fn<AuthService["request"]>(),
+      verify: vi.fn<AuthService["verify"]>(),
+      lookup: vi.fn<AuthService["lookup"]>(),
+      deliveryAddress: vi.fn<AuthService["deliveryAddress"]>(),
+      logout: vi.fn<AuthService["logout"]>(),
     };
+
     const routes = createAuthRoutes({
       service,
       origin: configuration.APP_ORIGIN,
@@ -84,6 +90,7 @@ describe("runtime configuration", () => {
       secure: true,
       ready: () => true,
     });
+
     for (const [origin, status] of [
       ["https://4.apps.droch.dev", 400],
       ["https://apps.droch.dev", 403],
@@ -95,11 +102,13 @@ describe("runtime configuration", () => {
         headers: { Origin: origin, "Content-Type": "application/json" },
         body: "{}",
       });
+
       expect(response.status).toBe(status);
       expect(await response.json()).toEqual({
         error: status === 400 ? "Enter a valid email address" : "Invalid request origin",
       });
     }
+
     expect(service.request).not.toHaveBeenCalled();
   });
 
@@ -140,14 +149,18 @@ describe("runtime configuration", () => {
     "https://private-user:private-password@apps.droch.dev",
   ])("rejects an invalid origin with actionable, redacted configuration guidance", (origin) => {
     let failure: unknown;
+
     try {
       readConfiguration({ DATA_DIRECTORY: "/data", APP_ORIGIN: origin });
     } catch (error) {
       failure = error;
     }
+
     expect(failure).toBeInstanceOf(Error);
     expect(failure).not.toBeInstanceOf(TypeError);
-    const message = (failure as Error).message;
+
+    if (!(failure instanceof Error)) throw new Error("Expected a configuration error");
+    const message = failure.message;
     expect(message).toContain("Invalid configuration: APP_ORIGIN");
     expect(message).toContain("APP_ORIGIN must be an HTTP(S) origin");
     expect(message).not.toContain("private-user");
@@ -172,6 +185,7 @@ describe("account delivery modes", () => {
         MAIL_FROM: token ? "sender@example.test" : undefined,
         AUTH_MODE: mode,
       });
+
       expect(accountPolicy(configuration)).toEqual({ sendMail, testMode, ready });
     },
   );
@@ -182,6 +196,7 @@ describe("account delivery modes", () => {
       MAILTRAP_TOKEN: "token",
       AUTH_MODE: "test",
     });
+
     expect(accountPolicy(configuration).ready).toBe(false);
   });
 });

@@ -16,6 +16,7 @@ import type { Command } from "../domain/index.ts";
 import { createPokerService, PokerError, inactivityPeriod } from "./service.ts";
 
 export { appDefinition };
+
 export type PokerOptions = {
   db: ReturnType<typeof connectDatabase>["db"];
   origin: string;
@@ -25,9 +26,11 @@ export type PokerOptions = {
   ready?: () => boolean;
   registerCleanup?: (cleanup: () => void) => void;
 };
+
 export function createRoutes(options?: PokerOptions) {
   const routes = new Hono();
   const status = () => statusSchema.parse({ app: "poker", stage: "foundation" });
+
   if (!options) return routes.get("/status", (c) => c.json(status()));
   const service = createPokerService(options.db, options.now);
   const subscribers = new Map<string, Set<() => void>>();
@@ -36,16 +39,23 @@ export function createRoutes(options?: PokerOptions) {
     for (const close of streamClosers) close();
   });
   const cookieName = `${options.cookieName}_poker`;
+
   const token = (c: Parameters<typeof getCookie>[0]) => {
     const value = getCookie(c, cookieName);
+
     return value && /^[a-f0-9]{64}$/.test(value) ? value : undefined;
   };
+
   const hash = (value: string) => createHash("sha256").update(value).digest("hex");
+
   const credential = (c: Parameters<typeof getCookie>[0]) => {
     const value = token(c);
+
     if (!value) throw new PokerError("Join this room first", 401);
+
     return hash(value);
   };
+
   const remember = (c: Parameters<typeof getCookie>[0], value: string) =>
     setCookie(c, cookieName, value, {
       httpOnly: true,
@@ -54,9 +64,11 @@ export function createRoutes(options?: PokerOptions) {
       path: "/api/poker",
       maxAge: inactivityPeriod / 1000,
     });
+
   const publish = (id: string) => {
     for (const update of subscribers.get(id) ?? []) update();
   };
+
   routes.onError((error, c) => {
     if (error instanceof PokerError) return c.json({ error: error.code }, error.status);
     const reference = randomUUID();
@@ -69,6 +81,7 @@ export function createRoutes(options?: PokerOptions) {
       code: cause && typeof cause === "object" && "code" in cause ? cause.code : undefined,
     });
     const action = c.req.path.endsWith("/rooms") ? "create the room" : "complete this room request";
+
     return c.json(
       {
         error: `Could not ${action}. Please try again. If it keeps failing, share error reference ${reference} with the site owner.`,
@@ -78,6 +91,7 @@ export function createRoutes(options?: PokerOptions) {
   });
   routes.use("*", async (c, next) => {
     c.header("Cache-Control", "no-store");
+
     if (options.ready && !options.ready())
       return c.json(
         {
@@ -86,6 +100,7 @@ export function createRoutes(options?: PokerOptions) {
         },
         503,
       );
+
     if (c.req.method === "POST" && c.req.header("Origin") !== options.origin)
       return c.json({ error: "Invalid request origin" }, 403);
     await next();
@@ -107,47 +122,60 @@ export function createRoutes(options?: PokerOptions) {
   routes.get("/status", (c) => c.json(status()));
   routes.post("/rooms", async (c) => {
     const parsed = createRoomSchema.safeParse(await c.req.json().catch(() => null));
+
     if (!parsed.success) return c.json({ error: "Enter a room title and your name" }, 400);
     const value = token(c) ?? randomBytes(32).toString("hex");
     const snapshot = service.create(parsed.data.title, parsed.data.name, hash(value));
     remember(c, value);
+
     return c.json(snapshot, 201);
   });
   routes.get("/rooms/:id/info", (c) => c.json(service.info(c.req.param("id"))));
   routes.get("/rooms/:id", (c) => c.json(service.snapshot(c.req.param("id"), credential(c))));
   routes.post("/rooms/:id/join", async (c) => {
     const parsed = joinRoomSchema.safeParse(await c.req.json().catch(() => null));
+
     if (!parsed.success) return c.json({ error: "Enter your name" }, 400);
     const value = token(c) ?? randomBytes(32).toString("hex");
     const snapshot = service.join(c.req.param("id"), parsed.data.name, hash(value));
     remember(c, value);
     publish(snapshot.id);
+
     return c.json(snapshot);
   });
   routes.post("/rooms/:id/:command", async (c) => {
     const kind = c.req.param("command");
+
     if (kind !== "vote" && kind !== "reveal" && kind !== "reset") return c.notFound();
     const body: unknown = await c.req.json().catch(() => null);
+
     const parsed =
       kind === "vote" ? voteCommandSchema.safeParse(body) : roundCommandSchema.safeParse(body);
+
     if (!parsed.success) return c.json({ error: "Invalid round or vote" }, 400);
+
     const command: Command =
       kind === "vote"
         ? { kind, ...voteCommandSchema.parse(body) }
         : { kind, round: parsed.data.round };
+
     const snapshot = service.command(c.req.param("id"), credential(c), command);
     const value = token(c);
+
     if (value) remember(c, value);
     publish(snapshot.id);
+
     return c.json(snapshot);
   });
   routes.get("/rooms/:id/events", (c) => {
     const id = c.req.param("id"),
       viewer = credential(c);
+
     service.snapshot(id, viewer); // Authorize before opening the response.
     const encoder = new TextEncoder();
     let cleanup = () => {};
     let closed = false;
+
     const body = new ReadableStream<Uint8Array>({
       start(controller) {
         const stop = () => {
@@ -156,8 +184,10 @@ export function createRoutes(options?: PokerOptions) {
           cleanup();
           controller.close();
         };
+
         const send = () => {
           if (closed || (controller.desiredSize ?? 0) <= 0) return;
+
           try {
             const snapshot = service.snapshot(id, viewer);
             controller.enqueue(
@@ -171,6 +201,7 @@ export function createRoutes(options?: PokerOptions) {
             stop();
           }
         };
+
         const listeners = subscribers.get(id) ?? new Set<() => void>();
         subscribers.set(id, listeners);
         listeners.add(send);
@@ -180,9 +211,11 @@ export function createRoutes(options?: PokerOptions) {
           clearInterval(timer);
           listeners.delete(send);
           streamClosers.delete(stop);
+
           if (!listeners.size) subscribers.delete(id);
           c.req.raw.signal.removeEventListener("abort", stop);
         };
+
         streamClosers.add(stop);
         c.req.raw.signal.addEventListener("abort", stop, { once: true });
         // Subscribe first, then send the authoritative full snapshot. Reconnects
@@ -194,6 +227,7 @@ export function createRoutes(options?: PokerOptions) {
         cleanup();
       },
     });
+
     return new Response(body, {
       headers: {
         "Content-Type": "text/event-stream",
@@ -202,5 +236,6 @@ export function createRoutes(options?: PokerOptions) {
       },
     });
   });
+
   return routes;
 }

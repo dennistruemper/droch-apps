@@ -95,3 +95,50 @@ All six app definitions declare light/dark defaults. Shared AppAppearance applie
 system appearance on startup and live changes, while preserving explicit stored
 choices. Existing Settings pickers offer System to resume automatic selection.
 Custom palette/font handling and app-scoped preferences remain central.
+
+## Anti-slop lint adoption — implemented
+
+- Vendored rules are integrated with the existing Oxlint checks.
+- After architecture review, nine generic rules remain enabled; see decisions.md.
+- Applied readable-spacing autofixes; existing source changed only in whitespace
+  during that step. No spacing violations remain after formatting.
+- Resolved all 39 assertion diagnostics through runtime narrowing, schema parsing,
+  `satisfies`, typed browser hooks, and specific comments for necessary casts.
+- `pnpm check` passes type checking, lint, formatting, and all 145 tests. The
+  production build passes. All 28 Chromium browser tests pass against a separate
+  local server/database (25 initially, then three requiring local auth metadata).
+  The attention-mode experiment also passes a separate strict TypeScript check.
+
+The initial full-ruleset scan of committed base `2848478` reported 1,449
+diagnostics, including 1,362 spacing findings. That selected anti-slop configuration reported zero diagnostics across 81
+scanned files before the additional checks below were enabled. The original checkout's
+uncommitted work is outside this scan. Deployment was not performed.
+
+## Additional Oxlint checks — implemented
+
+- Activated all eleven recommended checks and type-aware linting, retaining the
+  correctness category and its typed/Vitest defaults.
+- Resolved all 36 diagnostics from the initial expansion scan.
+- Union switches enumerate every message variant explicitly. Existing tests
+  preserve pending-state guards, late-response rejection, and immutable updates.
+- DOM adapters launch async operations explicitly; the existing error-handling
+  paths remain in their effect functions. Narrow FormData and FileReader values
+  before text use, bind browser-stub methods, and type test mocks.
+- Test assertions specify errors and sort semantics; delayed mail failures are
+  captured immediately and asserted after the race is triggered.
+- Full pnpm check passes type checking, lint, formatting, and all 145 tests. The
+  production build and a separate strict attention-mode experiment type check
+  also pass. All 28 Chromium browser tests pass against fresh isolated local
+  databases, including recovery, stale responses, and pending-state guards.
+
+The existing CI pnpm check command includes the new rules automatically.
+
+## PR integration on current main
+
+Rebased the lint changes onto main `678167e`, preserving its shared account naming,
+app appearance defaults, half-point Poker option, and added apps. Applied the
+same lint policy to that complete tree, including explicit message cases in
+Kunludo/Schlezaz and narrow typed browser/store seams in Observo tests.
+`pnpm check` passes with zero lint findings and 234 tests across 30 files; the
+production build passes for all registered apps. All 47 browser checks were
+verified (46 in the full suite, followed by the corrected calendar-race check).

@@ -3,6 +3,7 @@ import { init, update } from "./dashboard-model.ts";
 import type { Dashboard } from "../contracts/index.ts";
 
 const data: Dashboard = { generatedAt: 100, checksEnabled: true, sites: [] };
+
 describe("dashboard request recovery", () => {
   it("guards duplicate refreshes and stale completions, retaining data after failure", () => {
     const first = update(init(), { kind: "refresh" });
