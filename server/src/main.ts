@@ -84,6 +84,7 @@ const applicationOptions = (id: string): ApplicationOptions => {
   if (!database) throw new Error(`Missing database for ${id}`);
   return {
     db: database.connection.db,
+    ...(configuration.AUTH_SECRET ? { joinSecret: configuration.AUTH_SECRET } : {}),
     resolveUser: (token) => auth?.lookup(token) ?? null,
     ready: () => database.connection.ready(database.migrationsFolder),
     origin: configuration.APP_ORIGIN,

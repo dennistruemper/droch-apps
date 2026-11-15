@@ -486,7 +486,7 @@ for (const viewport of [
     await page.getByRole("button", { name: "Close game rules", exact: true }).click();
     await open();
     await menu.getByRole("button", { name: "Settings", exact: true }).click();
-    await expect(page.getByLabel("Your theme")).toHaveValue("antique-paper");
+    await expect(page.getByLabel("Your theme")).toHaveValue("system");
     await page.getByRole("button", { name: "Close settings", exact: true }).click();
     signedIn = true;
     for (const [path, game] of [

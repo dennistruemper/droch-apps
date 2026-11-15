@@ -389,7 +389,7 @@ test("game side panel adapts, restores focus, persists desktop choice and signs 
     await expect(open()).toBeFocused();
     await open().click();
     await menu.getByRole("button", { name: "Settings", exact: true }).click();
-    await expect(owner.getByLabel("Your theme")).toHaveValue("antique-paper");
+    await expect(owner.getByLabel("Your theme")).toHaveValue("system");
     await expect(owner.locator("#vortoj-theme")).toHaveCount(1);
     await owner.getByRole("button", { name: "Close settings", exact: true }).click();
     await expect(open()).toBeFocused();

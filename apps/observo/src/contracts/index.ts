@@ -4,7 +4,7 @@ export const appDefinition = {
   id: "observo",
   title: "Observo",
   description: "Website availability, observed every five minutes.",
-  theme: "paper",
+  themes: { light: "paper", dark: "ink" },
 } as const;
 
 export const outcomeSchema = z.enum(["available", "unreachable", "not-functional"]);

@@ -267,3 +267,21 @@ describe("test and production codes", () => {
     expect(service.codeInstructions.message).not.toContain("9999");
   });
 });
+
+it("collects a display name only after verifying a new account's code and reuses it on later sign-in", async () => {
+  const f = fixture();
+  await f.service.request("new@example.test");
+  expect(() => f.service.verify("new@example.test", "wrong")).toThrow(/incorrect/);
+  try {
+    f.service.verify("new@example.test", "012345");
+  } catch (e) {
+    expect(e).toMatchObject({ status: 422 });
+  }
+  const first = f.service.verify("new@example.test", "012345", "Shared name");
+  expect(first.user.name).toBe("Shared name");
+  f.service.logout(first.token);
+  f.advance(60001);
+  await f.service.request("new@example.test");
+  const next = f.service.verify("new@example.test", "012345");
+  expect(next.user).toEqual(first.user);
+});

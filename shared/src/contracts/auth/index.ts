@@ -7,7 +7,7 @@ export const requestCodeSchema = z.object({ email: emailSchema });
 export const verifyCodeSchema = z.object({
   email: emailSchema,
   code: z.string().regex(/^(?:\d{4}|\d{6})$/),
-  name: z.string().trim().min(1).max(32),
+  name: z.string().trim().min(1).max(32).optional(),
 });
 export const userSchema = z.object({ id: z.string().uuid(), name: z.string().min(1).max(32) });
 export const sessionSchema = z.object({ user: userSchema.nullable() });

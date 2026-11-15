@@ -1,3 +1,5 @@
+import { appDefinition } from "../contracts/index.ts";
+import { AppAppearance } from "@repo/shared/settings";
 import { createSignal, For, Show, onSettled } from "solid-js";
 import { render } from "@solidjs/web";
 import "@repo/shared/styles";
@@ -217,4 +219,11 @@ function App() {
     </>
   );
 }
-render(() => <App />, document.getElementById("app")!);
+render(
+  () => (
+    <AppAppearance appId={appDefinition.id} defaults={appDefinition.themes}>
+      <App />
+    </AppAppearance>
+  ),
+  document.getElementById("app")!,
+);

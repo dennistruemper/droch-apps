@@ -3,7 +3,7 @@ export const appDefinition = {
   id: "vortoj",
   title: "Vortoj",
   description: "Build words together. Take your turn whenever you’re ready.",
-  theme: "antique-paper",
+  themes: { light: "antique-paper", dark: "ink" },
 } as const;
 export const statusSchema = z.object({ app: z.literal("vortoj"), stage: z.literal("foundation") });
 export function normalizeLetter(letter: string) {

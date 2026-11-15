@@ -1,0 +1,545 @@
+:root {
+  --content-width: 72rem;
+}
+body {
+  margin: 0;
+}
+button,
+input,
+select {
+  font: inherit;
+}
+button {
+  min-height: 44px;
+}
+.zs-shell {
+  min-width: 0;
+}
+.zs-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid var(--color-fg);
+}
+.zs-brand {
+  font-weight: 750;
+  text-decoration: none;
+  letter-spacing: -0.03em;
+}
+.zs-account {
+  margin-left: auto;
+  font-size: 0.9rem;
+}
+.zs-main {
+  width: min(100%, 72rem);
+  margin-inline: auto;
+  padding: 2.5rem 2rem 4rem;
+  box-sizing: border-box;
+}
+.zs-login h1 {
+  font-size: clamp(2.3rem, 5vw, 4.1rem);
+  line-height: 1.05;
+  letter-spacing: -0.065em;
+  margin: 0.7rem 0 1rem;
+}
+.zs-eyebrow {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-weight: 700;
+}
+.zs-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+.zs-team-actions {
+  margin-bottom: 1.5rem;
+}
+.zs-actions button,
+.zs-game-actions button {
+  font-size: 0.85rem;
+  padding: 0.5rem 0.8rem;
+}
+button.secondary {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  border: 1px solid var(--color-fg);
+  box-shadow: none;
+}
+.zs-tabs {
+  display: flex;
+  gap: 1rem;
+  border-bottom: 1px solid var(--color-fg);
+  margin-bottom: 1.5rem;
+}
+.zs-tabs button {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  color: var(--color-fg);
+  border-bottom: 3px solid transparent;
+  padding: 0.6rem 1rem;
+}
+.zs-tabs button[aria-pressed="true"] {
+  border-bottom-color: var(--color-fg);
+  font-weight: 700;
+}
+.zs-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.zs-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-block: 0.5rem 1.5rem;
+}
+.zs-filters button,
+.zs-answer-buttons button {
+  border: 1px solid var(--color-fg);
+  box-shadow: none;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  padding: 0.5rem 0.8rem;
+  font-size: 0.85rem;
+}
+.zs-filters button[aria-pressed="true"],
+.zs-answer-buttons button[aria-pressed="true"] {
+  background: var(--color-fg);
+  color: var(--color-bg);
+}
+.zs-games {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.zs-game,
+.zs-team,
+.zs-editor,
+.zs-code {
+  border: 1px solid var(--color-fg);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  background: var(--color-bg);
+  margin: 0;
+  box-shadow: none;
+}
+.zs-game h2,
+.zs-team h2 {
+  font-size: 1.45rem;
+  letter-spacing: -0.035em;
+  margin: 0.5rem 0;
+}
+.zs-game p {
+  margin: 0.4rem 0;
+}
+.zs-game-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 0.9rem;
+}
+.zs-team-label {
+  border: 1px solid var(--color-fg);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.zs-muted {
+  opacity: 0.65;
+  font-size: 0.85rem;
+}
+.zs-date {
+  font-weight: 600;
+}
+.zs-readiness {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  flex: none;
+}
+.zs-readiness strong {
+  font-size: 2.1rem;
+  letter-spacing: -0.07em;
+}
+.zs-readiness strong span {
+  font-size: 1.15rem;
+  opacity: 0.55;
+}
+.zs-readiness small {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+.zs-answer-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--color-fg) 20%, transparent);
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+.zs-answer-buttons {
+  display: flex;
+  gap: 0.4rem;
+}
+.zs-status {
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+.zs-status:before {
+  content: "○";
+}
+.zs-status[data-state="yes"]:before,
+.zs-status[data-state="committed"]:before {
+  content: "●";
+  color: #44845a;
+}
+.zs-status[data-state="pending"]:before,
+.zs-status[data-state="stale"]:before {
+  content: "⚑";
+  color: #a76912;
+}
+.zs-status[data-state="elsewhere"]:before {
+  content: "↗";
+}
+.zs-game-actions {
+  margin: 1rem 0;
+}
+.zs-details,
+.zs-past {
+  border-top: 1px solid color-mix(in srgb, var(--color-fg) 25%, transparent);
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+summary {
+  cursor: pointer;
+  min-height: 36px;
+  font-weight: 600;
+}
+.zs-conflict {
+  margin-top: 1rem;
+  padding: 0.8rem 1rem;
+  border-left: 3px solid #a76912;
+  background: color-mix(in srgb, var(--color-fg) 3%, var(--color-bg));
+}
+.zs-conflict summary {
+  font-size: 0.9rem;
+}
+.zs-conflict p {
+  font-size: 0.9rem;
+}
+.zs-other {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  border-top: 1px solid color-mix(in srgb, var(--color-fg) 20%, transparent);
+  padding-block: 1rem;
+}
+.zs-other button {
+  align-self: flex-start;
+}
+.zs-response-group {
+  padding: 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--color-fg) 25%, transparent);
+}
+.zs-response-group h3 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+.zs-response-group .zs-roster li:last-child {
+  border-bottom: 0;
+}
+.zs-roster {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+}
+.zs-roster li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 15%, transparent);
+}
+.zs-roster li > span {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.zs-roster small {
+  opacity: 0.65;
+}
+.zs-teams {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.zs-banner {
+  padding: 1rem;
+  border: 1px solid var(--color-fg);
+  margin: 1rem 0;
+}
+.zs-banner button {
+  margin-left: 1rem;
+}
+.zs-editor,
+.zs-code {
+  margin: 1.5rem 0 2rem;
+}
+.zs-editor form {
+  max-width: 46rem;
+  margin-top: 1rem;
+}
+.zs-editor fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.zs-editor fieldset > button {
+  align-self: flex-start;
+  margin-top: 0.5rem;
+}
+.zs-editor input,
+.zs-editor select {
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+}
+.zs-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+.zs-form-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.zs-import-list {
+  max-height: 25rem;
+  overflow: auto;
+  border: 1px solid var(--color-fg);
+  padding: 0.75rem;
+}
+.zs-import-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-left: 3px solid transparent;
+  font-size: 0.85rem;
+}
+.zs-import-row:has(input:checked) {
+  border-left-color: var(--color-fg);
+}
+.zs-import-row input[type="checkbox"] {
+  appearance: auto;
+  accent-color: var(--color-fg);
+  width: 1.5rem;
+  height: 1.5rem;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: revert;
+  box-shadow: none;
+  flex: none;
+}
+.zs-import-row span,
+.zs-import-row small {
+  display: block;
+}
+.zs-import-row small {
+  margin-top: 0.4rem;
+  opacity: 0.65;
+}
+.zs-code code {
+  overflow-wrap: anywhere;
+}
+.zs-pin {
+  font-size: 1.8rem;
+  letter-spacing: 0.18em;
+}
+.zs-code button {
+  margin-right: 0.5rem;
+}
+.zs-empty {
+  padding: 2rem 0;
+  opacity: 0.7;
+}
+.zs-proposal {
+  border-top: 1px solid var(--color-fg);
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+.zs-change {
+  border-left: 2px solid var(--color-fg);
+  padding-left: 0.75rem;
+  font-size: 0.85rem;
+}
+.zs-login {
+  max-width: 34rem;
+  margin: 5rem auto;
+  padding: 1.5rem;
+}
+.zs-login form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  margin-top: 2rem;
+  max-width: 25rem;
+}
+.zs-login form button[type="button"] {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  box-shadow: none;
+}
+@media (max-width: 640px) {
+  .zs-header {
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+  .zs-main {
+    padding: 1.5rem 1rem 3rem;
+  }
+  .zs-team-actions > button {
+    flex: 1;
+  }
+  .zs-game,
+  .zs-team,
+  .zs-editor,
+  .zs-code {
+    padding: 1rem;
+  }
+  .zs-game .zs-row {
+    align-items: flex-start;
+    flex-wrap: nowrap;
+  }
+  .zs-readiness strong {
+    font-size: 1.6rem;
+  }
+  .zs-game h2 {
+    font-size: 1.2rem;
+  }
+  .zs-game-top {
+    align-items: flex-start;
+  }
+  .zs-account {
+    max-width: 7rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .zs-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .zs-roster li {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .zs-answer-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .zs-answer-buttons {
+    width: 100%;
+  }
+  .zs-answer-buttons button {
+    flex: 1;
+  }
+  .zs-date {
+    font-size: 0.9rem;
+  }
+  .zs-login {
+    margin: 2rem auto;
+  }
+  .zs-code code {
+    font-size: 0.8rem;
+  }
+  .zs-code .zs-pin {
+    font-size: 1.8rem;
+  }
+}
+
+.zs-toast {
+  position: fixed;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: max-content;
+  max-width: calc(100vw - 2rem);
+  padding: 0.75rem 1rem;
+  color: var(--color-bg);
+  background: var(--color-fg);
+  border: 1px solid var(--color-bg);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 3px 0 var(--color-fg);
+}
+.zs-toast > span {
+  overflow-wrap: anywhere;
+}
+.zs-toast > button {
+  flex: none;
+  min-width: 2rem;
+  min-height: 2rem;
+  padding: 0.25rem;
+  color: inherit;
+  background: transparent;
+  border: 1px solid currentColor;
+}
+
+.zs-player-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.zs-player-actions select {
+  width: auto;
+  max-width: 100%;
+}
+
+.zs-toast-countdown {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: currentColor;
+  transform-origin: left;
+  animation: zs-toast-countdown var(--toast-duration) linear forwards;
+}
+@keyframes zs-toast-countdown {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* This bar conveys remaining time rather than decorative motion. */
+  .zs-toast-countdown {
+    animation: zs-toast-countdown var(--toast-duration) linear forwards !important;
+  }
+}

@@ -4,7 +4,7 @@ export const appDefinition = {
   id: "poker",
   title: "Scrum poker",
   description: "Estimate together. No accounts needed.",
-  theme: "paper",
+  themes: { light: "paper", dark: "ink" },
 } as const;
 export const deck = ["0", "1", "2", "3", "5", "8", "13", "21", "?", "☕"] as const;
 export const voteSchema = z.enum(deck);

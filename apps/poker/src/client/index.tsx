@@ -1,7 +1,7 @@
 import { render } from "@solidjs/web";
 import { createRouter, useParams } from "@solidjs/router";
 import { createSignal, onCleanup, Show, For } from "solid-js";
-import { AppSettings } from "@repo/shared/settings";
+import { AppSettings, AppAppearance } from "@repo/shared/settings";
 import { createAppStorage } from "@repo/shared/storage";
 import {
   appDefinition,
@@ -427,7 +427,7 @@ function App() {
         <strong>Scrum poker</strong>
         <nav aria-label="App navigation">
           <a href="/">All apps</a>
-          <AppSettings appId={appDefinition.id} defaultTheme={appDefinition.theme}>
+          <AppSettings appId={appDefinition.id}>
             <AttentionSettings />
           </AppSettings>
         </nav>
@@ -439,4 +439,11 @@ function App() {
     </AttentionProvider>
   );
 }
-render(() => <App />, element);
+render(
+  () => (
+    <AppAppearance appId={appDefinition.id} defaults={appDefinition.themes}>
+      <App />
+    </AppAppearance>
+  ),
+  element,
+);

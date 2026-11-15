@@ -1,3 +1,8 @@
+import {
+  appDefinition as kunludo,
+  createRoutes as createKunludoRoutes,
+  type KunludoOptions,
+} from "@repo/kunludo/server";
 import { appDefinition as enigmo } from "@repo/enigmo/contracts";
 import { appDefinition as schlezaz } from "@repo/schlezaz/contracts";
 import {
@@ -10,6 +15,7 @@ import { appDefinition as words, createRoutes as createWordsRoutes } from "@repo
 
 // The only application registration list. Build, development, and HTTP mounting use it.
 export const applications = [
+  { ...kunludo, createRoutes: createKunludoRoutes },
   { ...poker, createRoutes: createPokerRoutes },
   { ...words, createRoutes: createWordsRoutes },
   schlezaz,
@@ -32,9 +38,15 @@ export const databaseDefinitions = [
   { id: "auth", schema: "./shared/src/auth/schema.ts" },
   ...applications
     .filter((app) => "createRoutes" in app)
-    .map((app) => ({ id: app.id, schema: `./apps/${app.id}/src/server/schema.ts` })),
+    .map((app) => ({
+      id: app.id,
+      schema: `./apps/${app.id}/src/server/schema.ts`,
+    })),
 ] as const;
 
 import type { PokerOptions } from "@repo/poker/server";
 import type { VortojOptions } from "@repo/vortoj/server";
-export type ApplicationOptions = PokerOptions & Pick<VortojOptions, "resolveUser"> & ObservoOptions;
+export type ApplicationOptions = PokerOptions &
+  Pick<VortojOptions, "resolveUser"> &
+  ObservoOptions &
+  Pick<KunludoOptions, "joinSecret">;

@@ -1,4 +1,12 @@
-import { createSignal, For, Show, type Element } from "solid-js";
+import {
+  createSignal,
+  createContext,
+  useContext,
+  onSettled,
+  For,
+  Show,
+  type Element,
+} from "solid-js";
 import type { JSX } from "@solidjs/web";
 import { createAppStorage } from "../storage/index.ts";
 
@@ -58,6 +66,7 @@ function nativeScheme(background: string) {
   return luminance < 0.179 ? "dark" : "light";
 }
 const themes = [
+  { value: "system", label: "System" },
   { value: "paper", label: "Paper" },
   { value: "antique-paper", label: "Antique paper" },
   { value: "ink", label: "Ink" },
@@ -66,21 +75,35 @@ const themes = [
   { value: "custom", label: "Custom" },
 ] as const;
 
-export function AppSettings(props: {
+export type ThemeDefaults = { light: string; dark: string };
+const AppearanceContext = createContext<{
+  theme: () => string;
+  customTheme: () => CustomTheme;
+  chooseTheme: (next: string) => void;
+  saveCustomTheme: (next: CustomTheme) => void;
+}>();
+
+export function AppAppearance(props: {
   appId: string;
-  defaultTheme: string;
+  defaults: ThemeDefaults;
   children?: Element;
-  trigger?: (open: () => void) => JSX.Element;
 }) {
   const storage = createAppStorage(props.appId, localStorage);
   const saved = storage.get("theme");
   let savedCustomTheme = readCustomTheme(storage.get("custom-theme"));
   const [customTheme, setCustomTheme] = createSignal(savedCustomTheme ?? defaultCustomTheme);
-  const [theme, setTheme] = createSignal(
-    themes.some((choice) => choice.value === saved) ? saved! : props.defaultTheme,
-  );
+  const media = window.matchMedia("(prefers-color-scheme: dark)");
+  let selected =
+    themes.some((choice) => choice.value === saved) ||
+    saved === props.defaults.light ||
+    saved === props.defaults.dark
+      ? saved!
+      : "system";
+  const [theme, setTheme] = createSignal(selected);
   const root = document.documentElement;
-  function applyTheme(next: string, palette = customTheme()) {
+  function applyTheme(preference: string, palette = savedCustomTheme ?? defaultCustomTheme) {
+    const next =
+      preference === "system" ? props.defaults[media.matches ? "dark" : "light"] : preference;
     root.dataset.theme = next;
     if (next === "custom") {
       root.style.setProperty("--color-bg", palette.background);
@@ -126,11 +149,33 @@ export function AppSettings(props: {
           : defaultCustomTheme,
       );
     }
+    selected = next;
     setTheme(next);
     storage.set("theme", next);
     applyTheme(next);
   }
-  applyTheme(theme());
+  applyTheme(selected);
+  onSettled(() => {
+    const changed = () => {
+      if (selected === "system") applyTheme("system");
+    };
+    media.addEventListener("change", changed);
+    changed();
+    return () => media.removeEventListener("change", changed);
+  });
+  return (
+    <AppearanceContext value={{ theme, customTheme, chooseTheme, saveCustomTheme }}>
+      {props.children}
+    </AppearanceContext>
+  );
+}
+
+export function AppSettings(props: {
+  appId: string;
+  children?: Element;
+  trigger?: (open: () => void) => JSX.Element;
+}) {
+  const { theme, customTheme, chooseTheme, saveCustomTheme } = useContext(AppearanceContext);
   let dialog: HTMLDialogElement | undefined;
   const headingId = `${props.appId}-settings-title`;
   const themeId = `${props.appId}-theme`;
@@ -200,7 +245,7 @@ export function AppSettings(props: {
                 Changes preview immediately and are saved for this app. Buttons use the same two
                 colors.
               </small>
-              <button type="button" onClick={() => chooseTheme(props.defaultTheme)}>
+              <button type="button" onClick={() => chooseTheme("system")}>
                 Use app default
               </button>
             </fieldset>
