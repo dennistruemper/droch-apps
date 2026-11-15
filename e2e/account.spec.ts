@@ -21,11 +21,10 @@ test("account code entry survives resend and verification failures", async ({ pa
   await page.getByLabel("Email address").fill("review@example.test");
   await page.getByRole("button", { name: "Send sign-in code", exact: true }).click();
   await page.getByLabel("Sign-in code").fill("9999");
-  await page.getByLabel("Your name", { exact: true }).fill("Review");
   await page.getByRole("button", { name: "Request another code", exact: true }).click();
   await expect(page.getByRole("alert")).toHaveText("Wait a minute before requesting another code.");
   await expect(page.getByLabel("Sign-in code")).toHaveValue("9999");
-  await expect(page.getByLabel("Your name", { exact: true })).toHaveValue("Review");
+  await expect(page.getByLabel("Account display name", { exact: true })).toHaveCount(0);
   await expect(page.getByLabel("Email address")).toHaveAttribute("readonly", "");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page.getByRole("alert")).toHaveText("Incorrect sign-in code.");
@@ -45,7 +44,6 @@ test("malformed account responses remain recoverable", async ({ page }) => {
   await page.getByLabel("Email address").fill("review@example.test");
   await page.getByRole("button", { name: "Send sign-in code", exact: true }).click();
   await page.getByLabel("Sign-in code").fill("9999");
-  await page.getByLabel("Your name", { exact: true }).fill("Review");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page.getByRole("alert")).toHaveText(
     "Could not sign you in. Request another code and try again.",
@@ -75,3 +73,41 @@ test("change email returns to editable entry and requests the corrected address"
   await expect(page.getByLabel("Sign-in code")).toBeVisible();
   expect(addresses).toEqual(["mistyped@example.test", "correct@example.test"]);
 });
+
+for (const needsName of [false, true]) {
+  test(`account name is requested only when needed (${needsName})`, async ({ page }) => {
+    const user = { id: "e6de83f5-49e2-4e89-8bf0-1829fb77b099", name: "Office Name" };
+    await page.route("**/api/auth/session", (route) => route.fulfill({ json: { user: null } }));
+    await page.route("**/api/auth/code", (route) =>
+      route.fulfill({ json: { codeLength: 4, message: "Use 9999" } }),
+    );
+    await page.route("**/api/vortoj/rooms", (route) => route.fulfill({ json: [] }));
+    await page.route("**/api/vortoj/tile-sets", (route) => route.fulfill({ json: [] }));
+    const attempts: Record<string, unknown>[] = [];
+    await page.route("**/api/auth/verify", (route) => {
+      const data = route.request().postDataJSON();
+      attempts.push(data);
+      return needsName && !data.name
+        ? route.fulfill({ status: 422, json: { error: "Choose an account name" } })
+        : route.fulfill({ json: { user } });
+    });
+    await page.goto("/vortoj/");
+    await page.getByLabel("Email address").fill("office@example.test");
+    await page.getByRole("button", { name: "Send sign-in code", exact: true }).click();
+    await expect(page.getByLabel("Account display name", { exact: true })).toHaveCount(0);
+    await page.getByLabel("Sign-in code").fill("9999");
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    if (needsName) {
+      await page.getByLabel("Account display name", { exact: true }).fill(user.name);
+      await page.getByRole("button", { name: "Save name", exact: true }).click();
+      expect(attempts[1]).toMatchObject({
+        email: "office@example.test",
+        code: "9999",
+        name: user.name,
+      });
+    }
+    await expect(page.getByText(`Account: ${user.name}`, { exact: true })).toBeVisible();
+    expect(attempts[0]).not.toHaveProperty("name");
+    await expect(page.getByLabel("Your name in this game")).toHaveValue(user.name);
+  });
+}

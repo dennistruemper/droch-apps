@@ -56,6 +56,18 @@ describe("HTTP composition", () => {
     expect(databaseDefinitions.map(({ id }) => id)).not.toContain("enigmo");
     expect(await (await app.request("/")).text()).toContain('href="/enigmo/"');
   });
+  it("serves Kunludo under its new name without old planner aliases", async () => {
+    expect(await (await app.request("/api/kunludo/status")).json()).toEqual({
+      app: "kunludo",
+      stage: "ready",
+    });
+    expect((await app.request("/zusammenspiel/")).status).toBe(404);
+    expect((await app.request("/api/zusammenspiel/status")).status).toBe(404);
+    const index = await (await app.request("/")).text();
+    expect(index).toContain('href="/kunludo/"');
+    expect(index).toContain("Kunludo");
+    expect(index).not.toContain("Zusammenspiel");
+  });
   it("keeps liveness separate from database readiness", async () => {
     const unready = createApplication({
       ready: async () => {

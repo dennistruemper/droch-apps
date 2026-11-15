@@ -77,7 +77,7 @@ test("custom colors and fonts preview, persist per app, and leave presets intact
   await expect(page.getByLabel("Background color")).toHaveValue("#102030");
   await expect(font).toHaveValue("serif");
   await page.getByRole("button", { name: "Use app default" }).click();
-  await expect(theme).toHaveValue("paper");
+  await expect(theme).toHaveValue("system");
   await expect(page.getByLabel("Background color")).toHaveCount(0);
   await expect.poll(palette).toEqual({ background: "", foreground: "", scheme: "light" });
   expect(errors).toEqual([]);
@@ -118,5 +118,49 @@ test("older color preferences and invalid fonts have safe defaults", async ({ pa
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await expect(page.getByLabel("Font", { exact: true })).toHaveValue("mono");
   await page.getByRole("button", { name: "Use app default" }).click();
-  await expect(page.getByLabel("Your theme")).toHaveValue("paper");
+  await expect(page.getByLabel("Your theme")).toHaveValue("system");
+});
+
+test("System follows live appearance changes, explicit presets persist and app defaults differ", async ({
+  page,
+}) => {
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.goto("/poker/");
+  const root = page.locator("html");
+  const theme = page.getByLabel("Your theme", { exact: true });
+  await expect(root).toHaveAttribute("data-theme", "ink");
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await expect(theme).toHaveValue("system");
+  await page.emulateMedia({ colorScheme: "light" });
+  await expect(root).toHaveAttribute("data-theme", "paper");
+  await theme.selectOption("ocean");
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(root).toHaveAttribute("data-theme", "ocean");
+  await page.reload();
+  await expect(root).toHaveAttribute("data-theme", "ocean");
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await theme.selectOption("system");
+  await expect(root).toHaveAttribute("data-theme", "ink");
+  await page.reload();
+  await expect(root).toHaveAttribute("data-theme", "ink");
+  await page.emulateMedia({ colorScheme: "light" });
+  await expect(root).toHaveAttribute("data-theme", "paper");
+  await page.goto("/vortoj/");
+  await expect(root).toHaveAttribute("data-theme", "antique-paper");
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(root).toHaveAttribute("data-theme", "ink");
+  await page.goto("/kunludo/");
+  await expect(page.getByLabel("E-Mail", { exact: true })).toBeVisible();
+  await expect(root).toHaveAttribute("data-theme", "ink");
+  await page.emulateMedia({ colorScheme: "light" });
+  await expect(root).toHaveAttribute("data-theme", "paper");
+  await page.goto("/enigmo/");
+  await expect(root).toHaveAttribute("data-theme", "enigmo");
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(root).toHaveAttribute("data-theme", "ink");
+  await page.goto("/schlezaz/");
+  await expect(root).toHaveAttribute("data-theme", "schlezaz");
+  await page.emulateMedia({ colorScheme: "light" });
+  await expect(root).toHaveAttribute("data-theme", "schlezaz-light");
+  await page.screenshot({ path: ".local/demos/schlezaz-light.png" });
 });

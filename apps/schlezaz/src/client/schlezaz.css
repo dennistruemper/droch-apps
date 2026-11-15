@@ -1,13 +1,68 @@
-[data-theme="schlezaz"] {
-  --color-bg: #211326;
-  --color-fg: #fff3d4;
-  --color-accent: #ffda58;
+:root {
   --font-body: "Trebuchet MS", system-ui, sans-serif;
   --content-width: 1120px;
+  --sz-base: #211326;
+  --sz-text: #fff3d4;
+  --sz-accent: #ffda58;
+  --sz-glow: #542332;
+  --sz-line: #ffffff30;
+  --sz-shadow: #e04c57;
+  --sz-accent-line: #ffda5870;
+  --sz-muted: #e491a1;
+  --sz-surface: #2b1e30;
+  --sz-outline: #72536a;
+  --sz-hover: #442c46;
+  --sz-accent-hover: #ffe890;
+  --sz-button-shadow: #ae455d;
+  --sz-description: #e1bccc;
+  --sz-line-soft: #ffffff25;
+  --sz-panel: #130c1980;
+  --sz-line-medium: #ffffff40;
+  --sz-input: #ffffff08;
+  --sz-line-strong: #ffffff50;
+  --sz-disabled: #645259;
+  --sz-disabled-text: #eee0d9;
+  --sz-result-caption: #6a233e;
+  --sz-track: #ffffff20;
+}
+[data-theme="schlezaz-light"] {
+  --color-bg: #fff7e9;
+  --color-fg: #211326;
+  --color-accent: #754500;
+  color-scheme: light;
+  --sz-base: #fff7e9;
+  --sz-text: #211326;
+  --sz-accent: #754500;
+  --sz-glow: #ead8c4;
+  --sz-line: #21132630;
+  --sz-shadow: #d99b91;
+  --sz-accent-line: #75450070;
+  --sz-muted: #81364c;
+  --sz-surface: #f1e4d1;
+  --sz-outline: #bda68e;
+  --sz-hover: #e7d7c0;
+  --sz-accent-hover: #633900;
+  --sz-button-shadow: #b98572;
+  --sz-description: #604d58;
+  --sz-line-soft: #21132625;
+  --sz-panel: #fffdf580;
+  --sz-line-medium: #21132640;
+  --sz-input: #21132608;
+  --sz-line-strong: #21132650;
+  --sz-disabled: #c8b8a7;
+  --sz-disabled-text: #54473f;
+  --sz-result-caption: #fff7e9;
+  --sz-track: #21132620;
+}
+[data-theme="schlezaz"] {
+  --color-bg: var(--sz-base);
+  --color-fg: var(--sz-text);
+  --color-accent: var(--sz-accent);
   color-scheme: dark;
 }
 body {
-  background: radial-gradient(ellipse at 80% 10%, #542332 0, transparent 50%), var(--color-bg);
+  background:
+    radial-gradient(ellipse at 80% 10%, var(--sz-glow) 0, transparent 50%), var(--color-bg);
 }
 button,
 input {
@@ -22,16 +77,16 @@ button:disabled {
 button:focus-visible,
 a:focus-visible,
 input:focus-visible {
-  outline: 3px solid #ffda58;
+  outline: 3px solid var(--sz-accent);
   outline-offset: 4px;
 }
 #app > header.site-header {
   font-size: 0.8rem;
-  border-bottom: 1px solid #ffffff30;
+  border-bottom: 1px solid var(--sz-line);
   padding-block: 20px;
 }
 .site-header a {
-  color: #ffda58;
+  color: var(--sz-accent);
 }
 .site-header > span {
   text-align: right;
@@ -47,7 +102,7 @@ input:focus-visible {
   margin-bottom: 48px;
 }
 .eyebrow {
-  color: #ffda58;
+  color: var(--sz-accent);
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.15em;
@@ -57,24 +112,24 @@ input:focus-visible {
   position: relative;
   width: fit-content;
   margin: 4px auto 12px;
-  color: #ffda58;
+  color: var(--sz-accent);
   font:
     italic 950 clamp(4rem, 12vw, 8rem)/1.1 Impact,
     "Arial Black",
     sans-serif;
   letter-spacing: -0.055em;
-  text-shadow: 5px 5px #e04c57;
+  text-shadow: 5px 5px var(--sz-shadow);
   transform: rotate(-3deg);
 }
 .opening h1 > span:first-child {
-  color: #fff3d4;
+  color: var(--sz-text);
 }
 .opening .title-star {
   position: absolute;
   font-size: 0.45em;
   right: -0.9em;
   top: 0.05em;
-  color: #ffda58;
+  color: var(--sz-accent);
   text-shadow: none;
 }
 .opening > p {
@@ -82,18 +137,18 @@ input:focus-visible {
   margin: 16px 0 24px;
 }
 .opening em {
-  color: #ffda58;
+  color: var(--sz-accent);
   font-style: normal;
   font-weight: bold;
 }
 .warning {
   width: fit-content;
   margin: auto;
-  border: 1px dashed #ffda5870;
+  border: 1px dashed var(--sz-accent-line);
   padding: 8px 16px;
   font-size: 0.8rem;
   transform: rotate(1deg);
-  color: #ffda58;
+  color: var(--sz-accent);
 }
 .generator-layout {
   display: grid;
@@ -104,7 +159,7 @@ h2 {
   font-size: 1.4rem;
 }
 .step {
-  color: #e491a1;
+  color: var(--sz-muted);
   font-size: 0.8rem;
   margin-right: 10px;
   vertical-align: middle;
@@ -120,9 +175,9 @@ h2 {
   align-items: center;
   gap: 14px;
   text-align: left;
-  background: #2b1e30;
-  color: #fff3d4;
-  border: 1px solid #72536a;
+  background: var(--sz-surface);
+  color: var(--sz-text);
+  border: 1px solid var(--sz-outline);
   padding: 16px;
   border-radius: 8px;
   transition:
@@ -134,20 +189,20 @@ h2 {
   transform: none;
 }
 .mode:not(.selected):is(:hover, :focus-visible):not(:disabled) {
-  background: #442c46;
-  color: #fff3d4;
-  border-color: #ffda58;
+  background: var(--sz-hover);
+  color: var(--sz-text);
+  border-color: var(--sz-accent);
 }
 .mode.selected {
-  background: #ffda58;
-  color: #211326;
-  border-color: #ffda58;
-  box-shadow: 4px 4px 0 #ae455d;
+  background: var(--sz-accent);
+  color: var(--sz-base);
+  border-color: var(--sz-accent);
+  box-shadow: 4px 4px 0 var(--sz-button-shadow);
 }
 .mode.selected:is(:hover, :focus-visible):not(:disabled) {
-  background: #ffe890;
-  color: #211326;
-  border-color: #ffe890;
+  background: var(--sz-accent-hover);
+  color: var(--sz-base);
+  border-color: var(--sz-accent-hover);
 }
 .mode:disabled {
   opacity: 0.65;
@@ -174,13 +229,13 @@ h2 {
   font-size: 0.85rem;
   line-height: 1.6;
   min-height: 4em;
-  color: #e1bccc;
+  color: var(--sz-description);
   margin-top: 20px;
 }
 .options-section {
   padding: 28px;
-  border: 1px solid #ffffff25;
-  background: #130c1980;
+  border: 1px solid var(--sz-line-soft);
+  background: var(--sz-panel);
   border-radius: 12px;
 }
 .options-section h2 {
@@ -205,7 +260,7 @@ h2 {
   font:
     0.75rem ui-monospace,
     monospace;
-  color: #e491a1;
+  color: var(--sz-muted);
   margin: 0;
 }
 .option-row input {
@@ -213,15 +268,15 @@ h2 {
   min-width: 0;
   margin: 0;
   padding: 12px;
-  border: 1px solid #ffffff40;
+  border: 1px solid var(--sz-line-medium);
   border-radius: 6px;
-  color: #fff3d4;
-  background: #ffffff08;
+  color: var(--sz-text);
+  background: var(--sz-input);
 }
 .remove-option {
   border: 0;
   background: transparent;
-  color: #e491a1;
+  color: var(--sz-muted);
   padding: 8px;
   min-width: 36px;
   min-height: 44px;
@@ -233,8 +288,8 @@ h2 {
 .add-option {
   width: 100%;
   background: transparent;
-  color: #fff3d4;
-  border: 1px dashed #ffffff50;
+  color: var(--sz-text);
+  border: 1px dashed var(--sz-line-strong);
   font-size: 0.8rem;
   margin-top: 18px;
   padding: 12px;
@@ -247,20 +302,20 @@ h2 {
   width: 100%;
   margin-top: 32px;
   padding: 20px;
-  background: #ffda58;
-  color: #211326;
+  background: var(--sz-accent);
+  color: var(--sz-base);
   border: 0;
   border-radius: 6px;
   font-weight: 900;
   font-size: 1.1rem;
-  box-shadow: 4px 4px 0 #ae455d;
+  box-shadow: 4px 4px 0 var(--sz-button-shadow);
 }
 .generate > span {
   font-size: 1.5rem;
 }
 .generate:disabled {
-  background: #645259;
-  color: #eee0d9;
+  background: var(--sz-disabled);
+  color: var(--sz-disabled-text);
   box-shadow: none;
 }
 .input-hint {
@@ -272,7 +327,7 @@ h2 {
   margin: 32px 0;
   padding: 32px;
   text-align: center;
-  border: 1px dashed #ffffff40;
+  border: 1px dashed var(--sz-line-medium);
   border-radius: 12px;
 }
 .result h2 {
@@ -284,16 +339,16 @@ h2 {
 }
 .standby-star {
   font-size: 2rem;
-  color: #e491a1;
+  color: var(--sz-muted);
 }
 .result.has-result {
-  background: #ffda58;
-  color: #211326;
-  border: 2px solid #ffda58;
-  box-shadow: 6px 6px 0 #ae455d;
+  background: var(--sz-accent);
+  color: var(--sz-base);
+  border: 2px solid var(--sz-accent);
+  box-shadow: 6px 6px 0 var(--sz-button-shadow);
 }
 .has-result .eyebrow {
-  color: #6a233e;
+  color: var(--sz-result-caption);
 }
 .result .result-value {
   text-transform: none;
@@ -301,8 +356,8 @@ h2 {
   overflow-wrap: anywhere;
 }
 .result button {
-  background: #211326;
-  color: #fff3d4;
+  background: var(--sz-base);
+  color: var(--sz-text);
   border: 0;
   border-radius: 6px;
   padding: 10px 16px;
@@ -310,7 +365,7 @@ h2 {
 }
 .loading-reel {
   font-size: 2.5rem;
-  color: #ffda58;
+  color: var(--sz-accent);
   animation: reel 2s linear infinite;
 }
 .loading-track {
@@ -318,14 +373,14 @@ h2 {
   max-width: 300px;
   height: 5px;
   border-radius: 10px;
-  background: #ffffff20;
+  background: var(--sz-track);
   margin: 24px auto 0;
 }
 .loading-track span {
   display: block;
   height: 100%;
   width: 40%;
-  background: #ffda58;
+  background: var(--sz-accent);
   animation: suspense 1.5s ease-in-out infinite alternate;
 }
 .schlezaz-footer {
@@ -336,7 +391,7 @@ h2 {
   font-size: 0.8rem;
 }
 .schlezaz-footer strong {
-  color: #e491a1;
+  color: var(--sz-muted);
 }
 .schlezaz-footer small {
   margin-top: 12px;

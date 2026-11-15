@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import { snapshotSchema } from "../apps/vortoj/src/contracts/index.ts";
 function stackMode(origin: string) {
+  if (process.env.TEST_AUTH_MODE === "local") return "local";
   for (const mode of ["test", "dev"]) {
     const file = resolve(`.local/${mode}/.env`);
     if (existsSync(file)) {
@@ -24,9 +25,10 @@ async function signIn(page: Page, url: string, name: string) {
   await page.getByRole("button", { name: "Send sign-in code", exact: true }).click();
   await expect(page.getByLabel("Sign-in code")).toBeVisible();
   await page.getByLabel("Sign-in code").fill("9999");
-  await page.getByLabel("Your name", { exact: true }).fill(name);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page.getByText(`Playing as ${name}`, { exact: true })).toBeVisible();
+  await page.getByLabel("Account display name", { exact: true }).fill(name);
+  await page.getByRole("button", { name: "Save name", exact: true }).click();
+  await expect(page.getByText(`Account: ${name}`, { exact: true })).toBeVisible();
 }
 test("accounts, saved sets, invitations, private racks, word voting and recovery", async ({
   browser,
@@ -389,7 +391,7 @@ test("game side panel adapts, restores focus, persists desktop choice and signs 
     await expect(open()).toBeFocused();
     await open().click();
     await menu.getByRole("button", { name: "Settings", exact: true }).click();
-    await expect(owner.getByLabel("Your theme")).toHaveValue("antique-paper");
+    await expect(owner.getByLabel("Your theme")).toHaveValue("system");
     await expect(owner.locator("#vortoj-theme")).toHaveCount(1);
     await owner.getByRole("button", { name: "Close settings", exact: true }).click();
     await expect(open()).toBeFocused();
@@ -407,5 +409,56 @@ test("game side panel adapts, restores focus, persists desktop choice and signs 
   } finally {
     await a.close();
     await b.close();
+  }
+});
+
+test("per-game names default to the account and stay private across games", async ({
+  browser,
+  baseURL,
+}) => {
+  const ownerContext = await browser.newContext();
+  const guestContext = await browser.newContext();
+  const owner = await ownerContext.newPage(),
+    guest = await guestContext.newPage();
+  try {
+    await signIn(owner, "/vortoj/", "GamerHandle");
+    await expect(owner.getByLabel("Your name in this game")).toHaveValue("GamerHandle");
+    await owner.getByLabel("Your name in this game").fill("Office Alice");
+    await owner.getByRole("button", { name: "Create room", exact: true }).click();
+    const invitation = await owner.getByLabel("Room invitation").inputValue();
+    await signIn(guest, invitation, "AnotherHandle");
+    await expect(guest.getByLabel("Your name in this game")).toHaveValue("AnotherHandle");
+    await guest.getByLabel("Your name in this game").fill("Office Bob");
+    await guest.getByRole("button", { name: "Join room", exact: true }).click();
+    await expect(
+      owner.locator(".room-lobby > ul").getByText("Office Bob", { exact: true }),
+    ).toBeVisible();
+    const id = invitation.split("/").at(-1)!;
+    const snapshot = await (await guest.request.get(`${baseURL}/api/vortoj/rooms/${id}`)).json();
+    expect(snapshot.players.map((p: { name: string }) => p.name)).toEqual([
+      "Office Alice",
+      "Office Bob",
+    ]);
+    expect(JSON.stringify(snapshot)).not.toContain("GamerHandle");
+    expect(JSON.stringify(snapshot)).not.toContain("AnotherHandle");
+    await owner.reload();
+    await expect(
+      owner.locator(".room-lobby > ul").getByText("Office Alice", { exact: true }),
+    ).toBeVisible();
+    await owner.goto("/vortoj/");
+    await expect(owner.getByLabel("Your name in this game")).toHaveValue("GamerHandle");
+    await owner.getByRole("button", { name: "Create room", exact: true }).click();
+    const second = await owner.getByLabel("Room invitation").inputValue();
+    expect(second).not.toBe(invitation);
+    await expect(
+      owner.locator(".room-lobby > ul").getByText("GamerHandle", { exact: true }),
+    ).toBeVisible();
+    await owner.goto(invitation);
+    await expect(
+      owner.locator(".room-lobby > ul").getByText("Office Alice", { exact: true }),
+    ).toBeVisible();
+  } finally {
+    await ownerContext.close();
+    await guestContext.close();
   }
 });

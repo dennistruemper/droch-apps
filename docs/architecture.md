@@ -8,6 +8,7 @@ verification history live in the app directories:
 - [Schlezaz](../apps/schlezaz/AGENTS.md)
 - [Observo](../apps/observo/AGENTS.md)
 - [Enigmo](../apps/enigmo/AGENTS.md)
+- [Kunludo](../apps/kunludo/AGENTS.md)
 
 See [decisions](decisions.md) for fixed choices versus proposed defaults.
 
@@ -171,7 +172,11 @@ verification internals.
 - Missing tokens on localhost select test mode without sending. Sandbox delivery is optional
   using a numeric inbox ID. `NODE_ENV` controls runtime/cookie behavior, not auth mode.
 
-Account creation happens on first verification. Shared identity
+Account creation happens on first verification. New accounts provide a display name;
+a valid first code can request that name without consuming the code. Existing accounts
+reuse their name without a new prompt once confirmed. A persistent name-confirmed flag
+marks legacy accounts for one confirmation on their next code sign-in; confirmation
+changes the shared default without rewriting existing game identities. Shared identity
 does not imply access to every app or match; app authorization remains explicit.
 
 Codes have ten-minute expiry, five verification attempts, a one-minute resend interval,
@@ -188,8 +193,13 @@ appear in game snapshots.
 Drochsign is vendored as an unmodified snapshot in `shared/src/styles/drochsign.css`;
 its revision and update process are recorded in `UPSTREAM.md`. Integration overrides
 are separate in `index.css`. Use its semantic styles and two-color theme variables. Each app has its own
-default theme and may add theme definitions and styles for specialized UI.
-Saved per-app theme choices take precedence over the app default.
+light and dark defaults in appDefinition.themes and may add theme definitions and
+styles for specialized UI. A shared AppAppearance provider wraps each app before its
+screens, applies the stored per-app choice, and follows prefers-color-scheme while
+System is selected (also the fallback for absent or invalid choices). It owns the
+media listener and its cleanup; the shared Settings picker consumes this app-local
+provider. Use app default restores System. Explicit saved presets/custom themes
+remain fixed when the operating-system appearance changes.
 
 Adapt direct-body layout selectors to the Solid mount structure, scope field-specific
 alert visibility rules, and extend reduced-motion handling to all animations. Preserve

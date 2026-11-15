@@ -3,7 +3,6 @@ import type { JSX } from "@solidjs/web";
 import type { User } from "@repo/shared/contracts/auth";
 import { SidePanel } from "@repo/shared/navigation";
 import { AppSettings } from "@repo/shared/settings";
-import { appDefinition } from "../contracts/index.ts";
 import { Rules } from "./rules.tsx";
 export function Shell(props: {
   user: () => User | null;
@@ -16,7 +15,6 @@ export function Shell(props: {
     <>
       <AppSettings
         appId="vortoj"
-        defaultTheme={appDefinition.theme}
         trigger={(open) => {
           openSettings = open;
           return null;
@@ -76,7 +74,7 @@ export function Shell(props: {
             <header class="vortoj-page-heading">
               <strong>Vortoj</strong>
               <Show when={props.user()} keyed>
-                {(person) => <small>Playing as {person.name}</small>}
+                {(person) => <small>Account: {person.name}</small>}
               </Show>
             </header>
             <main class="vortoj-content">{props.children}</main>

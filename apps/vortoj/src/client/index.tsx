@@ -1,3 +1,4 @@
+import { AppAppearance } from "@repo/shared/settings";
 import { render } from "@solidjs/web";
 import type { JSX } from "@solidjs/web";
 import type { User } from "@repo/shared/contracts/auth";
@@ -83,4 +84,11 @@ function App() {
 }
 const element = document.getElementById("app");
 if (!element) throw new Error("Missing app mount element");
-render(() => <App />, element);
+render(
+  () => (
+    <AppAppearance appId={appDefinition.id} defaults={appDefinition.themes}>
+      <App />
+    </AppAppearance>
+  ),
+  element,
+);

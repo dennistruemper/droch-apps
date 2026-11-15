@@ -288,13 +288,25 @@ export function Room(props: { id: string; user: User }) {
             <p>
               {details.playerCount} of 4 players · {details.phase}
             </p>
-            <button
-              type="button"
-              disabled={busy() || details.phase !== "waiting"}
-              onClick={() => void dispatch({ kind: "join" })}
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                const form = new FormData(event.currentTarget);
+                void dispatch({ kind: "join", playerName: String(form.get("playerName") ?? "") });
+              }}
             >
-              Join room
-            </button>
+              <label for="join-player-name">Your name in this game</label>
+              <input
+                id="join-player-name"
+                name="playerName"
+                value={props.user.name}
+                required
+                maxlength={32}
+                disabled={busy() || details.phase !== "waiting"}
+                autocomplete="nickname"
+              />
+              <button disabled={busy() || details.phase !== "waiting"}>Join room</button>
+            </form>
             <Show when={details.phase !== "waiting"}>
               <p>This game has started. Ask the creator for a new room.</p>
             </Show>
@@ -353,7 +365,9 @@ export function Room(props: { id: string; user: User }) {
             <header class="game-heading">
               <div>
                 <h1 title={current().title}>{current().title}</h1>
-                <small class="game-player">Playing as {props.user.name}</small>
+                <small class="game-player">
+                  Playing as {current().players.find((player) => player.id === props.user.id)?.name}
+                </small>
                 <p>{phaseText()}</p>
               </div>
               <nav class="game-heading-actions" aria-label="Game information">

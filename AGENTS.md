@@ -25,6 +25,20 @@ to understand the intended order of work.
 
 ## Product copy
 
+These rules apply to every app and to new screens as well as edits. Treat them as
+acceptance criteria, not optional polish.
+
+- Use one heading per page purpose. Do not add an eyebrow, slogan or subtitle that
+  repeats the heading (for example, "Gemeinsam spielen" above "Deine Teams").
+- Show account identity once in the account control. Do not repeat the signed-in
+  name, "ein Konto", or account benefits in page summaries or forms.
+- Omit narration of routine actions and obvious defaults, such as "Du erstellst
+  das Team als … und wirst Admin." Keep explanations when they affect a decision,
+  clarify a non-obvious consequence, or help recover from an error.
+- Before finishing a UI change, review its visible copy. Remove each sentence
+  that merely restates a heading, label, selected value, account identity or
+  routine action. Prefer removing text to replacing it with another slogan.
+
 - Keep user-facing text brief and focused on useful status and actions.
 - Do not expose implementation or operational details in app copy unless they help
   the user make a meaningful decision. Keep app-specific copy constraints in the
@@ -51,6 +65,7 @@ migrations, external tests, or shared integrations:
 - [Schlezaz](apps/schlezaz/AGENTS.md)
 - [Observo](apps/observo/AGENTS.md)
 - [Enigmo](apps/enigmo/AGENTS.md)
+- [Kunludo](apps/kunludo/AGENTS.md)
 
 App product rules, implementation details, decisions and verification history live
 in each app directory. Do not load every app's docs for unrelated work. For new apps,

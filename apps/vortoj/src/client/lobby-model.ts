@@ -20,11 +20,17 @@ export type Creating =
 export type Model = { collection: Loading; creating: Creating; nextId: number };
 export type Command =
   | { kind: "load"; id: number }
-  | { kind: "create"; id: number; title: string; tileSetId: string }
+  | {
+      kind: "create";
+      id: number;
+      title: string;
+      tileSetId: string;
+      playerName?: string | undefined;
+    }
   | { kind: "navigate"; roomId: string };
 export type Message =
   | { kind: "refresh" }
-  | { kind: "create"; title: string; tileSetId: string }
+  | { kind: "create"; title: string; tileSetId: string; playerName?: string | undefined }
   | { kind: "loaded"; id: number; data: Collection }
   | { kind: "created"; id: number; roomId: string }
   | { kind: "failed"; id: number; error: string };

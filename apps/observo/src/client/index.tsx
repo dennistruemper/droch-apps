@@ -1,6 +1,6 @@
 import { render } from "@solidjs/web";
 import { createMemo, createSignal, For, onSettled, Show } from "solid-js";
-import { AppSettings } from "@repo/shared/settings";
+import { AppSettings, AppAppearance } from "@repo/shared/settings";
 import "@repo/shared/styles";
 import "./styles.css";
 import { appDefinition, type Dashboard, type Latest } from "../contracts/index.ts";
@@ -305,7 +305,7 @@ function App() {
         <strong>Observo</strong>
         <nav aria-label="App navigation">
           <a href="/">All apps</a>
-          <AppSettings appId={appDefinition.id} defaultTheme={appDefinition.theme} />
+          <AppSettings appId={appDefinition.id} />
         </nav>
       </header>
       <main>
@@ -347,4 +347,11 @@ function App() {
 }
 const element = document.getElementById("app");
 if (!element) throw new Error("Missing app mount element");
-render(() => <App />, element);
+render(
+  () => (
+    <AppAppearance appId={appDefinition.id} defaults={appDefinition.themes}>
+      <App />
+    </AppAppearance>
+  ),
+  element,
+);

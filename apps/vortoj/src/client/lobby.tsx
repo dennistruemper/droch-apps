@@ -118,6 +118,7 @@ export function Lobby(props: { user: User }) {
           void dispatch({
             kind: "create",
             title: String(data.get("title") ?? ""),
+            playerName: String(data.get("playerName") ?? ""),
             tileSetId: String(data.get("tiles") ?? ""),
           });
         }}
@@ -131,6 +132,16 @@ export function Lobby(props: { user: User }) {
           required
           maxlength={80}
           value="Word night"
+        />
+        <label for="room-player-name">Your name in this game</label>
+        <input
+          id="room-player-name"
+          name="playerName"
+          value={props.user.name}
+          required
+          maxlength={32}
+          disabled={creating()}
+          autocomplete="nickname"
         />
         <label for="room-tiles">Tile set</label>
         <select disabled={creating()} id="room-tiles" name="tiles" required>

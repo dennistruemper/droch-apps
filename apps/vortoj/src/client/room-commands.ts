@@ -28,7 +28,9 @@ export async function execute(
       return {
         kind: "loaded",
         id: command.id,
-        room: snapshotSchema.parse(await api(`${path}/join`, {}, "POST", signal)),
+        room: snapshotSchema.parse(
+          await api(`${path}/join`, { playerName: command.playerName }, "POST", signal),
+        ),
       };
     case "action":
       return {

@@ -30,6 +30,7 @@ Read only the app documentation relevant to the task:
 - [Schlezaz](../apps/schlezaz/AGENTS.md)
 - [Observo](../apps/observo/AGENTS.md)
 - [Enigmo](../apps/enigmo/AGENTS.md)
+- [Kunludo](../apps/kunludo/AGENTS.md)
 
 ## Tradeoffs accepted
 
@@ -197,3 +198,31 @@ unrelated product details. Root instructions and shared docs keep cross-project
 constraints and short app links. Each app owns an `AGENTS.md` entry point plus local
 architecture, decisions and implementation status. Read the relevant app instructions
 when working on its code, migrations or external tests; do not read every app by default.
+
+## System appearance defaults — 2026-11-14
+
+Theme preference is central shared functionality. With no valid stored choice,
+follow prefers-color-scheme and update when the operating-system preference changes.
+System in the theme picker restores this behavior; Use app default also selects
+System. Explicit presets and custom palettes remain app-specific and take priority.
+
+Each app declares themes.light and themes.dark in its app definition. Kunludo,
+Poker and Observo use Paper / Ink. Vortoj keeps Antique paper for light and uses Ink
+for dark. Enigmo keeps its own light palette and uses Ink for dark. SchleZaZ has
+matching light/dark variants of its own palette. The shared AppAppearance provider
+wraps each app from startup, including signed-out pages; Settings consumes it rather
+than creating independent theme state on each screen. Media listeners clean up on
+disposal. No account, network request or state-management package is needed.
+
+## Shared account names and game identities — 2026-11-15
+
+The account display name is shared across authenticated apps. Existing accounts set
+or confirm it once on their next verified code sign-in; new accounts set it once.
+Persist confirmation in auth and preserve existing sessions and IDs. Never disclose
+whether naming is needed until a valid code is verified, and do not consume that
+code while requesting the name. Once confirmed, later sign-ins do not ask again.
+
+Vortoj uses the account name as the default for creating/joining a game, while allowing
+a different name in each game. Keep aliases in the game and shared identity in auth;
+account confirmation must not rewrite existing game names or expose account names to
+other players who only know the chosen game alias.

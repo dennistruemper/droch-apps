@@ -1,7 +1,9 @@
+:root {
+  --content-width: 52rem;
+}
 [data-theme="enigmo"] {
   --color-bg: #f5f0e6;
   --color-fg: #203d35;
-  --content-width: 52rem;
 }
 body {
   margin: 0;

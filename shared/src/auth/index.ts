@@ -18,7 +18,7 @@ export type { User } from "../contracts/auth/index.ts";
 export class AuthError extends Error {
   constructor(
     message: string,
-    public status: 400 | 401 | 403 | 429 | 503,
+    public status: 400 | 401 | 403 | 422 | 429 | 503,
   ) {
     super(message);
   }
@@ -108,7 +108,7 @@ export function createAuthService(options: {
         throw new AuthError("Could not send your code. Please try again shortly.", 503);
       }
     },
-    verify(email: string, code: string, name: string) {
+    verify(email: string, code: string, name?: string) {
       // Return failures from the transaction so the attempt counter is committed.
       const result = db.transaction(() => {
         const row = db.select().from(codes).where(eq(codes.email, email)).get();
@@ -124,11 +124,19 @@ export function createAuthService(options: {
             .run();
           return null;
         }
-        db.update(codes).set({ digest: "", attempts: 5 }).where(eq(codes.email, email)).run();
         let user = db.select().from(users).where(eq(users.email, email)).get();
+        if ((!user || !user.nameConfirmed) && !name)
+          throw new AuthError("Bitte wähle deinen Anzeigenamen.", 422);
+        db.update(codes).set({ digest: "", attempts: 5 }).where(eq(codes.email, email)).run();
         if (!user) {
-          user = { id: randomUUID(), email, name, createdAt: now() };
+          user = { id: randomUUID(), email, name: name!, nameConfirmed: true, createdAt: now() };
           db.insert(users).values(user).run();
+        } else if (!user.nameConfirmed) {
+          db.update(users)
+            .set({ name: name!, nameConfirmed: true })
+            .where(eq(users.id, user.id))
+            .run();
+          user = { ...user, name: name!, nameConfirmed: true };
         }
         db.delete(sessions).where(lt(sessions.expiresAt, now())).run();
         const token = randomBytes(32).toString("hex");

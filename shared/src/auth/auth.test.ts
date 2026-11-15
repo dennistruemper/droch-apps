@@ -267,3 +267,37 @@ describe("test and production codes", () => {
     expect(service.codeInstructions.message).not.toContain("9999");
   });
 });
+
+it("collects a display name only after verifying a new account's code and reuses it on later sign-in", async () => {
+  const f = fixture();
+  await f.service.request("new@example.test");
+  expect(() => f.service.verify("new@example.test", "wrong")).toThrow(/incorrect/);
+  try {
+    f.service.verify("new@example.test", "012345");
+  } catch (e) {
+    expect(e).toMatchObject({ status: 422 });
+  }
+  const first = f.service.verify("new@example.test", "012345", "Shared name");
+  expect(first.user.name).toBe("Shared name");
+  f.service.logout(first.token);
+  f.advance(60001);
+  await f.service.request("new@example.test");
+  const next = f.service.verify("new@example.test", "012345");
+  expect(next.user).toEqual(first.user);
+});
+
+it("asks legacy accounts to set their shared name once after a valid code", async () => {
+  const f = fixture();
+  const id = "e6de83f5-49e2-4e89-8bf0-1829fb77b099";
+  f.connection.db.$client
+    .prepare("INSERT INTO users (id,email,name,created_at) VALUES (?,?,?,?)")
+    .run(id, "legacy@example.test", "Old handle", 1);
+  await f.service.request("legacy@example.test");
+  expect(() => f.service.verify("legacy@example.test", "000000")).toThrow(/incorrect/);
+  expect(() => f.service.verify("legacy@example.test", "012345")).toThrow(/Anzeigenamen/);
+  const confirmed = f.service.verify("legacy@example.test", "012345", "Office Name");
+  expect(confirmed.user).toEqual({ id, name: "Office Name" });
+  f.advance(60001);
+  await f.service.request("legacy@example.test");
+  expect(f.service.verify("legacy@example.test", "012345").user).toEqual(confirmed.user);
+});

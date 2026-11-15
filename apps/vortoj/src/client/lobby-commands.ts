@@ -19,7 +19,12 @@ export async function execute(
     }
     case "create": {
       const room = snapshotSchema.parse(
-        await api("/rooms", { title: command.title, tileSetId: command.tileSetId }, "POST", signal),
+        await api(
+          "/rooms",
+          { title: command.title, tileSetId: command.tileSetId, playerName: command.playerName },
+          "POST",
+          signal,
+        ),
       );
       return { kind: "created", id: command.id, roomId: room.id };
     }

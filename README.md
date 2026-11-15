@@ -24,6 +24,8 @@ Product rules, app architecture and implementation status live with each app:
 - [Observo](apps/observo/AGENTS.md): website monitoring dashboard.
 - [Enigmo](apps/enigmo/AGENTS.md): code-based anagram puzzles; see its [authoring guide](apps/enigmo/README.md).
 
+- [Kunludo](apps/kunludo/AGENTS.md): team schedules and player availability across clubs.
+
 ## Local development
 
 Install [mise](https://mise.jdx.dev/). The local macOS setup uses Colima for Docker.

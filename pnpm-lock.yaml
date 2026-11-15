@@ -153,6 +153,30 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
 
+  apps/kunludo:
+    dependencies:
+      '@repo/shared':
+        specifier: workspace:*
+        version: link:../../shared
+      '@solidjs/router':
+        specifier: 2.0.0-next.34
+        version: 2.0.0-next.34(@solidjs/web@2.0.0-rc.13(solid-js@2.0.0-rc.13))(solid-js@2.0.0-rc.13)
+      '@solidjs/web':
+        specifier: 2.0.0-rc.13
+        version: 2.0.0-rc.13(solid-js@2.0.0-rc.13)
+      drizzle-orm:
+        specifier: 0.45.3
+        version: 0.45.3(@types/better-sqlite3@9.6.0)(@types/pg@8.23.1)(better-sqlite3@13.0.3)(pg@8.23.1)
+      hono:
+        specifier: 4.13.12
+        version: 4.13.12
+      solid-js:
+        specifier: 2.0.0-rc.13
+        version: 2.0.0-rc.13
+      zod:
+        specifier: 4.6.5
+        version: 4.6.5
+
   server:
     dependencies:
       '@hono/node-server':
@@ -176,6 +200,9 @@ importers:
       '@repo/vortoj':
         specifier: workspace:*
         version: link:../apps/vortoj
+      '@repo/kunludo':
+        specifier: workspace:*
+        version: link:../apps/kunludo
       hono:
         specifier: 4.13.12
         version: 4.13.12

@@ -157,3 +157,11 @@ shared module; apps own its navigation content. At 1280px or wider, display it a
 an expanded column by default and remember explicit desktop collapse per app.
 Below that width, overlay it as a native modal drawer, closed initially, to preserve
 board space and keyboard focus behavior. Poker can adopt the component later.
+
+## Per-game names — 2026-11-15
+
+The user wants the shared account name as the default for new games, with a separate
+name for each game when playing with different audiences. Provide editable names at
+creation and joining, preserve them across reconnects, and leave existing game names
+unchanged. Changing one game's name selection does not change the account or defaults
+for other games. Legacy accounts confirm the shared default once at their next sign-in.

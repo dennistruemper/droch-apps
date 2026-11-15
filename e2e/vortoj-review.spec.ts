@@ -338,7 +338,7 @@ for (const transport of ["stream", "http"] as const) {
     else await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
     await expect(page.getByRole("alert")).toContainText("room is no longer available");
     await expect(page.getByRole("heading", { name: "Your tiles" })).toHaveCount(0);
-    await expect(page.getByText(`Playing as ${f.author.name}`, { exact: true })).toBeVisible();
+    await expect(page.getByText(`Account: ${f.author.name}`, { exact: true })).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Refresh / sign in again", exact: true }),
     ).toHaveCount(0);
@@ -486,7 +486,7 @@ for (const viewport of [
     await page.getByRole("button", { name: "Close game rules", exact: true }).click();
     await open();
     await menu.getByRole("button", { name: "Settings", exact: true }).click();
-    await expect(page.getByLabel("Your theme")).toHaveValue("antique-paper");
+    await expect(page.getByLabel("Your theme")).toHaveValue("system");
     await page.getByRole("button", { name: "Close settings", exact: true }).click();
     signedIn = true;
     for (const [path, game] of [

@@ -86,3 +86,12 @@ and documented app creation requiring only repository changes and deployment.
 - [Schlezaz](../apps/schlezaz/docs/implementation-plan.md)
 - [Observo](../apps/observo/docs/implementation-plan.md)
 - [Enigmo](../apps/enigmo/docs/implementation-plan.md)
+
+- [Kunludo](../apps/kunludo/docs/implementation-plan.md)
+
+## Shared system appearance — implemented
+
+All six app definitions declare light/dark defaults. Shared AppAppearance applies
+system appearance on startup and live changes, while preserving explicit stored
+choices. Existing Settings pickers offer System to resume automatic selection.
+Custom palette/font handling and app-scoped preferences remain central.

@@ -3,7 +3,7 @@ export const appDefinition = {
   id: "vortoj",
   title: "Vortoj",
   description: "Build words together. Take your turn whenever you’re ready.",
-  theme: "antique-paper",
+  themes: { light: "antique-paper", dark: "ink" },
 } as const;
 export const statusSchema = z.object({ app: z.literal("vortoj"), stage: z.literal("foundation") });
 export function normalizeLetter(letter: string) {
@@ -41,7 +41,10 @@ export const tileSetSchema = z
   });
 export type TileSet = z.infer<typeof tileSetSchema>;
 export const savedTileSetSchema = tileSetSchema.safeExtend({ id: z.string() });
+export const playerNameSchema = z.string().trim().min(1).max(32);
+export const joinRoomSchema = z.object({ playerName: playerNameSchema.optional() });
 export const createRoomSchema = z.object({
+  playerName: playerNameSchema.optional(),
   title: z.string().trim().min(1).max(80),
   tileSetId: z.string().min(1).max(100),
 });

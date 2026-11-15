@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `name_confirmed` integer DEFAULT false NOT NULL;

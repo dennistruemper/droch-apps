@@ -8,6 +8,7 @@ import {
   appDefinition,
   statusSchema,
   createRoomSchema,
+  joinRoomSchema,
   tileSetSchema,
   commandSchema,
 } from "../contracts/index.ts";
@@ -90,12 +91,18 @@ export function createRoutes(options?: VortojOptions) {
   routes.post("/rooms", async (c) => {
     const value = createRoomSchema.safeParse(await c.req.json().catch(() => null));
     if (!value.success) return c.json({ error: "Enter a room name and select a tile set" }, 400);
-    return c.json(service.create(user(c), value.data.title, value.data.tileSetId), 201);
+    return c.json(
+      service.create(user(c), value.data.title, value.data.tileSetId, value.data.playerName),
+      201,
+    );
   });
   routes.get("/rooms/:id/info", (c) => c.json(service.info(c.req.param("id"))));
   routes.get("/rooms/:id", (c) => c.json(service.snapshot(c.req.param("id"), user(c))));
-  routes.post("/rooms/:id/join", (c) => {
-    const value = service.join(c.req.param("id"), user(c));
+  routes.post("/rooms/:id/join", async (c) => {
+    const input = joinRoomSchema.safeParse(await c.req.json().catch(() => null));
+    if (!input.success)
+      return c.json({ error: "Enter your name for this game (1–32 characters)." }, 400);
+    const value = service.join(c.req.param("id"), user(c), input.data.playerName);
     publish(value.id);
     return c.json(value);
   });
