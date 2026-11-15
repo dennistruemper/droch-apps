@@ -125,7 +125,9 @@ runner contention and must be measured on the next hosted run. Persistent CI Doc
 caching is being evaluated in a draft PR: use Buildx with the GitHub Actions
 cache backend, `mode=max`, and a `production-test` scope; load the production
 image locally for the existing Compose tests. Compare one cache-populating run
-and four sequential empty-commit repeats against the uncached baseline. Include
+and sequential repeats against the uncached baseline. Runs 2–3 use empty
+commits; run 4 adds a server startup log to measure a source rebuild; run 5
+repeats that changed tree with an empty commit. Include
 Buildx setup, cache transfer, and image loading when assessing the result.
 No Dockerfile or E2E coverage changes are part of this experiment.
 

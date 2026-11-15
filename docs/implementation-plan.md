@@ -146,7 +146,8 @@ verified (46 in the full suite, followed by the corrected calendar-race check).
 ## CI Docker cache experiment — in progress
 
 Evaluate persistent Buildx layer caching in a draft PR with five sequential CI
-runs (one cache-populating run and four empty-commit repeats). Record image build,
+runs: one cache-populating run, two empty-commit repeats, a server startup log
+change, and one empty-commit repeat of the changed code. Record image build,
 Buildx setup, E2E, and complete job times, plus cache hits. The reference uncached
 run is [43772356956](https://github.com/dennistruemper/droch-apps/actions/runs/43772356956):
 81 seconds for the image step and 187 seconds for the job. Keep the Dockerfile,

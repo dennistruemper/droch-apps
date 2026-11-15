@@ -146,6 +146,7 @@ server.on("request", (request, response) => {
 
 server.listen(configuration.PORT, "0.0.0.0", () => {
   console.log(`Droch apps listening on ${configuration.APP_ORIGIN}`);
+  console.log(`Serving ${applications.length} applications`);
 });
 
 let stopping = false;
