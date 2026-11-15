@@ -122,7 +122,12 @@ group, then both must succeed before the test stack starts. This overlaps indepe
 setup without duplicating runner/tool/dependency setup. The prior hosted run spent
 40 seconds building and 26 seconds installing the browser; actual savings depend on
 runner contention and must be measured on the next hosted run. Persistent CI Docker
-caching remains an option to evaluate.
+caching is being evaluated in a draft PR: use Buildx with the GitHub Actions
+cache backend, `mode=max`, and a `production-test` scope; load the production
+image locally for the existing Compose tests. Compare one cache-populating run
+and four sequential empty-commit repeats against the uncached baseline. Include
+Buildx setup, cache transfer, and image loading when assessing the result.
+No Dockerfile or E2E coverage changes are part of this experiment.
 
 ## Coolify runtime origin — 2026-10-05
 

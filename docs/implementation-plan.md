@@ -142,3 +142,12 @@ Kunludo/Schlezaz and narrow typed browser/store seams in Observo tests.
 `pnpm check` passes with zero lint findings and 234 tests across 30 files; the
 production build passes for all registered apps. All 47 browser checks were
 verified (46 in the full suite, followed by the corrected calendar-race check).
+
+## CI Docker cache experiment — in progress
+
+Evaluate persistent Buildx layer caching in a draft PR with five sequential CI
+runs (one cache-populating run and four empty-commit repeats). Record image build,
+Buildx setup, E2E, and complete job times, plus cache hits. The reference uncached
+run is [43772356956](https://github.com/dennistruemper/droch-apps/actions/runs/43772356956):
+81 seconds for the image step and 187 seconds for the job. Keep the Dockerfile,
+production test stack, and browser coverage unchanged.

@@ -14,8 +14,8 @@ const directory = resolve(root, ".local/test");
 const override = resolve(directory, "compose.json");
 const command = process.argv[2];
 
-if (!["build", "up", "stop", "logs"].includes(command ?? ""))
-  throw new Error("Expected build, up, stop, or logs");
+if (!["image", "build", "up", "stop", "logs"].includes(command ?? ""))
+  throw new Error("Expected image, build, up, stop, or logs");
 
 function docker(args: string[]) {
   const result = spawnSync("docker", args, { cwd: root, stdio: "inherit" });
@@ -55,7 +55,9 @@ async function availablePort() {
   return port;
 }
 
-if (command === "build") {
+if (command === "image") {
+  console.log(image);
+} else if (command === "build") {
   docker(["build", "--target", "production", "-t", image, "."]);
 } else if (command === "up") {
   await mkdir(directory, { recursive: true });

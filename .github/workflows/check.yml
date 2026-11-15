@@ -23,9 +23,21 @@ jobs:
         uses: jdx/mise-action@v4
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: Identify production test image
+        id: test-image
+        run: echo "image=$(pnpm exec tsx tooling/test-stack.ts image)" >> "$GITHUB_OUTPUT"
       - parallel:
           - name: Build production image
-            run: pnpm test:image
+            uses: docker/build-push-action@v7
+            with:
+              context: .
+              target: production
+              load: true
+              tags: ${{ steps.test-image.outputs.image }}
+              cache-from: type=gha,scope=production-test
+              cache-to: type=gha,scope=production-test,mode=max
           - name: Install browser and system dependencies
             run: pnpm exec playwright install --with-deps chromium
       - name: Start production test stack

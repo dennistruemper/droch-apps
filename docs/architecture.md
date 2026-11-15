@@ -56,7 +56,10 @@ build/development layers and is excluded from the production image.
 
 CI builds the production image and installs the Playwright browser in a native
 parallel step group within one job. The group waits for both steps and propagates
-failures before starting the test stack. Browser checks run against the built image
+failures before starting the test stack. The CI cache experiment uses Buildx with
+GitHub Actions layer caching (including intermediate stages) and loads the image
+into the runner Docker daemon under the same per-checkout tag as local builds.
+Browser checks run against the built image
 and the production Compose migration gate. `pnpm test:stack` publishes an allocated loopback port with a distinct
 per-checkout project, cookie and disposable SQLite volume; cleanup does not affect
 development stacks. Worktree identity coverage remains in the ordinary unit tests.
