@@ -26,7 +26,9 @@ import {
 } from "./planner-model.ts";
 import { execute } from "./planner-commands.ts";
 import { ApiError, errorText } from "./api.ts";
+
 const noticeDuration = 5000;
+
 const states: Record<GameView["mine"], string> = {
   unanswered: "Noch keine Antwort",
   yes: "Verfügbar",
@@ -37,6 +39,7 @@ const states: Record<GameView["mine"], string> = {
   elsewhere: "Anderweitig zugesagt",
   committed: "Verbindlich zugesagt",
 };
+
 export function formatWindow(w: MatchInput["window"], tz: string) {
   const date = new Intl.DateTimeFormat("de-DE", {
     timeZone: tz,
@@ -45,31 +48,39 @@ export function formatWindow(w: MatchInput["window"], tz: string) {
     month: "2-digit",
     year: "numeric",
   }).format(w.start);
+
   const time = (t: number) =>
     new Intl.DateTimeFormat("de-DE", { timeZone: tz, hour: "2-digit", minute: "2-digit" }).format(
       t,
     );
+
   return `${date} · ${time(w.start)}`;
 }
+
 export function Planner(props: { user: User; logout: () => void }) {
   let current = init(Date.now());
   const [model, setModel] = createSignal(current);
   const controller = new AbortController();
   let openSettings = () => {};
   let noticeTimeout: ReturnType<typeof setTimeout> | undefined;
+
   function dispatch(msg: Message) {
     if (controller.signal.aborted) return;
     const previous = current;
     const next = update(current, msg);
     current = next.model;
+
     if (previous.notice !== current.notice || previous.noticeId !== current.noticeId) {
       clearTimeout(noticeTimeout);
+
       if (current.notice) {
         const id = current.noticeId;
         noticeTimeout = setTimeout(() => dispatch({ kind: "dismiss-notice", id }), noticeDuration);
       }
     }
+
     setModel(current);
+
     for (const effect of next.effects)
       void execute(effect, controller.signal)
         .then(dispatch)
@@ -80,30 +91,66 @@ export function Planner(props: { user: User; logout: () => void }) {
             error: errorText(e),
             status: e instanceof ApiError ? e.status : 0,
           });
+
           if (e instanceof ApiError && e.status === 409) dispatch({ kind: "load" });
         });
   }
+
   function save(action: Action) {
     dispatch({ kind: "save", action, commandId: crypto.randomUUID() });
   }
+
   const data = () => model().data;
   const busy = () => !!model().pending || !!model().retry;
   const team = (id: string) => data()?.teams.find((t) => t.id === id);
   const editor = () => model().editor;
+
   const editing = () => {
     const e = editor();
+
     return e.kind === "none" ? null : e;
   };
+
   const fields = () => editing()?.fields ?? emptyFields;
   const supportedTimezones = Intl.supportedValuesOf("timeZone");
+
   const timezones = () =>
     [...new Set(["Europe/Berlin", "UTC", fields().timezone, ...supportedTimezones])].sort();
+
+  async function readCalendarFile(f: File | undefined) {
+    dispatch({ kind: "calendar-start" });
+    const editor = current.editor;
+
+    if (!f || editor.kind !== "import") return;
+    const editorId = current.editorId;
+
+    const timezone = current.data?.teams.find((t) => t.id === editor.teamId)?.timezone;
+
+    if (!timezone) return;
+
+    try {
+      if (f.size > 500000) throw new Error("Datei zu groß (maximal 500 KB).");
+      const text = await f.text();
+      const entries = parseCalendar(text, timezone);
+      dispatch({ kind: "calendar", editorId, text, events: entries });
+    } catch (error) {
+      dispatch({
+        kind: "calendar-failed",
+        editorId,
+        error: errorText(error),
+      });
+    }
+  }
+
   const field = (key: keyof Fields, value: string) =>
     dispatch({ kind: "field", field: key, value });
+
   function open(kind: Exclude<Editor["kind"], "none">, teamId = "", gameId = "") {
     const snapshot = current.data;
+
     const t = snapshot?.teams.find((v) => v.id === teamId),
       g = snapshot?.games.find((v) => v.id === gameId);
+
     const f = {
       ...emptyFields,
       teamId,
@@ -119,6 +166,7 @@ export function Planner(props: { user: User; logout: () => void }) {
           }
         : {}),
     };
+
     dispatch({
       kind: "open",
       editor: {
@@ -133,15 +181,21 @@ export function Planner(props: { user: User; logout: () => void }) {
       },
     });
   }
+
   function submitEditor() {
     const e = editing();
+
     if (!e) return;
+
     try {
       const f = e.fields;
+
       if (e.kind === "join") {
         save({ kind: "join", teamId: f.teamId.trim(), pin: f.pin.trim().toUpperCase() });
+
         return;
       }
+
       if (e.kind === "create-team" || e.kind === "settings") {
         const input = {
           name: f.name,
@@ -149,16 +203,21 @@ export function Planner(props: { user: User; logout: () => void }) {
           needed: Number(f.needed),
           timezone: f.timezone,
         };
+
         save(
           e.kind === "settings"
             ? { kind: "settings", teamId: e.teamId, team: input }
             : { kind: "create-team", team: input },
         );
+
         return;
       }
+
       const target = e.kind === "game" && !e.gameId ? f.teamId : e.teamId;
       const t = team(target);
+
       if (!t) throw new Error("Bitte ein Team wählen.");
+
       if (e.kind === "import") {
         save({
           kind: "import",
@@ -167,17 +226,22 @@ export function Planner(props: { user: User; logout: () => void }) {
           ownName: f.ownName,
           selected: e.selected,
         });
+
         return;
       }
+
       const window = {
         start: instant(f.start, t.timezone),
         end: instant(f.end, t.timezone),
         buffer: Number(f.buffer),
       };
+
       if (e.kind === "propose") {
         save({ kind: "propose", teamId: t.id, gameId: e.gameId, window });
+
         return;
       }
+
       const game = { opponent: f.opponent, venue: f.venue, home: f.home === "yes", window };
       save(
         e.gameId
@@ -188,6 +252,7 @@ export function Planner(props: { user: User; logout: () => void }) {
       dispatch({ kind: "local-error", error: errorText(e) });
     }
   }
+
   onSettled(() => {
     const initial = current.pending!;
     void execute(initial, controller.signal)
@@ -195,6 +260,7 @@ export function Planner(props: { user: User; logout: () => void }) {
         dispatch(msg);
         const params = new URLSearchParams(location.search);
         const pin = new URLSearchParams(location.hash.slice(1)).get("pin");
+
         if (params.get("team") && pin && current.data && !current.pending) {
           open("join");
           field("teamId", params.get("team")!);
@@ -213,9 +279,11 @@ export function Planner(props: { user: User; logout: () => void }) {
     const events = new EventSource("/api/kunludo/events");
     events.addEventListener("snapshot", (e) => {
       try {
+        if (!(e instanceof MessageEvent) || typeof e.data !== "string")
+          throw new Error("Invalid snapshot event");
         dispatch({
           kind: "snapshot",
-          data: snapshotSchema.parse(JSON.parse((e as MessageEvent<string>).data)),
+          data: snapshotSchema.parse(JSON.parse(e.data)),
         });
         dispatch({ kind: "online", value: true });
       } catch {
@@ -228,10 +296,13 @@ export function Planner(props: { user: User; logout: () => void }) {
     });
     events.onerror = () => dispatch({ kind: "online", value: false });
     const tick = setInterval(() => dispatch({ kind: "tick", now: Date.now() }), 30000);
+
     const visible = () => {
       if (!document.hidden) dispatch({ kind: "load" });
     };
+
     document.addEventListener("visibilitychange", visible);
+
     return () => {
       controller.abort();
       events.close();
@@ -240,23 +311,32 @@ export function Planner(props: { user: User; logout: () => void }) {
       document.removeEventListener("visibilitychange", visible);
     };
   });
+
   const filtered = () =>
     data()?.games.filter((g) => !model().filter.length || model().filter.includes(g.teamId)) ?? [];
+
   const upcoming = () => filtered().filter((g) => g.window.end >= model().now && !g.cancelled);
+
   const past = () =>
     filtered()
       .filter((g) => g.window.end < model().now || g.cancelled)
       .toReversed();
+
   const adminTeams = () => data()?.teams.filter((t) => t.role === "admin") ?? [];
+
   function remove(t: Team, uid: string, name: string) {
     if (confirm(`${name} aus „${t.name}“ entfernen? Der Team-PIN wird geändert.`))
       save({ kind: "remove", teamId: t.id, userId: uid });
   }
+
   function codeLink() {
     const c = model().code;
+
     return c ? `${location.origin}/kunludo/?team=${encodeURIComponent(c.teamId)}#pin=${c.pin}` : "";
   }
+
   const [copied, setCopied] = createSignal(false);
+
   async function copyCode() {
     try {
       await navigator.clipboard.writeText(codeLink());
@@ -268,20 +348,27 @@ export function Planner(props: { user: User; logout: () => void }) {
       });
     }
   }
+
   function importLabel(event: CalendarEvent) {
     const e = editing();
+
     if (!e) return "";
+
     if (e.fields.ownName && event.home !== e.fields.ownName && event.away !== e.fields.ownName)
       return "Anderes Team – bitte abwählen";
     const old = data()?.games.find((g) => g.teamId === e.teamId && g.calendarUid === event.uid);
+
     if (event.cancelled) return old?.cancelled ? "Bereits abgesagt" : "Abgesagt – wird übernommen";
+
     if (!old) return "Neu";
+
     return old.window.start !== event.start ||
       old.window.end !== event.end ||
       old.venue !== event.venue
       ? "Zeit / Ort geändert – neue Antworten nötig"
       : "Bereits vorhanden";
   }
+
   const label = () =>
     ({
       "create-team": "Team erstellen",
@@ -292,12 +379,14 @@ export function Planner(props: { user: User; logout: () => void }) {
       propose: "Termin vorschlagen",
       none: "",
     })[editor().kind];
+
   return (
     <>
       <AppSettings
         appId="kunludo"
         trigger={(fn) => {
           openSettings = fn;
+
           return null;
         }}
       />
@@ -625,30 +714,7 @@ export function Planner(props: { user: User; logout: () => void }) {
                             id="zs-ics"
                             type="file"
                             accept=".ics,text/calendar"
-                            onChange={async (e) => {
-                              const f = e.currentTarget.files?.[0];
-                              dispatch({ kind: "calendar-start" });
-                              const editor = current.editor;
-                              if (!f || editor.kind !== "import") return;
-                              const editorId = current.editorId;
-                              const timezone = current.data?.teams.find(
-                                (t) => t.id === editor.teamId,
-                              )?.timezone;
-                              if (!timezone) return;
-                              try {
-                                if (f.size > 500000)
-                                  throw new Error("Datei zu groß (maximal 500 KB).");
-                                const text = await f.text();
-                                const entries = parseCalendar(text, timezone);
-                                dispatch({ kind: "calendar", editorId, text, events: entries });
-                              } catch (error) {
-                                dispatch({
-                                  kind: "calendar-failed",
-                                  editorId,
-                                  error: errorText(error),
-                                });
-                              }
-                            }}
+                            onChange={(e) => void readCalendarFile(e.currentTarget.files?.[0])}
                           />
                           <Show when={editing()?.events.length}>
                             <Show when={!fields().ownName}>
@@ -905,6 +971,7 @@ export function Planner(props: { user: User; logout: () => void }) {
     </>
   );
 }
+
 function GameCard(props: {
   game: GameView;
   team: Team;
@@ -918,11 +985,15 @@ function GameCard(props: {
 }) {
   const g = () => props.game,
     t = () => props.team;
+
   const readiness = () => playerReadiness(g().ready, g().needed, g().window.start, props.now);
+
   const act = (kind: "commit" | "release" | "cancel") =>
     props.save({ kind, teamId: t().id, gameId: g().id });
+
   const answer = (answer: "yes" | "maybe" | "no") =>
     props.save({ kind: "answer", teamId: t().id, gameId: g().id, answer });
+
   const responseGroups = () =>
     (["committed", "yes", "pending", "maybe", "no", "elsewhere", "stale", "unanswered"] as const)
       .map((state) => ({
@@ -932,6 +1003,7 @@ function GameCard(props: {
           .sort((a, b) => a.name.localeCompare(b.name, "de")),
       }))
       .filter((group) => group.members.length > 0);
+
   return (
     <article class="zs-game" data-testid="game-card" data-game-id={g().id}>
       <div class="zs-game-top">
@@ -1116,6 +1188,7 @@ function GameCard(props: {
                             }
                             onChange={(e) => {
                               const value = e.currentTarget.value;
+
                               if (value === "yes" || value === "maybe" || value === "no")
                                 props.save({
                                   kind: "set-answer",

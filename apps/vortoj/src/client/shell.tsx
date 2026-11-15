@@ -4,6 +4,7 @@ import type { User } from "@repo/shared/contracts/auth";
 import { SidePanel } from "@repo/shared/navigation";
 import { AppSettings } from "@repo/shared/settings";
 import { Rules } from "./rules.tsx";
+
 export function Shell(props: {
   user: () => User | null;
   signOut: () => Promise<void>;
@@ -11,18 +12,21 @@ export function Shell(props: {
 }) {
   let openSettings = () => {};
   let openRules = () => {};
+
   return (
     <>
       <AppSettings
         appId="vortoj"
         trigger={(open) => {
           openSettings = open;
+
           return null;
         }}
       />
       <Rules
         trigger={(open) => {
           openRules = open;
+
           return null;
         }}
       />

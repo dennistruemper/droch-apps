@@ -19,8 +19,10 @@ const statusNames = {
   "not-functional": "Not functional",
   missing: "Missing",
 } as const;
+
 const timestamp = (time: number) =>
   new Date(time).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+
 const hourLabel = (hour: number) =>
   new Date(hour).toLocaleString(undefined, {
     hour: "2-digit",
@@ -28,6 +30,7 @@ const hourLabel = (hour: number) =>
     timeZoneName: "short",
     hour12: false,
   });
+
 function latestLabel(latest: Latest | null, now: number) {
   return !latest
     ? "Waiting for first check"
@@ -35,12 +38,15 @@ function latestLabel(latest: Latest | null, now: number) {
       ? "Unknown · check overdue"
       : statusNames[currentStatus(latest, now)];
 }
+
 function checkedAgo(latest: Latest, now: number) {
   const minutes = Math.max(0, Math.floor((now - latest.checkedAt) / 60_000));
+
   return minutes === 0
     ? "Checked just now"
     : `Checked ${minutes} minute${minutes === 1 ? "" : "s"} ago`;
 }
+
 function SiteCard(props: {
   site: Dashboard["sites"][number];
   now: number;
@@ -50,9 +56,11 @@ function SiteCard(props: {
   const days = createMemo(() => localDays(props.now), {
     equals: (previous, next) => previous[0]?.start === next[0]?.start,
   });
+
   const observations = createMemo(
     () => new Map(props.site.hours.map((entry) => [entry.hour, entry.slots])),
   );
+
   const summaries = createMemo(
     () =>
       new Map(
@@ -64,17 +72,22 @@ function SiteCard(props: {
         ),
       ),
   );
+
   const summary = (hour: number) => summaries().get(hour)!;
   const [historyExpanded, setHistoryExpanded] = createSignal(false);
+
   const populatedDays = createMemo(() =>
     days().filter((day) =>
       day.hours.some((hour) => {
         const result = summary(hour);
+
         return result.passed + result.failed > 0;
       }),
     ),
   );
+
   const hasHistory = () => populatedDays().some((day) => day.start < days()[0]!.start);
+
   const visibleDays = createMemo(() =>
     populatedDays().filter((day) => historyExpanded() || day.start === days()[0]!.start),
   );
@@ -85,14 +98,18 @@ function SiteCard(props: {
     const change = () => setCompact(media.matches);
     change();
     media.addEventListener("change", change);
+
     return () => media.removeEventListener("change", change);
   });
+
   const selected = () => {
     const hour = props.selected;
+
     return hour === null || !visibleDays().some((day) => hour >= day.start && hour < day.end)
       ? null
       : summaries().get(hour);
   };
+
   return (
     <article class="observo-site">
       <div class="observo-heading">
@@ -260,15 +277,18 @@ function SiteCard(props: {
     </article>
   );
 }
+
 function App() {
   let current = init();
   const [model, setModel] = createSignal(current);
   const controller = new AbortController();
+
   async function dispatch(message: Message): Promise<void> {
     if (controller.signal.aborted) return;
     const transition = update(current, message);
     current = transition.model;
     setModel(current);
+
     for (const command of transition.commands) {
       try {
         await dispatch(await execute(command, controller.signal));
@@ -281,24 +301,31 @@ function App() {
       }
     }
   }
+
   onSettled(() => {
     const refresh = () => {
       void dispatch({ kind: "clock", now: Date.now() });
+
       if (!document.hidden) void dispatch({ kind: "refresh" });
     };
+
     refresh();
     const timer = setInterval(refresh, 120_000);
     document.addEventListener("visibilitychange", refresh);
+
     return () => {
       controller.abort();
       clearInterval(timer);
       document.removeEventListener("visibilitychange", refresh);
     };
   });
+
   const error = () => {
     const request = model().request;
+
     return request.kind === "failed" ? request.error : "";
   };
+
   return (
     <>
       <header>
@@ -345,8 +372,11 @@ function App() {
     </>
   );
 }
+
 const element = document.getElementById("app");
+
 if (!element) throw new Error("Missing app mount element");
+
 render(
   () => (
     <AppAppearance appId={appDefinition.id} defaults={appDefinition.themes}>

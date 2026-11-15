@@ -24,6 +24,7 @@
     "test:stack:logs": "tsx tooling/test-stack.ts logs"
   },
   "devDependencies": {
+    "@oxlint/plugins": "1.86.0",
     "@playwright/test": "1.63.0",
     "@repo/observo": "workspace:*",
     "@repo/server": "workspace:*",
@@ -35,6 +36,7 @@
     "esbuild": "0.28.2",
     "oxfmt": "0.71.0",
     "oxlint": "1.86.0",
+    "oxlint-tsgolint": "7.0.2007",
     "tsx": "4.23.15",
     "typescript": "7.0.2",
     "vite": "8.3.2",

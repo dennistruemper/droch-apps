@@ -7,11 +7,14 @@ test("two anonymous players vote privately, reveal, reset, and reconnect", async
   if (!baseURL) throw new Error("Missing test origin");
   const hostContext = await browser.newContext({ baseURL });
   const guestContext = await browser.newContext({ baseURL });
+
   const host = await hostContext.newPage(),
     guest = await guestContext.newPage();
+
   const errors: string[] = [];
   host.on("pageerror", (e) => errors.push(e.message));
   guest.on("pageerror", (e) => errors.push(e.message));
+
   try {
     await host.goto("/poker/");
     await host.getByLabel("Room name").fill("Browser planning");

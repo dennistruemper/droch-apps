@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 import { createFrontendReader } from "./index.ts";
 
 let root: string;
+
 beforeAll(async () => {
   root = await mkdtemp(resolve(tmpdir(), "droch-frontends-"));
   await mkdir(resolve(root, "dist/client/poker/assets"), { recursive: true });
@@ -12,6 +13,7 @@ beforeAll(async () => {
   await writeFile(resolve(root, "dist/client/poker/assets/app.js"), "console.log('poker')");
   await writeFile(resolve(root, "secret.txt"), "private");
 });
+
 afterAll(async () => {
   await rm(root, { recursive: true, force: true });
 });

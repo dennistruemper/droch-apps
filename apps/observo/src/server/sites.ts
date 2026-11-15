@@ -6,6 +6,7 @@ const siteSchema = z.object({
   name: z.string().min(1),
   url: z.url().refine((value) => {
     const url = new URL(value);
+
     return url.protocol === "https:" && !url.username && !url.password && !url.hash;
   }),
   navigation: z.array(z.string().min(1)).min(1),
@@ -13,7 +14,9 @@ const siteSchema = z.object({
   rowSelector: z.string().min(1),
   description: z.string().min(1),
 });
+
 export type Site = z.infer<typeof siteSchema>;
+
 export const sites: readonly Site[] = siteSchema.array().parse([
   {
     id: "tischtennis-rendsburg",
@@ -26,5 +29,6 @@ export const sites: readonly Site[] = siteSchema.array().parse([
       "Chromium opens the site, follows Spielbetrieb → Kreisliga, and verifies populated standings with team links and scores.",
   },
 ]);
+
 if (new Set(sites.map((site) => site.id)).size !== sites.length)
   throw new Error("Duplicate Observo site ID");

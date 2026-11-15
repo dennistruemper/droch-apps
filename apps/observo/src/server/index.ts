@@ -7,6 +7,7 @@ import { checkSite } from "./check.ts";
 import { startMonitor } from "./monitor.ts";
 
 export { appDefinition, checkSite };
+
 export type ObservoOptions = {
   db: ReturnType<typeof connectDatabase>["db"];
   origin: string;
@@ -16,9 +17,11 @@ export type ObservoOptions = {
   check?: (site: Site, signal: AbortSignal) => Promise<Latest>;
   registerCleanup?: (cleanup: () => void) => void;
 };
+
 export function createRoutes(options?: ObservoOptions) {
   const routes = new Hono();
   routes.get("/status", (c) => c.json({ app: "observo", stage: "monitoring" }));
+
   if (!options)
     return routes.get("/sites", (c) =>
       c.json({ error: "Monitoring storage is temporarily unavailable." }, 503),
@@ -26,6 +29,7 @@ export function createRoutes(options?: ObservoOptions) {
   const now = options.now ?? Date.now;
   const ready = options.ready ?? (() => true);
   const store = createStore(options.db, sites);
+
   const monitor = startMonitor({
     store,
     sites,
@@ -35,9 +39,11 @@ export function createRoutes(options?: ObservoOptions) {
     check: options.check ?? ((site, signal) => checkSite(site, { signal, now })),
     onError: () => console.error("Observo monitoring failed; retrying at the next slot"),
   });
+
   options.registerCleanup?.(monitor.stop);
   routes.use("*", async (c, next) => {
     c.header("Cache-Control", "no-store");
+
     if (!ready())
       return c.json(
         { error: "Monitoring storage is temporarily unavailable. Please try again." },
@@ -45,17 +51,22 @@ export function createRoutes(options?: ObservoOptions) {
       );
     await next();
   });
+
   const snapshot = () =>
     dashboardSchema.parse(store.snapshot(now(), !options.checksDisabled && store.isActivated()));
+
   routes.get("/sites", (c) => c.json(snapshot()));
   // A rendered dashboard explicitly activates; reads, health checks and prefetches do not.
   routes.post("/activate", (c) => {
     if (c.req.header("Origin") !== options.origin)
       return c.json({ error: "Invalid request origin" }, 403);
+
     if (!options.checksDisabled) {
       if (store.activate(now())) monitor.wake();
     }
+
     return c.json(snapshot());
   });
+
   return routes;
 }

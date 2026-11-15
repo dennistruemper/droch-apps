@@ -34,7 +34,18 @@ Solid 2.0.0-rc.13, its official plugin, and Router 2 compile and run together.
 Compilation and type checking are separate; deployment verification requires both.
 
 Host/CI `pnpm check` enforces the custom Oxlint boundary rule and its rejection
-fixtures. The image build runs type checking and compilation. Oxlint JS plugins
+fixtures. Oxlint also loads the vendored anti-slop plugin from
+`tools/oxlint/anti-slop/`, with nine selected generic rules enabled as errors. The selection preserves
+discriminated unions, immutable object construction, and explicit parsing
+boundaries; see the anti-slop decision for the enabled rules. Its source, licenses, and revision
+are recorded there; lint and formatting exclude the upstream snapshot and agent
+assets. `oxlint` and `@oxlint/plugins` share the exact version 1.86.0. Type-aware linting
+is enabled in the root Oxlint configuration using pinned
+`oxlint-tsgolint` 7.0.2007. Selected equality, binding, type-import, TypeScript
+suppression, union-exhaustiveness, and promise rules extend the correctness
+category. Vitest checks are scoped to `*.test.ts`, including focused/duplicate
+test detection and the plugin's correctness defaults. Existing `pnpm lint` and
+CI `pnpm check` commands load this configuration automatically. The image build runs type checking and compilation. Oxlint JS plugins
 hit [a Linux allocator bug](https://github.com/oxc-project/oxc/issues/20331) on the
 small local Docker VM; do not remove boundary enforcement to work around it.
 

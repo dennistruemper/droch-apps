@@ -1,4 +1,5 @@
 import { createServer } from "node:http";
+import type { ViteDevServer } from "vite";
 import { getRequestListener } from "@hono/node-server";
 import { createAuthService, createAuthRoutes } from "@repo/shared/auth";
 import { createMailSender, createTestMailSender } from "@repo/shared/mail";
@@ -11,23 +12,27 @@ import { applications, databaseDefinitions, type ApplicationOptions } from "./re
 const configuration = readConfiguration(process.env);
 const root = process.cwd();
 const cleanupHandlers = new Set<() => void | Promise<void>>();
+
 const databases = databaseDefinitions.map(({ id }) => ({
   id,
   connection: connectDatabase(configuration.DATA_DIRECTORY, id, { mustExist: true }),
   migrationsFolder: `${root}/migrations/${id}`,
 }));
+
 const development =
   process.env.DROCH_BUILD !== "production" && configuration.NODE_ENV === "development";
-const developmentServers = new Map<string, import("vite").ViteDevServer>();
+
+const developmentServers = new Map<string, ViteDevServer>();
 const server = createServer();
 
 if (development) {
   const { createServer: createViteServer } = await import("vite");
   const { frontendConfig } = await import("../../tooling/frontend.ts");
-  const { resolve } = await import("node:path");
+  const path = await import("node:path");
+
   for (const application of applications) {
     const vite = await createViteServer({
-      ...frontendConfig(resolve(root, "apps", application.id), application.id, root),
+      ...frontendConfig(path.resolve(root, "apps", application.id), application.id, root),
       appType: "custom",
       server: {
         middlewareMode: true,
@@ -42,6 +47,7 @@ if (development) {
         },
       },
     });
+
     developmentServers.set(application.id, vite);
   }
 }
@@ -53,14 +59,18 @@ const readFrontend = createFrontendReader({
     ? {
         async transformHtml(appId: string, pathname: string, html: string) {
           const vite = developmentServers.get(appId);
+
           if (!vite) throw new Error("Missing development frontend");
+
           return vite.transformIndexHtml(pathname, html);
         },
       }
     : {}),
 });
+
 const authDatabase = databases.find((database) => database.id === "auth")!;
 const policy = accountPolicy(configuration);
+
 const sendMail = policy.sendMail
   ? createMailSender({
       ...(configuration.MAILTRAP_TOKEN ? { token: configuration.MAILTRAP_TOKEN } : {}),
@@ -70,6 +80,7 @@ const sendMail = policy.sendMail
         : {}),
     })
   : createTestMailSender();
+
 const auth =
   configuration.AUTH_SECRET && policy.ready
     ? createAuthService({
@@ -80,9 +91,12 @@ const auth =
         send: sendMail,
       })
     : null;
+
 const applicationOptions = (id: string): ApplicationOptions => {
   const database = databases.find((entry) => entry.id === id);
+
   if (!database) throw new Error(`Missing database for ${id}`);
+
   return {
     db: database.connection.db,
     ...(configuration.AUTH_SECRET ? { joinSecret: configuration.AUTH_SECRET } : {}),
@@ -100,6 +114,7 @@ const applicationOptions = (id: string): ApplicationOptions => {
     },
   };
 };
+
 const app = createApplication({
   authRoutes: createAuthRoutes({
     service: auth,
@@ -113,11 +128,14 @@ const app = createApplication({
   readFrontend,
   applicationOptions,
 });
+
 const listener = getRequestListener(app.fetch);
+
 server.on("request", (request, response) => {
   const originalUrl = request.url;
   const pathname = new URL(request.url ?? "/", "http://localhost").pathname;
   const vite = [...developmentServers].find(([id]) => pathname.startsWith(`/${id}/`))?.[1];
+
   if (vite)
     vite.middlewares(request, response, () => {
       request.url = originalUrl;
@@ -125,27 +143,34 @@ server.on("request", (request, response) => {
     });
   else void listener(request, response);
 });
+
 server.listen(configuration.PORT, "0.0.0.0", () => {
   console.log(`Droch apps listening on ${configuration.APP_ORIGIN}`);
 });
 
 let stopping = false;
+
 async function shutdown() {
   if (stopping) return;
   stopping = true;
-  await Promise.all([...cleanupHandlers].map((cleanup) => cleanup()));
+  await Promise.all([...cleanupHandlers].map(async (cleanup) => cleanup()));
+
   const deadline = setTimeout(() => {
     server.closeAllConnections();
   }, 5000);
+
   deadline.unref();
   await Promise.all([...developmentServers.values()].map((vite) => vite.close()));
   await new Promise<void>((resolveClose) => server.close(() => resolveClose()));
   clearTimeout(deadline);
+
   for (const { connection } of databases) connection.close();
 }
+
 process.on("SIGTERM", () => {
   void shutdown();
 });
+
 process.on("SIGINT", () => {
   void shutdown();
 });

@@ -38,17 +38,25 @@ export const modes = [
     description: "Sogar der Modus wird ausgelost. Zufälliger wird’s heute nicht mehr.",
   },
 ] as const;
+
 export type Mode = (typeof modes)[number]["id"];
+
 export type ConcreteMode = Exclude<Mode, "random">;
+
 export type Memory = { repeat: string | null; unused: string[] };
+
 export const emptyMemory = (): Memory => ({ repeat: null, unused: [] });
+
 export function validOptions(options: readonly string[]) {
   return options.map((value) => value.trim()).filter(Boolean);
 }
+
 function index(random: number, length: number) {
   if (!Number.isFinite(random) || random < 0 || random >= 1) throw new Error("Invalid randomness");
+
   return Math.floor(random * length);
 }
+
 /** Effects supply entropy; all selection and sequence rules stay pure. */
 export function draw(
   options: readonly string[],
@@ -58,12 +66,16 @@ export function draw(
   modeRandom: number,
 ) {
   const values = validOptions(options);
+
   if (values.length < 2) throw new Error("Mindestens zwei Optionen erforderlich");
   const concreteModes: ConcreteMode[] = ["xkcd", "standard", "schlezaz", "shuffle"];
+
   const selected =
     mode === "random" ? concreteModes[index(modeRandom, concreteModes.length)]! : mode;
+
   let next = memory;
   let value: string;
+
   switch (selected) {
     case "xkcd":
       value = values[3 % values.length]!;
@@ -82,5 +94,6 @@ export function draw(
       break;
     }
   }
+
   return { value, mode: selected, memory: next };
 }

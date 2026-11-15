@@ -1,29 +1,37 @@
 import { describe, expect, it } from "vitest";
 import { draw, emptyMemory, type Memory } from "./index.ts";
+
 const options = ["A", "B", "C", "D", "E"];
+
 describe("SchleZaZ rules", () => {
   it("wraps the fourth option and ignores blank options", () => {
     expect(draw(options, "xkcd", emptyMemory(), 0, 0).value).toBe("D");
     expect(draw([" ", " A ", "B"], "xkcd", emptyMemory(), 0, 0).value).toBe("B");
     expect(draw(["A", "B", "C"], "xkcd", emptyMemory(), 0, 0).value).toBe("A");
-    expect(() => draw(["A", " "], "xkcd", emptyMemory(), 0, 0)).toThrow();
+    expect(() => draw(["A", " "], "xkcd", emptyMemory(), 0, 0)).toThrow(/zwei|two|Option/i);
   });
   it("repeats exactly twice, then draws a fresh pair", () => {
     let memory = emptyMemory();
+
     const results = [0, 0.9, 0.5, 0, 0.9, 0].map((random) => {
       const result = draw(options, "schlezaz", memory, random, 0);
       memory = result.memory;
+
       return result.value;
     });
+
     expect(results).toEqual(["A", "A", "C", "C", "E", "E"]);
   });
   it("exhausts unique shuffle values before refilling, including duplicate input", () => {
     let memory: Memory = emptyMemory();
+
     const results = Array.from({ length: 6 }, () => {
       const result = draw(["A", "A", "B", "C"], "shuffle", memory, 0, 0);
       memory = result.memory;
+
       return result.value;
     });
+
     expect(results).toEqual(["A", "B", "C", "A", "B", "C"]);
   });
   it("executes the selected random mode once and preserves its own memory", () => {

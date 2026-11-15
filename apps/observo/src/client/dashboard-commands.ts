@@ -10,6 +10,8 @@ export async function execute(command: Command, signal: AbortSignal): Promise<Me
       credentials: "omit",
     },
   );
+
   if (!response.ok) throw new Error("Could not load monitoring data. Please try again.");
+
   return { kind: "loaded", id: command.id, data: dashboardSchema.parse(await response.json()) };
 }

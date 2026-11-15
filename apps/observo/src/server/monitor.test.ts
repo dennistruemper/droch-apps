@@ -2,37 +2,46 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { interval, slotStart } from "../domain/index.ts";
 import { startMonitor } from "./monitor.ts";
 import { sites } from "./sites.ts";
-import type { createStore } from "./store.ts";
+
+type Options = Parameters<typeof startMonitor>[0];
+
+type Store = Options["store"];
+
 import type { Latest } from "../contracts/index.ts";
 
 afterEach(() => vi.useRealTimers());
+
 describe("five-minute scheduler", () => {
   it("aligns to clock slots, skips persisted slots, and aborts without recording after shutdown", async () => {
     vi.useFakeTimers();
     const now = Date.UTC(2026, 9, 24, 10, 2);
     vi.setSystemTime(now);
-    const record = vi.fn();
-    const prune = vi.fn();
-    const hasSlot = vi.fn().mockReturnValueOnce(true).mockReturnValue(false);
-    const store = { record, prune, hasSlot, isActivated: () => true } as unknown as ReturnType<
-      typeof createStore
-    >;
+    const record = vi.fn<Store["record"]>();
+    const prune = vi.fn<Store["prune"]>();
+    const hasSlot = vi.fn<Store["hasSlot"]>().mockReturnValueOnce(true).mockReturnValue(false);
+
+    const store = { record, prune, hasSlot, isActivated: () => true } satisfies Store;
+
     let complete: ((result: Latest) => void) | undefined;
     let signal: AbortSignal | undefined;
-    const check = vi.fn((_site, activeSignal: AbortSignal) => {
+
+    const check = vi.fn<Options["check"]>((_site, activeSignal: AbortSignal) => {
       signal = activeSignal;
+
       return new Promise<Latest>((resolve) => {
         complete = resolve;
       });
     });
+
     const { stop } = startMonitor({
       store,
       sites,
       check,
       ready: () => true,
       now: Date.now,
-      onError: vi.fn(),
+      onError: vi.fn<Options["onError"]>(),
     });
+
     expect(check).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(3 * 60_000);
     expect(check).toHaveBeenCalledTimes(1);
@@ -55,15 +64,18 @@ describe("five-minute scheduler", () => {
   it("waits for migrations and treats browser launch failures as missing observations", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(Date.UTC(2026, 9, 24, 10));
+
     const store = {
-      record: vi.fn(),
-      prune: vi.fn(),
+      record: vi.fn<Store["record"]>(),
+      prune: vi.fn<Store["prune"]>(),
       hasSlot: () => false,
       isActivated: () => true,
-    } as unknown as ReturnType<typeof createStore>;
+    } satisfies Store;
+
     let ready = false;
-    const onError = vi.fn();
-    const check = vi.fn().mockRejectedValue(new Error("browser unavailable"));
+    const onError = vi.fn<Options["onError"]>();
+    const check = vi.fn<Options["check"]>().mockRejectedValue(new Error("browser unavailable"));
+
     const { stop } = startMonitor({
       store,
       sites,
@@ -72,6 +84,7 @@ describe("five-minute scheduler", () => {
       now: Date.now,
       onError,
     });
+
     expect(check).not.toHaveBeenCalled();
     ready = true;
     await vi.advanceTimersByTimeAsync(interval);

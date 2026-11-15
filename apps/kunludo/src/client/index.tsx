@@ -6,6 +6,7 @@ import { Account } from "./account.tsx";
 import { Planner } from "./planner.tsx";
 import "@repo/shared/styles";
 import "./kunludo.css";
+
 function App() {
   return (
     <Errored
@@ -20,8 +21,11 @@ function App() {
     </Errored>
   );
 }
+
 const root = document.getElementById("app");
+
 if (!root) throw new Error("Missing app mount");
+
 render(
   () => (
     <AppAppearance appId={appDefinition.id} defaults={appDefinition.themes}>

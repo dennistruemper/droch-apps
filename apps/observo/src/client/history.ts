@@ -16,6 +16,7 @@ export function localDays(now: number) {
     start.setDate(start.getDate() - offset);
     const end = new Date(start);
     end.setDate(end.getDate() + 1);
+
     return {
       start: start.getTime(),
       end: end.getTime(),
@@ -35,11 +36,14 @@ export function localSummary(
   latest: Latest | null,
 ) {
   let packed = 0;
+
   for (let index = 0; index < 12; index++) {
     const time = hour + index * interval;
     const source = hours.get(hourStart(time)) ?? 0;
     const outcome = readSlots(source)[Math.floor((time - hourStart(time)) / interval)]!;
+
     if (outcome !== "missing") packed = recordSlot(packed, index * interval, outcome);
   }
+
   return summarize(packed, hour, now, latest);
 }

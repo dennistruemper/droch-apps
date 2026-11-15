@@ -1,6 +1,7 @@
 import { sqliteTable, text, integer, primaryKey, index } from "drizzle-orm/sqlite-core";
 import type { Game } from "../domain/index.ts";
 import type { TileSet } from "../contracts/index.ts";
+
 export const tileSets = sqliteTable(
   "tile_sets",
   {
@@ -11,6 +12,7 @@ export const tileSets = sqliteTable(
   },
   (t) => [index("tile_sets_owner").on(t.ownerId)],
 );
+
 export const rooms = sqliteTable("rooms", {
   id: text("id").primaryKey(),
   ownerId: text("owner_id").notNull(),
@@ -20,6 +22,7 @@ export const rooms = sqliteTable("rooms", {
   tileSet: text("tile_set", { mode: "json" }).$type<TileSet>().notNull(),
   state: text("state", { mode: "json" }).$type<Game>().notNull(),
 });
+
 export const members = sqliteTable(
   "members",
   {
@@ -30,6 +33,7 @@ export const members = sqliteTable(
   },
   (t) => [primaryKey({ columns: [t.roomId, t.userId] }), index("members_user").on(t.userId)],
 );
+
 export const commands = sqliteTable(
   "commands",
   {

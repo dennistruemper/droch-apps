@@ -13,18 +13,22 @@ test("Observo shows public history, slot details, recovery, and quiet accents ac
   await page.clock.pauseAt(now + 1000);
   let requests = 0;
   let outcome: "available" | "unreachable" = "available";
+
   let healthy = 0,
     degraded = 0,
     down = 0;
+
   for (let i = 0; i < 12; i++) {
     healthy = recordSlot(healthy, now + i * interval, "available");
     degraded = recordSlot(degraded, now + i * interval, i === 0 ? "not-functional" : "available");
     down = recordSlot(down, now + i * interval, i < 7 ? "unreachable" : "available");
   }
+
   let fail = true;
   let historical = false;
   await page.route("**/api/observo/*", (route) => {
     requests++;
+
     return fail
       ? route.fulfill({ status: 503 })
       : route.fulfill({
@@ -86,21 +90,25 @@ test("Observo shows public history, slot details, recovery, and quiet accents ac
     page.getByRole("list", { name: "Five-minute checks" }).getByRole("listitem"),
   ).toHaveCount(12);
   await expect(page.getByText("12 passed · 0 failed · 0 missing", { exact: true })).toBeVisible();
+
   const palette = () =>
     page.locator('button[data-status="available"]:not([data-current])').evaluate((element) => ({
       background: getComputedStyle(element).backgroundColor,
       color: getComputedStyle(element).color,
       accent: getComputedStyle(element).borderBottomColor,
     }));
+
   const original = await palette();
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page.getByLabel("Your theme").selectOption("ink");
   await page.getByRole("button", { name: "Close settings" }).click();
   expect((await palette()).background).not.toBe(original.background);
   expect((await palette()).color).not.toBe(original.color);
+
   const statuses = page.locator(
     'button[data-status="available"]:not([data-current]), button[data-status="degraded"], button[data-status="mostly-unavailable"]',
   );
+
   const marks = await statuses.evaluateAll((elements) =>
     elements.map((element) => ({
       background: getComputedStyle(element).backgroundColor,
@@ -108,21 +116,25 @@ test("Observo shows public history, slot details, recovery, and quiet accents ac
       accent: getComputedStyle(element).borderBottomColor,
     })),
   );
+
   expect(new Set(marks.map((mark) => mark.background)).size).toBe(1);
   expect(new Set(marks.map((mark) => mark.color)).size).toBe(1);
   expect(new Set(marks.map((mark) => mark.accent)).size).toBe(3);
   // On a red custom theme, semantic meaning still comes from contrasting symbols.
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page.getByLabel("Your theme").selectOption("custom");
+
   for (const [label, value] of [
     ["Background color", "#a12f40"],
     ["Text and border color", "#ffffff"],
   ]) {
     await page.getByLabel(label!).evaluate((input, color) => {
-      (input as HTMLInputElement).value = color!;
+      if (!(input instanceof HTMLInputElement)) throw new Error("Expected a color input");
+      input.value = color!;
       input.dispatchEvent(new Event("input", { bubbles: true }));
     }, value);
   }
+
   await page.getByRole("button", { name: "Close settings" }).click();
   await expect(page.locator('button[data-status="degraded"] b')).toHaveText("!");
   await expect(page.locator('button[data-status="mostly-unavailable"] b')).toHaveText("×");
@@ -174,8 +186,10 @@ test("browser monitor submits a fresh confirmation token and requires populated 
   test.setTimeout(60_000);
   let posts = 0;
   let broken = false;
+
   const server = createServer((request, response) => {
     response.setHeader("Content-Type", "text/html; charset=utf-8");
+
     if (request.method === "POST" && request.url === "/default.aspx?Token=fresh-token") {
       posts++;
       response.setHeader("Set-Cookie", "verified=yes; Path=/; HttpOnly");
@@ -194,9 +208,12 @@ test("browser monitor submits a fresh confirmation token and requires populated 
       response.end('<a href="/competition">Spielbetrieb</a>');
     }
   });
+
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const address = server.address();
+
   if (!address || typeof address === "string") throw new Error("Missing fixture port");
+
   const site = {
     id: "fixture",
     name: "Fixture",
@@ -206,6 +223,7 @@ test("browser monitor submits a fresh confirmation token and requires populated 
     resultHeading: "Kreisliga Erwachsene",
     rowSelector: 'tr[id*="_Team"]',
   };
+
   const options = {
     signal: new AbortController().signal,
     now: Date.now,
@@ -214,6 +232,7 @@ test("browser monitor submits a fresh confirmation token and requires populated 
         ...(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {}),
       }),
   };
+
   try {
     expect(await checkSite(site, options)).toMatchObject({
       outcome: "available",

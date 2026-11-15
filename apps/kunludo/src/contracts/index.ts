@@ -1,14 +1,18 @@
 import { z } from "zod";
+
 export const appDefinition = {
   id: "kunludo",
   title: "Kunludo",
   description: "Deine Teams. Ein Spielplan.",
   themes: { light: "paper", dark: "ink" },
 } as const;
+
 const id = z.string().min(1).max(80);
 const name = z.string().trim().min(1).max(100);
 export const answerSchema = z.enum(["yes", "maybe", "no"]);
+
 export type Answer = z.infer<typeof answerSchema>;
+
 export const windowSchema = z
   .object({
     start: z.number().int().min(0).max(4102444800000),
@@ -19,20 +23,25 @@ export const windowSchema = z
     (v) => v.end > v.start && v.end - v.start <= 86400000,
     "Ende muss nach Beginn liegen (maximal 24 Stunden).",
   );
+
 export const matchInputSchema = z.object({
   opponent: name,
   venue: z.string().trim().max(200),
   home: z.boolean(),
   window: windowSchema,
 });
+
 export type MatchInput = z.infer<typeof matchInputSchema>;
+
 export const responseSchema = z.object({ answer: answerSchema, revision: z.number().int() });
+
 export const proposalSchema = z.object({
   id,
   window: windowSchema,
   votes: z.record(z.string(), answerSchema),
   by: id,
 });
+
 export const gameSchema = matchInputSchema.extend({
   id,
   revision: z.number().int(),
@@ -44,9 +53,13 @@ export const gameSchema = matchInputSchema.extend({
   sourceName: z.string().nullable(),
   notice: z.string(),
 });
+
 export type Game = z.infer<typeof gameSchema>;
+
 export type Proposal = z.infer<typeof proposalSchema>;
+
 export const teamDataSchema = z.object({ games: z.array(gameSchema) });
+
 export const teamInputSchema = z
   .object({
     name,
@@ -58,6 +71,7 @@ export const teamInputSchema = z
       .refine((v) => {
         try {
           new Intl.DateTimeFormat("de", { timeZone: v });
+
           return true;
         } catch {
           return false;
@@ -65,7 +79,9 @@ export const teamInputSchema = z
       }, "Ungültige Zeitzone"),
   })
   .strict();
+
 export type TeamInput = z.infer<typeof teamInputSchema>;
+
 const actionSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("create-team"), team: teamInputSchema }),
   z.object({
@@ -112,20 +128,27 @@ const actionSchema = z.discriminatedUnion("kind", [
     selected: z.array(z.string().max(300)).min(1).max(500),
   }),
 ]);
+
 export type Action = z.infer<typeof actionSchema>;
+
 export const commandSchema = z.object({
   commandId: z.string().uuid(),
   version: z.number().int().nonnegative(),
   action: actionSchema,
 });
+
 export type Command = z.infer<typeof commandSchema>;
+
 export const memberSchema = z.object({ id, name, role: z.enum(["admin", "member"]) });
+
 export const teamSchema = teamInputSchema.extend({
   id,
   role: z.enum(["admin", "member"]),
   members: z.array(memberSchema),
 });
+
 export type Team = z.infer<typeof teamSchema>;
+
 export const stateSchema = z.enum([
   "unanswered",
   "yes",
@@ -136,6 +159,7 @@ export const stateSchema = z.enum([
   "elsewhere",
   "committed",
 ]);
+
 export const gameViewSchema = z.object({
   id,
   teamId: id,
@@ -167,18 +191,23 @@ export const gameViewSchema = z.object({
     }),
   ),
 });
+
 export type GameView = z.infer<typeof gameViewSchema>;
+
 export const snapshotSchema = z.object({
   version: z.number().int(),
   teams: z.array(teamSchema),
   games: z.array(gameViewSchema),
 });
+
 export type Snapshot = z.infer<typeof snapshotSchema>;
+
 export const resultSchema = z.object({
   snapshot: snapshotSchema,
   teamId: z.string().optional(),
   message: z.string(),
 });
+
 export const codeSchema = z.object({
   teamId: id,
   pin: z.string().regex(/^[A-Z0-9]{6}$/),

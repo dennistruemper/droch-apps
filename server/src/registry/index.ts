@@ -25,10 +25,12 @@ export const applications = [
 
 export function validateApplications(apps: readonly { id: string }[]) {
   const seen = new Set<string>();
+
   for (const app of apps) {
     if (!/^[a-z][a-z0-9-]*$/.test(app.id) || seen.has(app.id)) {
       throw new Error(`Invalid or duplicate application ID: ${app.id}`);
     }
+
     seen.add(app.id);
   }
 }
@@ -46,6 +48,7 @@ export const databaseDefinitions = [
 
 import type { PokerOptions } from "@repo/poker/server";
 import type { VortojOptions } from "@repo/vortoj/server";
+
 export type ApplicationOptions = PokerOptions &
   Pick<VortojOptions, "resolveUser"> &
   ObservoOptions &

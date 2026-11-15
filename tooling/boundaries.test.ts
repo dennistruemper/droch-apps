@@ -8,6 +8,7 @@ const root = process.cwd();
 const client = resolve(root, "apps/poker/src/client/index.tsx");
 const server = resolve(root, "server/src/registry/index.ts");
 const fixtures = resolve(root, "apps/poker/src/client/__boundary_checks__");
+
 afterAll(() => rmSync(fixtures, { recursive: true, force: true }));
 
 describe("module boundaries", () => {
@@ -69,11 +70,13 @@ describe("module boundaries", () => {
     mkdirSync(fixtures, { recursive: true });
     const file = resolve(fixtures, "invalid.ts");
     writeFileSync(file, source.replaceAll('"../server/', '"../../server/'));
+
     const result = spawnSync(
       resolve(root, "node_modules/.bin/oxlint"),
       ["--threads=1", "--format", "json", file],
       { cwd: root, encoding: "utf8" },
     );
+
     expect(result.error).toBeUndefined();
     expect(result.status).toBe(1);
     expect(result.stdout + result.stderr).toContain("repo(boundaries)");

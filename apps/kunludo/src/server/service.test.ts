@@ -4,16 +4,20 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import { connectDatabase, migrateDatabase } from "@repo/shared/database";
-import { createTeamService, TeamError } from "./service.ts";
+import { createTeamService } from "./service.ts";
 import { createRoutes } from "./index.ts";
 import { teamInputSchema, type Action } from "../contracts/index.ts";
+
 const alice = { id: "alice", name: "Alice" },
   bob = { id: "bob", name: "Bob" },
   charlie = { id: "charlie", name: "Charlie" };
+
 const dispose: (() => void)[] = [];
+
 afterEach(() => {
   for (const f of dispose.splice(0)) f();
 });
+
 function fixture() {
   const directory = mkdtempSync(join(tmpdir(), "kunludo-"));
   migrateDatabase(directory, "kunludo", resolve("migrations/kunludo"));
@@ -22,16 +26,21 @@ function fixture() {
     connection.close();
     rmSync(directory, { recursive: true, force: true });
   });
+
   const secret = "s".repeat(64),
     now = Date.parse("2026-08-01T00:00Z"),
     service = createTeamService(connection.db, { secret, now: () => now });
+
   const send = (u: typeof alice, action: Action) =>
     service.command(u, { commandId: randomUUID(), version: service.snapshot(u).version, action });
+
   const create = (u = alice, name = "Team", club = "Club A") =>
     send(u, { kind: "create-team", team: { name, club, timezone: "Europe/Berlin", needed: 4 } })
       .teamId!;
+
   const enter = (tid: string, u = bob) =>
     send(u, { kind: "join", teamId: tid, pin: service.code(tid, alice).pin });
+
   const game = (tid: string, start = "2026-11-20T18:00Z", opponent = "Visitors") => {
     send(alice, {
       kind: "create-game",
@@ -43,18 +52,22 @@ function fixture() {
         window: { start: Date.parse(start), end: Date.parse(start) + 7200000, buffer: 30 },
       },
     });
+
     return service
       .snapshot(alice)
       .games.filter((g) => g.teamId === tid)
       .at(-1)!;
   };
+
   return { service, connection, send, create, enter, game, secret, now };
 }
+
 describe("teams, privacy and transactional planning", () => {
   it("creates the account as admin, uses one identity across unrestricted clubs and rejects named rosters", () => {
     const f = fixture(),
       a = f.create(alice, "Adults", "Club A"),
       b = f.create(alice, "Boys", "Club B");
+
     f.enter(a);
     f.enter(b);
     const s = f.service.snapshot(bob);
@@ -76,6 +89,7 @@ describe("teams, privacy and transactional planning", () => {
     const f = fixture(),
       tid = f.create(),
       old = f.service.code(tid, alice);
+
     f.enter(tid);
     expect(old.pin).toMatch(/^[A-Z0-9]{6}$/);
     expect(() => f.send(bob, { kind: "remove", teamId: tid, userId: alice.id })).toThrow(/Admins/);
@@ -83,11 +97,13 @@ describe("teams, privacy and transactional planning", () => {
       /weiteren Admin/,
     );
     f.send(alice, { kind: "promote", teamId: tid, userId: bob.id });
+
     const cmd = {
       commandId: randomUUID(),
       version: f.service.snapshot(alice).version,
       action: { kind: "remove", teamId: tid, userId: bob.id } as const,
     };
+
     f.service.command(alice, cmd);
     const next = f.service.code(tid, alice);
     expect(next.teamId).toBe(tid);
@@ -106,6 +122,7 @@ describe("teams, privacy and transactional planning", () => {
     const f = fixture(),
       a = f.create(),
       b = f.create(alice, "Other", "Club B");
+
     f.enter(a);
     f.enter(b);
     const before = f.service.code(a, alice);
@@ -133,9 +150,12 @@ describe("teams, privacy and transactional planning", () => {
     const f = fixture(),
       a = f.create(),
       b = f.create(alice, "Secret Boys", "Secret club");
+
     f.enter(a);
+
     const ga = f.game(a),
       gb = f.game(b, "2026-11-20T19:00Z", "Private opponent");
+
     f.send(alice, { kind: "answer", teamId: a, gameId: ga.id, answer: "yes" });
     f.send(alice, { kind: "answer", teamId: b, gameId: gb.id, answer: "yes" });
     expect(
@@ -170,7 +190,9 @@ describe("teams, privacy and transactional planning", () => {
       b = f.create(),
       g = f.game(a),
       h = f.game(b, "2026-11-21T18:00Z");
+
     f.enter(a);
+
     for (const [tid, x] of [
       [a, g],
       [b, h],
@@ -192,10 +214,13 @@ describe("teams, privacy and transactional planning", () => {
   });
   it("imports both actual calendars, deduplicates per team, and preserves answers on unchanged re-import", () => {
     const f = fixture();
+
     for (const n of [3, 4]) {
       const tid = f.create(alice, `Team ${n}`),
         calendar = readFileSync(`e2e/fixtures/rendsburger-tsv-${n}.ics`, "utf8");
+
       const selected = [...calendar.matchAll(/^UID:\s*(.+)$/gm)].map((m) => m[1]!.trim());
+
       const action: Action = {
         kind: "import",
         teamId: tid,
@@ -203,6 +228,7 @@ describe("teams, privacy and transactional planning", () => {
         ownName: `Rendsburger TSV ${n}`,
         selected,
       };
+
       f.send(alice, action);
       const first = f.service.snapshot(alice).games.filter((g) => g.teamId === tid);
       expect(first).toHaveLength(20);
@@ -211,25 +237,29 @@ describe("teams, privacy and transactional planning", () => {
       expect(f.service.snapshot(alice).games.filter((g) => g.teamId === tid)).toHaveLength(20);
       expect(f.service.snapshot(alice).games.find((g) => g.id === first[0]!.id)!.mine).toBe("yes");
     }
+
     const reopened = createTeamService(f.connection.db, { secret: f.secret, now: () => f.now });
     expect(reopened.snapshot(alice).games).toHaveLength(40);
   });
   it("bounds failed joining attempts and rejects command-ID reuse with different actions", () => {
     const f = fixture(),
       tid = f.create();
+
     for (let i = 0; i < 20; i++)
-      expect(() => f.send(bob, { kind: "join", teamId: tid, pin: "000000" })).toThrow();
-    try {
-      f.send(bob, { kind: "join", teamId: tid, pin: "000000" });
-    } catch (e) {
-      expect(e).toBeInstanceOf(TeamError);
-      expect((e as TeamError).status).toBe(429);
-    }
+      expect(() => f.send(bob, { kind: "join", teamId: tid, pin: "000000" })).toThrow(
+        /PIN|beitreten|Versuche/i,
+      );
+
+    expect(() => f.send(bob, { kind: "join", teamId: tid, pin: "000000" })).toThrow(
+      expect.objectContaining({ status: 429 }),
+    );
+
     const c = {
       commandId: randomUUID(),
       version: f.service.snapshot(alice).version,
       action: { kind: "rotate", teamId: tid } as const,
     };
+
     f.service.command(alice, c);
     expect(() =>
       f.service.command(alice, { ...c, action: { kind: "remove", teamId: tid, userId: alice.id } }),
@@ -238,6 +268,7 @@ describe("teams, privacy and transactional planning", () => {
   it("enforces sessions, origin, runtime data and private HTTP/event payloads", async () => {
     const f = fixture(),
       tid = f.create();
+
     const routes = createRoutes({
       db: f.connection.db,
       joinSecret: f.secret,
@@ -245,12 +276,15 @@ describe("teams, privacy and transactional planning", () => {
       cookieName: "test",
       resolveUser: (token) => (token === "alice" ? alice : token === "bob" ? bob : null),
     });
+
     expect((await routes.request("/snapshot")).status).toBe(401);
+
     const headers = {
       Cookie: "test_auth=bob",
       "Content-Type": "application/json",
       Origin: "https://evil.test",
     };
+
     expect((await routes.request("/command", { method: "POST", headers, body: "{}" })).status).toBe(
       403,
     );
@@ -280,10 +314,12 @@ describe("teams, privacy and transactional planning", () => {
       ).status,
     ).toBe(400);
     const abort = new AbortController();
+
     const events = await routes.request("/events", {
       headers: { Cookie: "test_auth=bob" },
       signal: abort.signal,
     });
+
     const reader = events.body!.getReader();
     const event = new TextDecoder().decode((await reader.read()).value);
     expect(event).not.toContain(tid);
@@ -295,7 +331,9 @@ describe("teams, privacy and transactional planning", () => {
 it("withdraws private team snapshots immediately on an open stream after removal", async () => {
   const f = fixture(),
     tid = f.create();
+
   f.enter(tid);
+
   const routes = createRoutes({
     db: f.connection.db,
     joinSecret: f.secret,
@@ -303,9 +341,11 @@ it("withdraws private team snapshots immediately on an open stream after removal
     cookieName: "test",
     resolveUser: (t) => (t === "alice" ? alice : t === "bob" ? bob : null),
   });
+
   const stream = await routes.request("/events", { headers: { Cookie: "test_auth=bob" } });
   const reader = stream.body!.getReader();
   expect(new TextDecoder().decode((await reader.read()).value)).toContain(tid);
+
   const response = await routes.request("/command", {
     method: "POST",
     headers: {
@@ -319,6 +359,7 @@ it("withdraws private team snapshots immediately on an open stream after removal
       action: { kind: "remove", teamId: tid, userId: bob.id },
     }),
   });
+
   expect(response.status).toBe(200);
   const next = new TextDecoder().decode((await reader.read()).value);
   expect(next).not.toContain(tid);
@@ -329,8 +370,10 @@ it("withdraws private team snapshots immediately on an open stream after removal
 it("allows only team admins to update joined players' availability without overriding other commitments", () => {
   const f = fixture(),
     teamId = f.create();
+
   f.enter(teamId);
   const game = f.game(teamId);
+
   const action = {
     kind: "set-answer",
     teamId,
@@ -338,6 +381,7 @@ it("allows only team admins to update joined players' availability without overr
     userId: bob.id,
     answer: "yes",
   } as const;
+
   expect(() => f.send(bob, action)).toThrow(/Admins/);
   expect(() => f.send(charlie, action)).toThrow(/nicht verfügbar/);
   expect(() => f.send(alice, { ...action, userId: charlie.id })).toThrow(/beigetretene/);
@@ -362,6 +406,7 @@ it("allows only team admins to update joined players' availability without overr
 it("applies calendar cancellations to existing and newly imported matches idempotently", () => {
   const f = fixture(),
     teamId = f.create();
+
   const calendar = (cancelled: boolean) =>
     [
       "BEGIN:VCALENDAR",
@@ -373,6 +418,7 @@ it("applies calendar cancellations to existing and newly imported matches idempo
       "END:VEVENT",
       "END:VCALENDAR",
     ].join("\n");
+
   const action = (cancelled: boolean): Extract<Action, { kind: "import" }> => ({
     kind: "import",
     teamId,
@@ -380,6 +426,7 @@ it("applies calendar cancellations to existing and newly imported matches idempo
     ownName: "Our team",
     selected: ["cancelled-match"],
   });
+
   f.send(alice, action(false));
   const game = f.service.snapshot(alice).games[0]!;
   f.send(alice, { kind: "commit", teamId, gameId: game.id });

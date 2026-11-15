@@ -32,6 +32,7 @@ import {
   attempts,
 } from "./schema.ts";
 import { enqueueAvailabilityChange } from "./notifications.ts";
+
 export class TeamError extends Error {
   constructor(
     message: string,
@@ -40,76 +41,100 @@ export class TeamError extends Error {
     super(message);
   }
 }
+
 type DB = ReturnType<typeof connectDatabase>["db"];
+
 type Row = typeof teams.$inferSelect;
+
 export function createTeamService(
   db: DB,
   options: { secret: string; now?: () => number; id?: () => string; pin?: () => string },
 ) {
   const now = options.now ?? Date.now,
     id = options.id ?? randomUUID;
+
   const encryptionKey = createHash("sha256")
     .update("kunludo:pin:" + options.secret)
     .digest();
+
   const digest = (pin: string) =>
     createHmac("sha256", options.secret)
       .update("kunludo:join:" + pin)
       .digest("hex");
+
   function credential(oldDigest?: string) {
     let pin = "";
+
     for (let tries = 0; tries < 10; tries++) {
       pin =
         options.pin?.() ??
         Array.from({ length: 6 }, () => "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"[randomInt(36)]).join(
           "",
         );
+
       if (digest(pin) !== oldDigest) break;
     }
+
     if (!/^[A-Z0-9]{6}$/.test(pin) || digest(pin) === oldDigest)
       throw new Error("Could not generate a new PIN");
+
     const iv = randomBytes(12),
       cipher = createCipheriv("aes-256-gcm", encryptionKey, iv);
+
     const encrypted = Buffer.concat([cipher.update(pin, "utf8"), cipher.final()]);
+
     return {
       pinDigest: digest(pin),
       pinBox: Buffer.concat([iv, cipher.getAuthTag(), encrypted]).toString("base64"),
     };
   }
+
   const member = (teamId: string, userId: string) =>
     db
       .select()
       .from(memberships)
       .where(and(eq(memberships.teamId, teamId), eq(memberships.userId, userId)))
       .get();
+
   function team(teamId: string, user: User, admin = false): Row {
     const m = member(teamId, user.id),
       t = db.select().from(teams).where(eq(teams.id, teamId)).get();
+
     if (!t || !m) throw new TeamError("Dieses Team ist nicht verfügbar.", 404);
+
     if (admin && m.role !== "admin") throw new TeamError("Nur Admins können das ändern.", 403);
+
     return t;
   }
+
   function profile(user: User) {
     db.insert(profiles)
       .values(user)
       .onConflictDoUpdate({ target: profiles.id, set: { name: user.name } })
       .run();
   }
+
   const version = () => db.select().from(revision).get()!.value;
+
   function code(teamId: string, user: User) {
     const t = team(teamId, user, true),
       box = Buffer.from(t.pinBox, "base64"),
       decipher = createDecipheriv("aes-256-gcm", encryptionKey, box.subarray(0, 12));
+
     decipher.setAuthTag(box.subarray(12, 28));
+
     return {
       teamId,
       version: version(),
       pin: Buffer.concat([decipher.update(box.subarray(28)), decipher.final()]).toString("utf8"),
     };
   }
+
   function snapshot(user: User): Snapshot {
     // Auth owns the current shared name; refresh this app's cached roster identity.
     db.transaction(() => {
       const cached = db.select().from(profiles).where(eq(profiles.id, user.id)).get();
+
       if (cached && cached.name !== user.name) {
         profile(user);
         db.update(revision)
@@ -119,6 +144,7 @@ export function createTeamService(
     });
     const allTeams = db.select().from(teams).all();
     const allMembers = db.select().from(memberships).all();
+
     const names = new Map(
       db
         .select()
@@ -126,12 +152,16 @@ export function createTeamService(
         .all()
         .map((p) => [p.id, p.name]),
     );
+
     const mine = allMembers.filter((m) => m.userId === user.id),
       visible = new Set(mine.map((m) => m.teamId));
+
     const allGames = allTeams.flatMap((t) =>
       t.games.map((raw) => ({ team: t, game: gameSchema.parse(raw) })),
     );
+
     const active = allGames.filter(({ game: g }) => !g.cancelled && g.window.end >= now());
+
     const committed = db
       .select()
       .from(commitments)
@@ -144,15 +174,22 @@ export function createTeamService(
             allMembers.some((m) => m.teamId === t.id && m.userId === c.userId),
         ),
       );
+
     const currentYes = (g: Game, uid: string) =>
       g.responses[uid]?.answer === "yes" && g.responses[uid]?.revision === g.revision;
+
     function state(g: Game, uid: string): GameView["mine"] {
       if (g.cancelled) return "unanswered";
       const r = g.responses[uid];
+
       if (!r) return "unanswered";
+
       if (r.revision !== g.revision) return "stale";
+
       if (r.answer !== "yes") return r.answer;
+
       if (committed.some((c) => c.gameId === g.id && c.userId === uid)) return "committed";
+
       if (
         committed.some(
           (c) =>
@@ -161,6 +198,7 @@ export function createTeamService(
         )
       )
         return "elsewhere";
+
       if (
         g.window.end >= now() &&
         active.some(
@@ -172,8 +210,10 @@ export function createTeamService(
         )
       )
         return "pending";
+
       return "yes";
     }
+
     const resultTeams = allTeams
       .filter((t) => visible.has(t.id))
       .map((t) => ({
@@ -187,6 +227,7 @@ export function createTeamService(
           .filter((m) => m.teamId === t.id)
           .map((m) => ({ id: m.userId, name: names.get(m.userId) ?? "Mitglied", role: m.role })),
       }));
+
     const games: GameView[] = allGames
       .filter(({ team: t }) => visible.has(t.id))
       .map(({ team: t, game: g }) => {
@@ -197,9 +238,11 @@ export function createTeamService(
             state: state(g, m.id),
             reserve: g.reserves.includes(m.id),
           }));
+
         const others = active.filter(
           ({ game: o, team: ot }) => o.id !== g.id && visible.has(ot.id),
         );
+
         return {
           id: g.id,
           teamId: t.id,
@@ -245,27 +288,32 @@ export function createTeamService(
           })),
         };
       });
+
     return snapshotSchema.parse({
       version: version(),
       teams: resultTeams,
       games: games.sort((a, b) => a.window.start - b.window.start || a.id.localeCompare(b.id)),
     });
   }
+
   function throttle(user: User, group: string) {
     // Commit failed attempts outside the command transaction, so rollback cannot erase limits.
     db.transaction(() => {
       db.delete(attempts)
         .where(lt(attempts.start, now() - 3600000))
         .run();
+
       for (const [key, limit] of [
         ["global", 300],
         ["user:" + user.id, 20],
         ["group:" + group, 80],
       ] as const) {
         const row = db.select().from(attempts).where(eq(attempts.key, key)).get();
+
         if (row && row.start > now() - 600000 && row.count >= limit)
           throw new TeamError("Zu viele Beitrittsversuche. Bitte später erneut versuchen.", 429);
       }
+
       for (const key of ["global", "user:" + user.id, "group:" + group]) {
         const row = db.select().from(attempts).where(eq(attempts.key, key)).get();
         db.insert(attempts)
@@ -281,23 +329,29 @@ export function createTeamService(
       }
     });
   }
+
   function command(user: User, c: Command) {
     const fingerprint = createHash("sha256").update(JSON.stringify(c.action)).digest("hex");
+
     const prior = db
       .select()
       .from(receipts)
       .where(and(eq(receipts.userId, user.id), eq(receipts.commandId, c.commandId)))
       .get();
+
     if (prior) {
       if (prior.fingerprint !== fingerprint)
         throw new TeamError("Diese Anfrage-ID wurde bereits verwendet.", 409);
+
       return {
         snapshot: snapshot(user),
         ...(prior.teamId ? { teamId: prior.teamId } : {}),
         message: prior.message,
       };
     }
+
     if (c.action.kind === "join") throttle(user, c.action.teamId);
+
     return db.transaction(() => {
       if (c.version !== version())
         throw new TeamError(
@@ -306,12 +360,16 @@ export function createTeamService(
         );
       profile(user);
       const a = c.action;
+
       let teamId: string | undefined,
         message = "Gespeichert.";
+
       const save = (t: Row) =>
         db.update(teams).set({ games: t.games }).where(eq(teams.id, t.id)).run();
+
       const revokeGame = (gameId: string) =>
         db.delete(commitments).where(eq(commitments.gameId, gameId)).run();
+
       const newGame = (
         input: MatchInput,
         sourceUid: string | null = null,
@@ -328,6 +386,7 @@ export function createTeamService(
         sourceName,
         notice: "",
       });
+
       function cancel(g: Game) {
         if (g.cancelled) return;
         g.cancelled = true;
@@ -337,8 +396,10 @@ export function createTeamService(
         g.notice = "Spiel abgesagt.";
         revokeGame(g.id);
       }
+
       function reschedule(g: Game, input: MatchInput) {
         const v = matchInputSchema.parse(input);
+
         if (changedSchedule(g, v)) {
           g.revision++;
           g.reserves = [];
@@ -346,8 +407,10 @@ export function createTeamService(
           g.notice = "Termin oder Ort geändert – bitte erneut antworten.";
           g.proposals = [];
         }
+
         Object.assign(g, v);
       }
+
       if (a.kind === "create-team") {
         teamId = id();
         db.insert(teams)
@@ -357,6 +420,7 @@ export function createTeamService(
         message = "Team erstellt. Du bist Admin.";
       } else if (a.kind === "join") {
         const t = db.select().from(teams).where(eq(teams.id, a.teamId)).get();
+
         if (
           !t ||
           !timingSafeEqual(Buffer.from(t.pinDigest, "hex"), Buffer.from(digest(a.pin), "hex"))
@@ -382,15 +446,19 @@ export function createTeamService(
           "set-answer",
           "import",
         ].includes(a.kind);
+
         const t = team(a.teamId, user, admin);
         teamId = t.id;
+
         if (a.kind === "settings") db.update(teams).set(a.team).where(eq(teams.id, t.id)).run();
         else if (a.kind === "rotate") {
           db.update(teams).set(credential(t.pinDigest)).where(eq(teams.id, t.id)).run();
           message = "Neuer Beitrittscode erstellt.";
         } else if (a.kind === "promote" || a.kind === "remove") {
           const target = member(t.id, a.userId);
+
           if (!target) throw new TeamError("Dieses Mitglied ist nicht mehr im Team.", 404);
+
           if (a.kind === "promote")
             db.update(memberships)
               .set({ role: "admin" })
@@ -409,14 +477,17 @@ export function createTeamService(
             db.delete(memberships)
               .where(and(eq(memberships.teamId, t.id), eq(memberships.userId, a.userId)))
               .run();
+
             for (const g of t.games) {
               delete g.responses[a.userId];
               g.reserves = g.reserves.filter((uid) => uid !== a.userId);
+
               for (const p of g.proposals) delete p.votes[a.userId];
               db.delete(commitments)
                 .where(and(eq(commitments.gameId, g.id), eq(commitments.userId, a.userId)))
                 .run();
             }
+
             db.update(teams)
               .set({ ...credential(t.pinDigest), games: t.games })
               .where(eq(teams.id, t.id))
@@ -437,15 +508,19 @@ export function createTeamService(
               }
             })(),
             chosen = new Set(a.selected);
+
           let added = 0,
             updated = 0;
+
           if (
             chosen.size !== a.selected.length ||
             a.selected.some((uid) => !events.some((e) => e.uid === uid))
           )
             throw new TeamError("Ungültige Spielauswahl.");
+
           for (const e of events.filter((e) => chosen.has(e.uid))) {
             let v: MatchInput;
+
             try {
               v = importGame(e, a.ownName);
             } catch (error) {
@@ -453,8 +528,10 @@ export function createTeamService(
                 error instanceof Error ? error.message : "Ungültige Teamauswahl.",
               );
             }
+
             matchInputSchema.parse(v);
             const old = t.games.find((g) => g.sourceUid === e.uid);
+
             if (old) {
               if (e.cancelled) cancel(old);
               else reschedule(old, v);
@@ -462,23 +539,29 @@ export function createTeamService(
               updated++;
             } else {
               const created = newGame(v, e.uid, a.ownName);
+
               if (e.cancelled) cancel(created);
               t.games.push(created);
               added++;
             }
           }
+
           save(t);
           message = `${added} Spiele hinzugefügt, ${updated} abgeglichen.`;
         } else {
           const g = t.games.find((g) => g.id === a.gameId);
+
           if (!g) throw new TeamError("Dieses Spiel ist nicht verfügbar.", 404);
+
           if (a.kind === "edit-game") reschedule(g, a.game);
           else if (a.kind === "cancel") cancel(g);
           else {
             if (g.cancelled || g.window.end < now())
               throw new TeamError("Dieses Spiel ist nicht mehr offen.");
+
             if (a.kind === "answer" || a.kind === "set-answer") {
               const targetId = a.kind === "set-answer" ? a.userId : user.id;
+
               if (!member(t.id, targetId))
                 throw new TeamError("Nur beigetretene Mitglieder können antworten.");
               const previous = g.responses[targetId];
@@ -494,6 +577,7 @@ export function createTeamService(
                 id,
               });
               g.responses[targetId] = { answer: a.answer, revision: g.revision };
+
               if (a.answer !== "yes")
                 db.delete(commitments)
                   .where(and(eq(commitments.gameId, g.id), eq(commitments.userId, targetId)))
@@ -504,13 +588,16 @@ export function createTeamService(
                 .from(commitments)
                 .where(eq(commitments.userId, user.id))
                 .all();
+
               const all = db
                 .select()
                 .from(teams)
                 .all()
                 .flatMap((v) => v.games);
+
               for (const entry of existing) {
                 const other = all.find((v) => v.id === entry.gameId);
+
                 if (
                   other &&
                   !other.cancelled &&
@@ -523,6 +610,7 @@ export function createTeamService(
                     )
                     .run();
               }
+
               const previous = g.responses[user.id];
               enqueueAvailabilityChange(db, {
                 teamId: t.id,
@@ -549,7 +637,9 @@ export function createTeamService(
               g.proposals.push({ id: id(), window: a.window, votes: {}, by: user.id });
             else if (a.kind === "vote" || a.kind === "adopt") {
               const p = g.proposals.find((p) => p.id === a.proposalId);
+
               if (!p) throw new TeamError("Dieser Vorschlag ist nicht mehr offen.", 409);
+
               if (a.kind === "vote") p.votes[user.id] = a.answer;
               else {
                 reschedule(g, { ...g, window: p.window });
@@ -560,12 +650,15 @@ export function createTeamService(
               if (!member(t.id, a.userId))
                 throw new TeamError("Nur beigetretene Mitglieder können Ersatz sein.");
               g.reserves = g.reserves.filter((uid) => uid !== a.userId);
+
               if (a.add) g.reserves.push(a.userId);
             }
           }
+
           save(t);
         }
       }
+
       db.update(revision)
         .set({ value: version() + 1 })
         .where(eq(revision.id, 1))
@@ -583,8 +676,10 @@ export function createTeamService(
           createdAt: now(),
         })
         .run();
+
       return { snapshot: snapshot(user), ...(teamId ? { teamId } : {}), message };
     });
   }
+
   return { snapshot, command, code };
 }

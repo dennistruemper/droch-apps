@@ -8,6 +8,7 @@ describe("HTTP composition", () => {
     readFrontend: async (_id, path) =>
       path.includes(".") ? null : { body: "frontend", contentType: "text/html" },
   });
+
   it("mounts app APIs and redirects app roots", async () => {
     expect(await (await app.request("/api/observo/status")).json()).toEqual({
       app: "observo",
@@ -38,9 +39,11 @@ describe("HTTP composition", () => {
       readFrontend: async () => ({ body: "Schlezaz", contentType: "text/html" }),
       applicationOptions: (id) => {
         if (id === "schlezaz") throw new Error("A browser-only app has no database");
+
         return undefined!;
       },
     });
+
     const redirect = await composed.request("/schlezaz");
     expect(redirect.status).toBe(308);
     expect(redirect.headers.get("location")).toBe("/schlezaz/");
@@ -75,6 +78,7 @@ describe("HTTP composition", () => {
       },
       readFrontend: async () => null,
     });
+
     expect((await unready.request("/health/live")).status).toBe(200);
     expect((await unready.request("/health/ready")).status).toBe(503);
   });

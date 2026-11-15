@@ -1,5 +1,7 @@
 export type Mail = { to: string; subject: string; text: string };
+
 export type SendMail = (mail: Mail, signal?: AbortSignal) => Promise<void>;
+
 export function createMailSender(options: {
   token?: string;
   from?: string;
@@ -8,11 +10,14 @@ export function createMailSender(options: {
 }): SendMail {
   return async (mail, signal) => {
     if (!options.token || !options.from) throw new Error("Email delivery is not configured");
+
     const endpoint = options.sandboxId
       ? `https://sandbox.api.mailtrap.io/api/send/${options.sandboxId}`
       : "https://send.api.mailtrap.io/api/send";
+
     const transport = options.sandboxId ? "sandbox" : "sending";
     let response: Response;
+
     try {
       response = await (options.fetch ?? fetch)(endpoint, {
         method: "POST",
@@ -34,6 +39,7 @@ export function createMailSender(options: {
       });
       throw new Error("Email delivery failed");
     }
+
     if (!response.ok) {
       // Provider responses may contain addresses or message contents; log only metadata.
       console.error("Mailtrap delivery failed", { transport, status: response.status });

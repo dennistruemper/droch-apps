@@ -1,5 +1,6 @@
 import type { Action, Snapshot } from "../contracts/index.ts";
 import type { CalendarEvent } from "../domain/index.ts";
+
 export type Fields = {
   name: string;
   club: string;
@@ -15,6 +16,7 @@ export type Fields = {
   home: string;
   ownName: string;
 };
+
 export const emptyFields: Fields = {
   name: "",
   club: "",
@@ -30,6 +32,7 @@ export const emptyFields: Fields = {
   home: "yes",
   ownName: "",
 };
+
 export type Editor =
   | { kind: "none" }
   | {
@@ -42,11 +45,13 @@ export type Editor =
       events: CalendarEvent[];
       selected: string[];
     };
+
 export type Effect = { id: number } & (
   | { kind: "load" }
   | { kind: "save"; action: Action; version: number; commandId: string }
   | { kind: "code"; teamId: string }
 );
+
 export type Model = {
   data: Snapshot | null;
   screen: "loading" | "ready" | "expired";
@@ -64,6 +69,7 @@ export type Model = {
   now: number;
   online: boolean;
 };
+
 export type Message =
   | { kind: "open"; editor: Editor }
   | { kind: "close" }
@@ -92,6 +98,7 @@ export type Message =
       | { kind: "coded"; code: { teamId: string; pin: string; version: number } }
       | { kind: "failed"; error: string; status: number }
     ));
+
 export function init(now: number): Model {
   return {
     data: null,
@@ -111,15 +118,19 @@ export function init(now: number): Model {
     online: true,
   };
 }
+
 export function update(m: Model, msg: Message): { model: Model; effects: Effect[] } {
   const done = (model: Model) => ({ model, effects: [] });
+
   const start = (effect: Effect) => ({
     model: { ...m, pending: effect, next: m.next + 1, error: "", notice: "" },
     effects: [effect],
   });
+
   function accept(data: Snapshot): Model {
     if (m.data && data.version < m.data.version) return m;
     const ids = new Set(data.teams.map((t) => t.id));
+
     return {
       ...m,
       data,
@@ -141,6 +152,7 @@ export function update(m: Model, msg: Message): { model: Model; effects: Effect[
           : null,
     };
   }
+
   if (msg.kind === "expired")
     return done({
       ...m,
@@ -153,7 +165,9 @@ export function update(m: Model, msg: Message): { model: Model; effects: Effect[
       error: "Bitte melde dich erneut an.",
       notice: "",
     });
+
   if (m.screen === "expired") return done(m);
+
   switch (msg.kind) {
     case "dismiss-notice":
       return msg.id === m.noticeId ? done({ ...m, notice: "" }) : done(m);
@@ -269,8 +283,12 @@ export function update(m: Model, msg: Message): { model: Model; effects: Effect[
             commandId: msg.commandId,
             version: m.editor.kind === "none" ? m.data.version : m.editor.version,
           });
-    default: {
+    case "coded":
+    case "failed":
+    case "loaded":
+    case "saved": {
       if (!m.pending || m.pending.id !== msg.id) return done(m);
+
       if (msg.kind === "failed")
         return msg.status === 401
           ? update(m, { kind: "expired" })
@@ -284,8 +302,10 @@ export function update(m: Model, msg: Message): { model: Model; effects: Effect[
               screen: m.data ? "ready" : "loading",
               error: msg.error,
             });
+
       if (msg.kind === "loaded" && m.pending.kind === "load")
         return done({ ...accept(msg.data), pending: null });
+
       if (msg.kind === "saved" && m.pending.kind === "save")
         return done({
           ...accept(msg.data),
@@ -296,6 +316,7 @@ export function update(m: Model, msg: Message): { model: Model; effects: Effect[
           retry: null,
           code: null,
         });
+
       if (msg.kind === "coded" && m.pending.kind === "code")
         return done({
           ...m,
@@ -311,6 +332,7 @@ export function update(m: Model, msg: Message): { model: Model; effects: Effect[
               ? "Der Beitrittscode wurde inzwischen geändert. Bitte erneut öffnen."
               : "",
         });
+
       return done(m);
     }
   }
@@ -318,9 +340,12 @@ export function update(m: Model, msg: Message): { model: Model; effects: Effect[
 
 export function calendarTeam(events: CalendarEvent[], teamName?: string): string {
   const first = events[0];
+
   if (!first) return "";
+
   const common = [...new Set([first.home, first.away])].filter((name) =>
     events.every((event) => event.home === name || event.away === name),
   );
+
   return common.length === 1 ? common[0]! : (common.find((name) => name === teamName) ?? "");
 }

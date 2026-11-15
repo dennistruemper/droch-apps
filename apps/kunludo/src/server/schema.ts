@@ -8,6 +8,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 import type { Game } from "../contracts/index.ts";
+
 export const teams = sqliteTable("teams", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -18,10 +19,12 @@ export const teams = sqliteTable("teams", {
   pinBox: text("pin_box").notNull(),
   games: text("games", { mode: "json" }).$type<Game[]>().notNull(),
 });
+
 export const profiles = sqliteTable("profiles", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
 });
+
 export const memberships = sqliteTable(
   "memberships",
   {
@@ -35,6 +38,7 @@ export const memberships = sqliteTable(
   },
   (t) => [primaryKey({ columns: [t.teamId, t.userId] }), index("memberships_user").on(t.userId)],
 );
+
 export const commitments = sqliteTable(
   "commitments",
   {
@@ -44,10 +48,12 @@ export const commitments = sqliteTable(
   },
   (t) => [primaryKey({ columns: [t.userId, t.gameId] })],
 );
+
 export const revision = sqliteTable("revision", {
   id: integer("id").primaryKey(),
   value: integer("value").notNull(),
 });
+
 export const receipts = sqliteTable(
   "receipts",
   {
@@ -60,6 +66,7 @@ export const receipts = sqliteTable(
   },
   (t) => [primaryKey({ columns: [t.userId, t.commandId] })],
 );
+
 export const attempts = sqliteTable("join_attempts", {
   key: text("key").primaryKey(),
   start: integer("start").notNull(),
@@ -74,6 +81,7 @@ export type AvailabilityChange = {
   after: "yes" | "no" | "maybe";
   actorId: string;
 };
+
 export const mailQueue = sqliteTable(
   "mail_queue",
   {

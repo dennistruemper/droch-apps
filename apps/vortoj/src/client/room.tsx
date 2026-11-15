@@ -5,55 +5,75 @@ import { init, update, type Action, type Message } from "./room-model.ts";
 import { execute } from "./room-commands.ts";
 import { premium, evaluateMove } from "../domain/index.ts";
 import { message, RequestError } from "./api.ts";
+
 export function Room(props: { id: string; user: User }) {
   let state = init();
   const [model, setModel] = createSignal(state);
+
   // Geometry and focus belong to the browser, not the game model.
   const [zoomed, setZoomed] = createSignal(false),
     [cell, setCell] = createSignal(20),
     [fits, setFits] = createSignal(false),
     [boardFocus, setBoardFocus] = createSignal(112);
+
   const room = () => {
     const screen = model().screen;
+
     return screen.kind === "active" ? screen.room : null;
   };
+
   const info = () => {
     const screen = model().screen;
+
     return screen.kind === "invite" ? screen.info : null;
   };
+
   const error = () => model().error;
   const busy = () => model().pending !== null;
   const connection = () => model().connection;
   const removed = () => model().screen.kind === "removed";
+
   const draft = () => {
     const move = model().move;
+
     return move.kind === "placement" ? move.draft : [];
   };
+
   const selected = () => {
     const move = model().move;
+
     return move.kind === "placement" ? move.selected : null;
   };
+
   const joker = () => {
     const move = model().move;
+
     return move.kind === "placement" ? move.joker : "";
   };
+
   const jokerError = () => {
     const move = model().move;
+
     return move.kind === "placement" ? move.jokerError : "";
   };
+
   const exchange = () => {
     const move = model().move;
+
     return move.kind === "exchange" ? move.tiles : [];
   };
+
   const exchangeMode = () => model().move.kind === "exchange";
   const controller = new AbortController();
   let events: EventSource | null = null;
   const unavailable = () => state.screen.kind === "removed" || state.screen.kind === "expired";
+
   async function dispatch(event: Message): Promise<void> {
     if (controller.signal.aborted) return;
     const transition = update(state, event, props.user.id);
     state = transition.model;
     setModel(state);
+
     for (const effect of transition.commands) {
       switch (effect.kind) {
         case "load":
@@ -69,6 +89,7 @@ export function Room(props: { id: string; user: User }) {
               error: message(error),
             });
           }
+
           break;
         case "subscribe":
           subscribe();
@@ -79,6 +100,7 @@ export function Room(props: { id: string; user: User }) {
           break;
         case "close-dialogs":
           cancelAnimationFrame(approvalFrame);
+
           for (const dialog of [approvalDialog, actionsDialog, detailsDialog, jokerDialog])
             dialog?.close();
           break;
@@ -93,6 +115,7 @@ export function Room(props: { id: string; user: User }) {
         case "approval":
           if (effect.action === "close") approvalDialog?.close();
           cancelAnimationFrame(approvalFrame);
+
           if (effect.action === "show")
             approvalFrame = requestAnimationFrame(() => {
               if (state.screen.kind !== "active" || state.screen.room.version !== effect.version)
@@ -100,12 +123,14 @@ export function Room(props: { id: string; user: User }) {
               detailsDialog?.close();
               document.querySelector<HTMLDialogElement>("#vortoj-rules")?.close();
               actionsDialog?.close();
+
               if (approvalDialog?.isConnected && !approvalDialog.open) approvalDialog.showModal();
             });
           break;
       }
     }
   }
+
   let viewport: HTMLDivElement | undefined;
   let resizeObserver: ResizeObserver | undefined;
   let detailsDialog: HTMLDialogElement | undefined;
@@ -117,17 +142,22 @@ export function Room(props: { id: string; user: User }) {
   let approvalFrame = 0;
   let focus = { row: 7, col: 7 };
   const pointer = matchMedia("(pointer: fine)");
+
   function measureBoard(detail = zoomed()) {
     if (!viewport?.isConnected) return;
+
     const whole = Math.max(
       8,
       Math.floor(Math.min(viewport.clientWidth - 6, viewport.clientHeight - 6, 900) / 15),
     );
+
     const complete = whole >= (pointer.matches ? 32 : 44);
     setFits(complete);
+
     if (complete) setZoomed(false);
     setCell(!complete && detail ? 44 : whole);
   }
+
   function attachViewport(element: HTMLDivElement) {
     resizeObserver?.disconnect();
     viewport = element;
@@ -139,12 +169,15 @@ export function Room(props: { id: string; user: User }) {
     cancelAnimationFrame(cameraFrame);
     cameraFrame = requestAnimationFrame(() => measureBoard());
   }
+
   function overview() {
     setZoomed(false);
     measureBoard(false);
   }
+
   function zoomTo(row: number, col: number) {
     focus = { row, col };
+
     if (fits()) return;
     setZoomed(true);
     measureBoard(true);
@@ -155,16 +188,21 @@ export function Room(props: { id: string; user: User }) {
       viewport.scrollTop = row * 44 + 22 - viewport.clientHeight / 2;
     });
   }
+
   const pointerChange = () => measureBoard();
   pointer.addEventListener("change", pointerChange);
+
   function subscribe() {
     if (events || unavailable()) return;
     events = new EventSource(`/api/vortoj/rooms/${props.id}/events`);
     events.addEventListener("snapshot", (event) => {
       try {
+        if (!(event instanceof MessageEvent) || typeof event.data !== "string")
+          throw new Error("Invalid snapshot event");
+
         void dispatch({
           kind: "snapshot",
-          room: snapshotSchema.parse(JSON.parse((event as MessageEvent<string>).data)),
+          room: snapshotSchema.parse(JSON.parse(event.data)),
         });
       } catch {
         void dispatch({
@@ -181,17 +219,22 @@ export function Room(props: { id: string; user: User }) {
         text: "Connection interrupted. Your game is saved; reconnecting…",
       });
   }
+
   const load = () => dispatch({ kind: "refresh" });
   const command = (action: Action) => dispatch({ kind: "action", action });
   onSettled(() => {
     void load();
+
     const timer = setInterval(() => {
       if (document.visibilityState === "visible" && state.screen.kind === "active") void load();
     }, 10000);
+
     const visibility = () => {
       if (document.visibilityState === "visible") void load();
     };
+
     document.addEventListener("visibilitychange", visibility);
+
     return () => {
       controller.abort();
       cancelAnimationFrame(approvalFrame);
@@ -206,9 +249,24 @@ export function Room(props: { id: string; user: User }) {
   });
   const turn = () => room()?.phase === "playing" && room()?.turnId === props.user.id;
   const invite = `${location.origin}/vortoj/room/${props.id}`;
+
+  async function copyInvite() {
+    try {
+      await navigator.clipboard.writeText(invite);
+      void dispatch({ kind: "connection", text: "Invitation copied." });
+    } catch {
+      void dispatch({
+        kind: "connection",
+        text: "Select and copy the invitation link to share it.",
+      });
+    }
+  }
+
   const preview = () => {
     const current = room();
+
     if (!current || !draft().length) return { move: null, error: "" };
+
     try {
       return {
         move: evaluateMove(
@@ -223,12 +281,15 @@ export function Room(props: { id: string; user: User }) {
       return { move: null, error: message(error) };
     }
   };
+
   function selectTile(id: string) {
     void dispatch({ kind: "select-tile", id });
   }
+
   function navigateBoard(event: KeyboardEvent, row: number, col: number) {
     let nextRow = row,
       nextCol = col;
+
     switch (event.key) {
       case "ArrowUp":
         nextRow = Math.max(0, row - 1);
@@ -244,30 +305,41 @@ export function Room(props: { id: string; user: User }) {
         break;
       case "Home":
         nextCol = 0;
+
         if (event.ctrlKey) nextRow = 0;
         break;
       case "End":
         nextCol = 14;
+
         if (event.ctrlKey) nextRow = 14;
         break;
       default:
         return;
     }
+
     event.preventDefault();
+
     const square =
       viewport?.querySelectorAll<HTMLButtonElement>(".game-board button")[nextRow * 15 + nextCol];
+
     square?.focus({ preventScroll: true });
     square?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
+
   function squareClick(row: number, col: number) {
     focus = { row, col };
+
     if (!zoomed() && !fits()) {
       zoomTo(row, col);
+
       return;
     }
+
     void dispatch({ kind: "place", row, col });
   }
+
   const current = () => room()!;
+
   const phaseText = () =>
     current().phase === "waiting"
       ? "Invite your players, then start."
@@ -278,6 +350,7 @@ export function Room(props: { id: string; user: User }) {
           : current().turnId === props.user.id
             ? "Your turn"
             : `${current().players.find((player) => player.id === current().turnId)?.name}’s turn`;
+
   return (
     <>
       <Show when={info()} keyed>
@@ -292,7 +365,11 @@ export function Room(props: { id: string; user: User }) {
               onSubmit={(event) => {
                 event.preventDefault();
                 const form = new FormData(event.currentTarget);
-                void dispatch({ kind: "join", playerName: String(form.get("playerName") ?? "") });
+                const playerName = form.get("playerName");
+                void dispatch({
+                  kind: "join",
+                  playerName: typeof playerName === "string" ? playerName : "",
+                });
               }}
             >
               <label for="join-player-name">Your name in this game</label>
@@ -329,20 +406,7 @@ export function Room(props: { id: string; user: User }) {
               value={invite}
               onFocus={(event) => event.currentTarget.select()}
             />
-            <button
-              type="button"
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(invite);
-                  void dispatch({ kind: "connection", text: "Invitation copied." });
-                } catch {
-                  void dispatch({
-                    kind: "connection",
-                    text: "Select and copy the invitation link to share it.",
-                  });
-                }
-              }}
-            >
+            <button type="button" onClick={() => void copyInvite()}>
               Copy invite link
             </button>
             <Show when={current().ownerId === props.user.id}>
@@ -416,19 +480,26 @@ export function Room(props: { id: string; user: User }) {
                         bonusDescription = bonus
                           ? `${multiplier} ${bonus.endsWith("W") ? "word" : "letter"} bonus`
                           : "";
+
                       const committed = () =>
                         current().board.find((tile) => tile.row === row && tile.col === col);
+
                       const pending = () =>
                         current().pending?.placements.find(
                           (tile) => tile.row === row && tile.col === col,
                         );
+
                       const placement = () =>
                         draft().find((tile) => tile.row === row && tile.col === col);
+
                       const tile = () => committed() ?? pending();
+
                       const rackTile = () =>
                         current().you.rack.find((tile) => tile.id === placement()?.tileId);
+
                       const letter = () =>
                         tile()?.letter ?? placement()?.letter ?? rackTile()?.letter;
+
                       return (
                         <button
                           type="button"

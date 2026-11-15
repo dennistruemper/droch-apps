@@ -10,6 +10,7 @@ export const hours = sqliteTable(
   },
   (t) => [primaryKey({ columns: [t.siteId, t.hour] })],
 );
+
 export const latest = sqliteTable("latest", {
   siteId: text("site_id").primaryKey(),
   slot: integer("slot").notNull(),

@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { init, update, type Model, type SavedSet } from "./tiles-model.ts";
+
 const a: SavedSet = { id: "a", name: "Set A", tiles: [{ letter: "A", count: 28, points: 1 }] };
 const b: SavedSet = { id: "b", name: "Set B", tiles: [{ letter: "B", count: 28, points: 2 }] };
+
 function editing(set = a): Model {
   return update(init(), { kind: "edit", set, copy: false, rowIds: ["row"] }).model;
 }
+
 describe("tile editor transitions", () => {
   it("freezes save identity and draft, rejects duplicate submissions and late responses", () => {
     const draft = editing();
@@ -12,6 +15,7 @@ describe("tile editor transitions", () => {
     expect(save.commands).toEqual([
       { kind: "save", requestId: 1, setId: "a", value: { name: "Set A", tiles: a.tiles } },
     ]);
+
     for (const event of [
       { kind: "edit", set: b, copy: false, rowIds: ["b-row"] },
       { kind: "save" },
@@ -46,20 +50,24 @@ describe("tile editor transitions", () => {
       field: "count",
       value: "",
     }).model;
+
     expect(emptyQuantity.rows[0]?.count).toBe("");
     expect(update(emptyQuantity, { kind: "save" }).commands).toEqual([]);
+
     const valid = update(emptyQuantity, {
       kind: "row-changed",
       id: "row",
       field: "count",
       value: "28",
     }).model;
+
     const lowercase = update(valid, {
       kind: "row-changed",
       id: "row",
       field: "letter",
       value: "a",
     }).model;
+
     expect(update(lowercase, { kind: "save" }).commands[0]).toMatchObject({
       value: { tiles: a.tiles },
     });
@@ -70,11 +78,13 @@ describe("tile editor transitions", () => {
     const saving = update(copy, { kind: "save" }).model;
     const persisted = update(saving, { kind: "saved", requestId: 1, set: { ...a, id: "new-id" } });
     expect(persisted.commands[0]?.kind).toBe("reload");
+
     const failed = update(persisted.model, {
       kind: "failed",
       requestId: 1,
       error: "Collection unavailable",
     }).model;
+
     expect(update(failed, { kind: "save" }).commands[0]).toMatchObject({ setId: "new-id" });
   });
   it("copies presets as new sets and cancelled deletion preserves the draft", () => {

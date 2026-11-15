@@ -3,7 +3,9 @@ import { randomUUID } from "node:crypto";
 import type { connectDatabase } from "@repo/shared/database";
 import type { SendMail } from "@repo/shared/mail";
 import { mailQueue, memberships, profiles, teams, type AvailabilityChange } from "./schema.ts";
+
 type DB = ReturnType<typeof connectDatabase>["db"];
+
 export const notificationDelay = 5 * 60 * 1000;
 const leaseDuration = 60_000;
 
@@ -22,11 +24,13 @@ export function enqueueAvailabilityChange(
     .set({ dueAt: input.now + notificationDelay })
     .where(and(eq(mailQueue.teamId, input.teamId), eq(mailQueue.status, "pending")))
     .run();
+
   const admins = db
     .select()
     .from(memberships)
     .where(and(eq(memberships.teamId, input.teamId), eq(memberships.role, "admin")))
     .all();
+
   for (const admin of admins) {
     if (admin.userId === input.actorId) {
       // An admin's own later edit also supersedes an older failed notification.
@@ -42,10 +46,12 @@ export function enqueueAvailabilityChange(
           ),
         )
         .all();
+
       for (const retry of retries) {
         const changes = retry.changes.filter(
           (change) => change.gameId !== input.gameId || change.playerId !== input.playerId,
         );
+
         if (!changes.length) db.delete(mailQueue).where(eq(mailQueue.id, retry.id)).run();
         else
           db.update(mailQueue)
@@ -54,6 +60,7 @@ export function enqueueAvailabilityChange(
             .run();
       }
     }
+
     const old = db
       .select()
       .from(mailQueue)
@@ -65,14 +72,18 @@ export function enqueueAvailabilityChange(
         ),
       )
       .get();
+
     const existing = old?.changes.find(
       (c) =>
         c.playerId === input.playerId && c.gameId === input.gameId && c.revision === input.revision,
     );
+
     const before = existing?.before ?? input.before;
+
     const changes = (old?.changes ?? []).filter(
       (c) => c.gameId !== input.gameId || c.playerId !== input.playerId,
     );
+
     if (admin.userId !== input.actorId && before !== input.after)
       changes.push({
         playerId: input.playerId,
@@ -82,6 +93,7 @@ export function enqueueAvailabilityChange(
         after: input.after,
         actorId: input.actorId,
       });
+
     if (!changes.length) {
       if (old) db.delete(mailQueue).where(eq(mailQueue.id, old.id)).run();
     } else if (old) db.update(mailQueue).set({ changes }).where(eq(mailQueue.id, old.id)).run();
@@ -114,6 +126,7 @@ export function createNotificationWorker(
   const controller = new AbortController();
   let running: Promise<void> | undefined;
   let timer: ReturnType<typeof setInterval> | undefined;
+
   function claim() {
     return db.transaction(() => {
       const job = db
@@ -130,7 +143,9 @@ export function createNotificationWorker(
         )
         .orderBy(asc(mailQueue.dueAt), asc(mailQueue.id))
         .get();
+
       if (!job) return;
+
       const related = db
         .select()
         .from(mailQueue)
@@ -143,13 +158,18 @@ export function createNotificationWorker(
         )
         .orderBy(asc(mailQueue.createdAt), asc(mailQueue.id))
         .all();
+
       const waitUntil = Math.max(...related.map((row) => Math.max(row.dueAt, row.leaseUntil)));
+
       if (waitUntil > now()) {
         db.update(mailQueue).set({ dueAt: waitUntil }).where(eq(mailQueue.id, job.id)).run();
+
         return null;
       }
+
       // A failed older summary and later pending changes become one delivery.
       const merged = new Map<string, AvailabilityChange>();
+
       for (const row of related)
         for (const change of row.changes) {
           const key = `${change.playerId}:${change.gameId}`;
@@ -159,36 +179,49 @@ export function createNotificationWorker(
             before: previous?.revision === change.revision ? previous.before : change.before,
           });
         }
+
       const changes = [...merged.values()].filter((change) => change.before !== change.after);
       const attempts = Math.max(...related.map((row) => row.attempts)) + 1;
+
       for (const row of related)
         if (row.id !== job.id) db.delete(mailQueue).where(eq(mailQueue.id, row.id)).run();
       db.update(mailQueue)
         .set({ changes, status: "sending", leaseUntil: now() + leaseDuration, attempts })
         .where(eq(mailQueue.id, job.id))
         .run();
+
       return { ...job, changes, attempts };
     });
   }
+
   const labels = { unanswered: "Noch keine Antwort", yes: "Ja", no: "Nein", maybe: "Vielleicht" };
+
   async function processDue() {
     if (options.ready && !options.ready()) return;
+
     for (let i = 0; i < 20 && !controller.signal.aborted; i++) {
       const job = claim();
+
       if (job === undefined) return;
+
       if (job === null) continue;
+
       try {
         const t = db.select().from(teams).where(eq(teams.id, job.teamId)).get();
+
         const members = db
           .select()
           .from(memberships)
           .where(eq(memberships.teamId, job.teamId))
           .all();
+
         const recipient = members.find((m) => m.userId === job.recipientId && m.role === "admin");
+
         const changes = job.changes
           .flatMap((c) => {
             const game = t?.games.find((g) => g.id === c.gameId);
             const answer = game?.responses[c.playerId];
+
             return members.some((member) => member.userId === c.playerId) &&
               game &&
               !game.cancelled &&
@@ -201,21 +234,27 @@ export function createNotificationWorker(
               : [];
           })
           .sort((a, b) => a.game.window.start - b.game.window.start);
+
         const to = recipient && changes.length ? options.deliveryAddress(job.recipientId) : null;
+
         if (t && to) {
           const name = (id: string) =>
             db.select().from(profiles).where(eq(profiles.id, id)).get()?.name ?? "Mitglied";
+
           const date = new Intl.DateTimeFormat("de-DE", {
             timeZone: t.timezone,
             dateStyle: "medium",
             timeStyle: "short",
           });
+
           const grouped = new Map<string, typeof changes>();
+
           for (const entry of changes) {
             const rows = grouped.get(entry.change.playerId) ?? [];
             rows.push(entry);
             grouped.set(entry.change.playerId, rows);
           }
+
           const text =
             `${t.name}\n\n` +
             [...grouped.entries()]
@@ -236,11 +275,13 @@ export function createNotificationWorker(
               )
               .join("\n\n") +
             `\n\n${new URL("/kunludo/", options.origin).href}`;
+
           await options.send(
             { to, subject: `${t.name}: Verfügbarkeit aktualisiert`, text },
             controller.signal,
           );
         }
+
         db.delete(mailQueue).where(eq(mailQueue.id, job.id)).run();
       } catch {
         if (controller.signal.aborted) return; // Leave the lease for restart recovery.
@@ -259,23 +300,29 @@ export function createNotificationWorker(
       }
     }
   }
+
   function run(): Promise<void> {
     if (controller.signal.aborted) return Promise.resolve();
+
     if (!running)
       running = processDue().finally(() => {
         running = undefined;
       });
+
     return running;
   }
+
   return {
     run,
     start() {
       if (timer || controller.signal.aborted) return;
+
       const tick = () => {
         void run().catch(() =>
           console.error("Kunludo notification queue unavailable", { reference: randomUUID() }),
         );
       };
+
       tick();
       timer = setInterval(tick, 15_000);
       timer.unref();

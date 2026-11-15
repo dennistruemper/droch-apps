@@ -17,36 +17,45 @@ export function SidePanel(props: {
   const storage = createAppStorage(props.appId, localStorage);
   const media = matchMedia(`(min-width: ${props.desktopMinWidth ?? 1280}px)`);
   const [desktop, setDesktop] = createSignal(media.matches);
+
   const [expanded, setExpanded] = createSignal(
     media.matches && storage.get("side-panel") !== "collapsed",
   );
+
   let dialog: HTMLDialogElement | undefined;
   let trigger: HTMLButtonElement | undefined;
   let mounted = true;
   const id = `${props.appId}-side-panel`;
   const label = props.label ?? "Navigation menu";
+
   function sync(nextExpanded = expanded(), nextDesktop = desktop()) {
     if (!dialog?.isConnected) return;
     dialog.close();
+
     if (nextExpanded) {
       if (nextDesktop) dialog.open = true;
       else dialog.showModal();
     }
   }
+
   function close() {
     setExpanded(false);
+
     if (desktop()) storage.set("side-panel", "collapsed");
     dialog?.close();
     trigger?.focus();
   }
+
   function toggle() {
     if (expanded()) close();
     else {
       setExpanded(true);
+
       if (desktop()) storage.set("side-panel", "expanded");
       sync(true);
     }
   }
+
   const resize = () => {
     const wide = media.matches;
     const open = wide && storage.get("side-panel") !== "collapsed";
@@ -54,12 +63,14 @@ export function SidePanel(props: {
     setExpanded(open);
     sync(open, wide);
   };
+
   media.addEventListener("change", resize);
   onCleanup(() => {
     mounted = false;
     media.removeEventListener("change", resize);
     dialog?.close();
   });
+
   const controls: SidePanelControls = {
     dismiss: () => {
       if (!desktop()) close();
@@ -86,6 +97,7 @@ export function SidePanel(props: {
       </button>
     ),
   };
+
   return (
     <div
       data-side-panel
@@ -115,6 +127,7 @@ export function SidePanel(props: {
         onClick={(event) => {
           if (event.target !== event.currentTarget || desktop()) return;
           const box = event.currentTarget.getBoundingClientRect();
+
           if (
             event.clientX < box.left ||
             event.clientX > box.right ||

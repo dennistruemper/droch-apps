@@ -3,15 +3,19 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { connectDatabase, migrateDatabase } from "@repo/shared/database";
+import { z } from "zod";
 import { roomSnapshotSchema } from "../contracts/index.ts";
 import { createRoutes } from "./index.ts";
 
 const cleanups: (() => void)[] = [];
+
 afterEach(() => {
   for (const cleanup of cleanups.splice(0).reverse()) cleanup();
 });
+
 const origin = "http://localhost:3000";
 const period = 30 * 24 * 60 * 60 * 1000;
+
 function fixture() {
   const directory = mkdtempSync(join(tmpdir(), "droch-poker-"));
   let ready = true;
@@ -19,6 +23,7 @@ function fixture() {
   migrateDatabase(directory, "poker", resolve("migrations/poker"));
   let connection = connectDatabase(directory, "poker");
   let streams: (() => void)[] = [];
+
   function routes() {
     return createRoutes({
       db: connection.db,
@@ -30,29 +35,36 @@ function fixture() {
       registerCleanup: (close) => streams.push(close),
     });
   }
+
   let app = routes();
   cleanups.push(() => {
     streams.forEach((close) => close());
     connection.close();
     rmSync(directory, { recursive: true, force: true });
   });
+
   const request = (path: string, cookie = "", body?: unknown, requestOrigin = origin) =>
     app.request(path, {
       headers: { Cookie: cookie, Origin: requestOrigin, "Content-Type": "application/json" },
       ...(body === undefined ? {} : { method: "POST", body: JSON.stringify(body) }),
     });
+
   async function create() {
     const response = await request("/rooms", "", { title: "Planning", name: "Host" });
     expect(response.status).toBe(201);
     const cookie = response.headers.get("set-cookie")!.split(";")[0]!;
     const snapshot = roomSnapshotSchema.parse(await response.json());
+
     return { cookie, snapshot, path: `/rooms/${snapshot.id}` };
   }
+
   async function joinRoom(path: string) {
     const response = await request(`${path}/join`, "", { name: "Guest" });
     expect(response.status).toBe(200);
+
     return response.headers.get("set-cookie")!.split(";")[0]!;
   }
+
   return {
     request,
     create,
@@ -74,10 +86,12 @@ function fixture() {
     },
   };
 }
+
 async function event(reader: ReadableStreamDefaultReader<Uint8Array>) {
   const chunk = await reader.read();
   const text = new TextDecoder().decode(chunk.value);
   expect(text).toContain("event: snapshot");
+
   return roomSnapshotSchema.parse(JSON.parse(text.split("data: ")[1]!.trim()));
 }
 
@@ -104,13 +118,19 @@ describe("poker HTTP and persistence", () => {
     expect((await event(reader)).you.vote).toBe("☕");
     const revealed = await f.request(`${host.path}/reveal`, guest, { round: 1 });
     expect(revealed.status).toBe(200);
-    expect((await event(reader)).participants.map((p) => p.vote).sort()).toEqual(["0.5", "☕"]);
+    expect(
+      (await event(reader)).participants
+        .map((p) => p.vote)
+        .sort((a, b) => (a === b ? 0 : (a ?? "") < (b ?? "") ? -1 : 1)),
+    ).toEqual(["0.5", "☕"]);
     expect((await f.request(`${host.path}/vote`, guest, { round: 1, vote: "8" })).status).toBe(409);
+
     const resets = await Promise.all([
       f.request(`${host.path}/reset`, guest, { round: 1 }),
       f.request(`${host.path}/reset`, host.cookie, { round: 1 }),
     ]);
-    expect(resets.map((r) => r.status).sort()).toEqual([200, 409]);
+
+    expect(resets.map((r) => r.status).sort((a, b) => a - b)).toEqual([200, 409]);
     const reset = await event(reader);
     expect(reset).toMatchObject({ round: 2, revealed: false, you: { vote: null } });
     expect(reset.participants.every((p) => !p.hasVoted && p.vote === null)).toBe(true);
@@ -123,14 +143,17 @@ describe("poker HTTP and persistence", () => {
     const f = fixture(),
       host = await f.create(),
       guest = await f.joinRoom(host.path);
+
     await f.request(`${host.path}/vote`, guest, { round: 1, vote: "☕" });
     const before = roomSnapshotSchema.parse(await (await f.request(host.path, guest)).json());
     f.restart();
     const after = roomSnapshotSchema.parse(await (await f.request(host.path, guest)).json());
     expect(after).toEqual(before);
+
     const rejoin = roomSnapshotSchema.parse(
       await (await f.request(`${host.path}/join`, guest, { name: "Duplicate" })).json(),
     );
+
     expect(rejoin.you.id).toBe(before.you.id);
     expect(rejoin.participants).toHaveLength(2);
     await f.request(`${host.path}/reveal`, host.cookie, { round: 1 });
@@ -145,9 +168,11 @@ describe("poker HTTP and persistence", () => {
   it("requires room membership on reads, streams, and commands; protects origins and cookie credentials", async () => {
     const f = fixture(),
       host = await f.create();
+
     for (const suffix of ["", "/events"])
       expect((await f.request(host.path + suffix)).status).toBe(401);
     expect((await f.request(`${host.path}/vote`, "", { round: 1, vote: "5" })).status).toBe(401);
+
     for (const command of ["reveal", "reset"])
       expect((await f.request(`${host.path}/${command}`, "", { round: 1 })).status).toBe(401);
     const other = await f.create();
@@ -168,9 +193,11 @@ describe("poker HTTP and persistence", () => {
     expect(response.headers.get("set-cookie")).toMatch(/HttpOnly/);
     expect(response.headers.get("set-cookie")).toMatch(/Path=\/api\/poker/);
     expect(response.headers.get("set-cookie")).toMatch(/SameSite=Lax/);
-    const rows = f.client().prepare("SELECT token_hash FROM participants").all() as {
-      token_hash: string;
-    }[];
+
+    const rows = z
+      .array(z.object({ token_hash: z.string() }))
+      .parse(f.client().prepare("SELECT token_hash FROM participants").all());
+
     expect(rows.every((row) => !host.cookie.includes(row.token_hash))).toBe(true);
     const publicInfo = await (await f.request(`${host.path}/info`)).json();
     expect(Object.keys(publicInfo).sort()).toEqual(["id", "participantCount", "title"]);
@@ -185,11 +212,13 @@ describe("poker HTTP and persistence", () => {
     f.setReady(true);
     f.client().exec("DROP TABLE participants");
     const log = vi.spyOn(console, "error").mockImplementation(() => {});
+
     try {
       const failed = await f.request("/rooms", "", {
         title: "Private title",
         name: "Private name",
       });
+
       expect(failed.status).toBe(500);
       const body = await failed.json();
       expect(body.error).toMatch(/Could not create the room.*error reference [a-f0-9-]{36}/);
@@ -204,6 +233,7 @@ describe("poker HTTP and persistence", () => {
   it("expires at 30 days, cascades membership deletion, and does not count viewing as activity", async () => {
     const f = fixture(),
       host = await f.create();
+
     f.advance(period - 1);
     expect((await f.request(host.path, host.cookie)).status).toBe(200);
     f.advance(1);
@@ -215,6 +245,7 @@ describe("poker HTTP and persistence", () => {
   it("refreshes inactivity for joins, votes, reveals, and new rounds, including repeated joins", async () => {
     const f = fixture(),
       host = await f.create();
+
     for (const [command, body] of [
       ["join", { name: "Host" }],
       ["vote", { round: 1, vote: "?" }],
@@ -224,6 +255,7 @@ describe("poker HTTP and persistence", () => {
       f.advance(period - 1);
       expect((await f.request(`${host.path}/${command}`, host.cookie, body)).status).toBe(200);
     }
+
     f.advance(period - 1);
     expect((await f.request(host.path, host.cookie)).status).toBe(200);
   });

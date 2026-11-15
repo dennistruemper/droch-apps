@@ -1,14 +1,18 @@
 import { afterEach, describe, expect, it } from "vitest";
+import { z } from "zod";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { connectDatabase, migrateDatabase } from "../database/index.ts";
 import { createTestMailSender } from "../mail/index.ts";
 import { createAuthService, createAuthRoutes, sessionLifetime } from "./index.ts";
+
 const cleanup: (() => void)[] = [];
+
 afterEach(() => {
   for (const dispose of cleanup.splice(0)) dispose();
 });
+
 function fixture() {
   const root = mkdtempSync(join(tmpdir(), "vortoj-auth-"));
   migrateDatabase(root, "auth", resolve("migrations/auth"));
@@ -19,6 +23,7 @@ function fixture() {
   });
   let clock = 1000000;
   const sent: { to: string; text: string }[] = [];
+
   const options = {
     db: connection.db,
     secret: "a".repeat(64),
@@ -28,6 +33,7 @@ function fixture() {
     now: () => clock,
     generateCode: () => "012345",
   };
+
   return {
     connection,
     sent,
@@ -38,22 +44,27 @@ function fixture() {
     },
   };
 }
+
 describe("email-code accounts", () => {
   it("stores code/session digests, consumes a code once, reuses users and revokes sessions", async () => {
     const f = fixture();
     await f.service.request("alice@example.test");
     expect(f.sent[0]?.text).toContain("012345");
-    const row = f.connection.db.$client.prepare("SELECT digest FROM codes").get() as {
-      digest: string;
-    };
+
+    const row = z
+      .object({ digest: z.string() })
+      .parse(f.connection.db.$client.prepare("SELECT digest FROM codes").get());
+
     expect(row.digest).not.toBe("012345");
     const first = f.service.verify("alice@example.test", "012345", "Alice");
     expect(f.service.lookup(first.token)).toEqual(first.user);
     expect(f.service.deliveryAddress(first.user.id)).toBe("alice@example.test");
     expect(f.service.deliveryAddress("missing")).toBeNull();
-    const stored = f.connection.db.$client.prepare("SELECT digest FROM sessions").get() as {
-      digest: string;
-    };
+
+    const stored = z
+      .object({ digest: z.string() })
+      .parse(f.connection.db.$client.prepare("SELECT digest FROM sessions").get());
+
     expect(stored.digest).not.toBe(first.token);
     expect(() => f.service.verify("alice@example.test", "012345", "Alice")).toThrow(/already used/);
     f.advance(60001);
@@ -68,9 +79,10 @@ describe("email-code accounts", () => {
   it("commits wrong attempts and locks the code after five failures", async () => {
     const f = fixture();
     await f.service.request("a@example.test");
+
     for (let i = 0; i < 5; i++)
-      expect(() => f.service.verify("a@example.test", "999999", "A")).toThrow();
-    expect(() => f.service.verify("a@example.test", "012345", "A")).toThrow();
+      expect(() => f.service.verify("a@example.test", "999999", "A")).toThrow(/code/i);
+    expect(() => f.service.verify("a@example.test", "012345", "A")).toThrow(/code/i);
     expect(f.connection.db.$client.prepare("SELECT attempts FROM codes").get()).toEqual({
       attempts: 5,
     });
@@ -79,7 +91,7 @@ describe("email-code accounts", () => {
     const f = fixture();
     await f.service.request("a@example.test");
     f.advance(600000);
-    expect(() => f.service.verify("a@example.test", "012345", "A")).toThrow();
+    expect(() => f.service.verify("a@example.test", "012345", "A")).toThrow(/code/i);
     await f.service.request("a@example.test");
     const signed = f.service.verify("a@example.test", "012345", "A");
     f.advance(sessionLifetime);
@@ -89,27 +101,32 @@ describe("email-code accounts", () => {
     const f = fixture();
     await f.service.request("a@example.test");
     await expect(f.service.request("a@example.test")).rejects.toThrow(/wait/);
+
     for (let i = 0; i < 4; i++) {
       f.advance(60001);
       await f.service.request("a@example.test");
       f.service.verify("a@example.test", "012345", "A");
     }
+
     f.advance(60001);
     await expect(f.service.request("a@example.test")).rejects.toThrow(/five/);
   });
   it("limits requests across addresses and recovers from mail failure", async () => {
     const f = fixture();
+
     for (let i = 0; i < 30; i++) await f.service.request(`a${i}@example.test`);
     await expect(f.service.request("extra@example.test")).rejects.toThrow(/busy/);
     f.advance(60001);
+
     const broken = createAuthService({
       ...f.options,
       send: async () => {
         throw new Error("provider detail");
       },
     });
+
     await expect(broken.request("broken@example.test")).rejects.toThrow("Could not send");
-    expect(() => broken.verify("broken@example.test", "012345", "Broken")).toThrow();
+    expect(() => broken.verify("broken@example.test", "012345", "Broken")).toThrow(/code/i);
     await expect(f.service.request("broken@example.test")).rejects.toThrow(/wait/);
     f.advance(60001);
     await f.service.request("broken@example.test");
@@ -117,6 +134,7 @@ describe("email-code accounts", () => {
   it("retains per-address and global throttles when every delivery fails", async () => {
     const f = fixture();
     let calls = 0;
+
     const broken = createAuthService({
       ...f.options,
       send: async () => {
@@ -124,17 +142,22 @@ describe("email-code accounts", () => {
         throw new Error("Offline");
       },
     });
+
     await expect(broken.request("one@example.test")).rejects.toThrow(/Could not send/);
+
     for (let i = 0; i < 40; i++)
       await expect(broken.request("one@example.test")).rejects.toThrow(/wait/);
     expect(calls).toBe(1);
+
     for (let i = 1; i < 30; i++)
       await expect(broken.request(`other${i}@example.test`)).rejects.toThrow(/Could not send/);
     await expect(broken.request("overflow@example.test")).rejects.toThrow(/busy/);
+
     for (let i = 1; i < 5; i++) {
       f.advance(60001);
       await expect(broken.request("one@example.test")).rejects.toThrow(/Could not send/);
     }
+
     f.advance(60001);
     await expect(broken.request("one@example.test")).rejects.toThrow(/five/);
     f.advance(3600000);
@@ -144,6 +167,7 @@ describe("email-code accounts", () => {
     const f = fixture();
     let fail: (error: Error) => void = () => {};
     let calls = 0;
+
     const service = createAuthService({
       ...f.options,
       testMode: true,
@@ -154,17 +178,20 @@ describe("email-code accounts", () => {
           });
       },
     });
-    const older = service.request("test@example.test");
-    const failed = expect(older).rejects.toThrow(/Could not send/);
+
+    const older = service.request("test@example.test").catch((cause: unknown) => cause);
     f.advance(60001);
     await service.request("test@example.test");
     fail(new Error("Late failure"));
-    await failed;
+    await expect(older).resolves.toMatchObject({
+      message: expect.stringContaining("Could not send"),
+    });
     expect(service.verify("test@example.test", "9999", "Test").user.name).toBe("Test");
   });
   it("enforces origins, cookie flags, expiry and avoids exposing emails", async () => {
     const f = fixture(),
       origin = "https://apps.example.test";
+
     const app = createAuthRoutes({
       service: f.service,
       origin,
@@ -172,6 +199,7 @@ describe("email-code accounts", () => {
       secure: true,
       ready: () => true,
     });
+
     expect(
       (
         await app.request("/code", {
@@ -180,18 +208,22 @@ describe("email-code accounts", () => {
         })
       ).status,
     ).toBe(403);
+
     const request = (path: string, body: unknown) =>
       app.request(path, {
         method: "POST",
         headers: { Origin: origin, "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
+
     expect((await request("/code", { email: "A@example.test" })).status).toBe(200);
+
     const signed = await request("/verify", {
       email: "A@example.test",
       code: "012345",
       name: "Alice",
     });
+
     expect(signed.status).toBe(200);
     expect(signed.headers.get("set-cookie")).toMatch(/HttpOnly/);
     expect(signed.headers.get("set-cookie")).toMatch(/Secure/);
@@ -199,6 +231,7 @@ describe("email-code accounts", () => {
     expect(JSON.stringify(await signed.json())).not.toContain("email");
     const cookie = signed.headers.get("set-cookie")!.split(";")[0]!;
     expect((await app.request("/session", { headers: { Cookie: cookie } })).status).toBe(200);
+
     const another = createAuthRoutes({
       service: f.service,
       origin,
@@ -206,6 +239,7 @@ describe("email-code accounts", () => {
       secure: true,
       ready: () => true,
     });
+
     expect(
       await (await another.request("/session", { headers: { Cookie: cookie } })).json(),
     ).toEqual({ user: null });
@@ -215,12 +249,14 @@ describe("email-code accounts", () => {
 describe("test and production codes", () => {
   it("uses 9999 through the real HTTP contract without sending locally", async () => {
     const f = fixture();
+
     const service = createAuthService({
       ...f.options,
       testMode: true,
       mailDelivery: false,
       send: createTestMailSender(),
     });
+
     const routes = createAuthRoutes({
       service,
       origin: "http://localhost",
@@ -228,12 +264,14 @@ describe("test and production codes", () => {
       secure: false,
       ready: () => true,
     });
+
     const post = (path: string, data: unknown) =>
       routes.request(path, {
         method: "POST",
         headers: { Origin: "http://localhost", "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
+
     const response = await post("/code", { email: "test@example.test" });
     expect(await response.json()).toMatchObject({
       codeLength: 4,
@@ -256,15 +294,17 @@ describe("test and production codes", () => {
   });
   it("generates and sends six-digit codes in production and rejects the test code", async () => {
     const f = fixture();
+
     const service = createAuthService({
       db: f.options.db,
       secret: f.options.secret,
       send: f.options.send,
     });
+
     await service.request("prod@example.test");
     const code = f.sent[0]?.text.match(/code is (\d{6})\./)?.[1];
     expect(code).toMatch(/^\d{6}$/);
-    expect(() => service.verify("prod@example.test", "9999", "Production")).toThrow();
+    expect(() => service.verify("prod@example.test", "9999", "Production")).toThrow(/code/i);
     expect(service.verify("prod@example.test", code!, "Production").user.name).toBe("Production");
     expect(service.codeInstructions.message).not.toContain("9999");
   });
@@ -274,11 +314,11 @@ it("collects a display name only after verifying a new account's code and reuses
   const f = fixture();
   await f.service.request("new@example.test");
   expect(() => f.service.verify("new@example.test", "wrong")).toThrow(/incorrect/);
-  try {
-    f.service.verify("new@example.test", "012345");
-  } catch (e) {
-    expect(e).toMatchObject({ status: 422 });
-  }
+
+  expect(() => f.service.verify("new@example.test", "012345")).toThrow(
+    expect.objectContaining({ status: 422 }),
+  );
+
   const first = f.service.verify("new@example.test", "012345", "Shared name");
   expect(first.user.name).toBe("Shared name");
   f.service.logout(first.token);

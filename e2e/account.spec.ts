@@ -5,6 +5,7 @@ test("account code entry survives resend and verification failures", async ({ pa
   let requests = 0;
   await page.route("**/api/auth/code", (route) => {
     requests++;
+
     return requests === 1
       ? route.fulfill({ json: { codeLength: 4, message: "Use 9999" } })
       : route.fulfill({
@@ -15,6 +16,7 @@ test("account code entry survives resend and verification failures", async ({ pa
   let attempts = 0;
   await page.route("**/api/auth/verify", (route) => {
     attempts++;
+
     return route.fulfill({ status: 400, json: { error: "Incorrect sign-in code." } });
   });
   await page.goto("/vortoj/");
@@ -60,6 +62,7 @@ test("change email returns to editable entry and requests the corrected address"
   await page.route("**/api/auth/session", (route) => route.fulfill({ json: { user: null } }));
   await page.route("**/api/auth/code", (route) => {
     addresses.push(route.request().postDataJSON().email);
+
     return route.fulfill({ json: { codeLength: 4, message: "Use 9999" } });
   });
   await page.goto("/vortoj/");
@@ -87,6 +90,7 @@ for (const needsName of [false, true]) {
     await page.route("**/api/auth/verify", (route) => {
       const data = route.request().postDataJSON();
       attempts.push(data);
+
       return needsName && !data.name
         ? route.fulfill({ status: 422, json: { error: "Choose an account name" } })
         : route.fulfill({ json: { user } });
@@ -97,6 +101,7 @@ for (const needsName of [false, true]) {
     await expect(page.getByLabel("Account display name", { exact: true })).toHaveCount(0);
     await page.getByLabel("Sign-in code").fill("9999");
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
+
     if (needsName) {
       await page.getByLabel("Account display name", { exact: true }).fill(user.name);
       await page.getByRole("button", { name: "Save name", exact: true }).click();
@@ -106,6 +111,7 @@ for (const needsName of [false, true]) {
         name: user.name,
       });
     }
+
     await expect(page.getByText(`Account: ${user.name}`, { exact: true })).toBeVisible();
     expect(attempts[0]).not.toHaveProperty("name");
     await expect(page.getByLabel("Your name in this game")).toHaveValue(user.name);
