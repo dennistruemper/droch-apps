@@ -76,3 +76,16 @@ server authorization and ordinary conflict handling apply. Match headings show
 readiness icons based on available players and a fourteen-day threshold, with the
 current clock supplied by the planner model. Public date labels show start times;
 planned ends remain part of the scheduling window used to detect overlaps.
+
+## Availability email queue
+
+Explicit answer changes, including admin-entered responses and commitments that
+change an answer to Ja, enqueue notifications in the same SQLite transaction.
+One pending batch per team/admin coalesces all players until five minutes after the
+last actual availability change by anyone in that team. Current admins receive summaries except for edits they made themselves.
+Game cancellations, rescheduling, reserve flags and poll votes do not enqueue answer
+notifications. No email address is exposed through the app API or stored in the queue.
+
+The backend injects the shared mail sender and a server-only auth delivery-address
+lookup. The app owns its persistent queue, retry/lease worker and graceful asynchronous
+cleanup. Read the [worked example and delivery details](email-notifications.md).

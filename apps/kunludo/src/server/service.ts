@@ -31,6 +31,7 @@ import {
   receipts,
   attempts,
 } from "./schema.ts";
+import { enqueueAvailabilityChange } from "./notifications.ts";
 export class TeamError extends Error {
   constructor(
     message: string,
@@ -480,6 +481,18 @@ export function createTeamService(
               const targetId = a.kind === "set-answer" ? a.userId : user.id;
               if (!member(t.id, targetId))
                 throw new TeamError("Nur beigetretene Mitglieder können antworten.");
+              const previous = g.responses[targetId];
+              enqueueAvailabilityChange(db, {
+                teamId: t.id,
+                playerId: targetId,
+                actorId: user.id,
+                gameId: g.id,
+                revision: g.revision,
+                before: previous?.revision === g.revision ? previous.answer : "unanswered",
+                after: a.answer,
+                now: now(),
+                id,
+              });
               g.responses[targetId] = { answer: a.answer, revision: g.revision };
               if (a.answer !== "yes")
                 db.delete(commitments)
@@ -510,6 +523,18 @@ export function createTeamService(
                     )
                     .run();
               }
+              const previous = g.responses[user.id];
+              enqueueAvailabilityChange(db, {
+                teamId: t.id,
+                playerId: user.id,
+                actorId: user.id,
+                gameId: g.id,
+                revision: g.revision,
+                before: previous?.revision === g.revision ? previous.answer : "unanswered",
+                after: "yes",
+                now: now(),
+                id,
+              });
               g.responses[user.id] = { answer: "yes", revision: g.revision };
               db.insert(commitments)
                 .values({ gameId: g.id, userId: user.id, revision: g.revision })

@@ -1,4 +1,12 @@
-import { sqliteTable, text, integer, primaryKey, index } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
+import {
+  sqliteTable,
+  text,
+  integer,
+  primaryKey,
+  index,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core";
 import type { Game } from "../contracts/index.ts";
 export const teams = sqliteTable("teams", {
   id: text("id").primaryKey(),
@@ -57,3 +65,34 @@ export const attempts = sqliteTable("join_attempts", {
   start: integer("start").notNull(),
   count: integer("count").notNull(),
 });
+
+export type AvailabilityChange = {
+  playerId: string;
+  gameId: string;
+  revision: number;
+  before: "unanswered" | "yes" | "no" | "maybe";
+  after: "yes" | "no" | "maybe";
+  actorId: string;
+};
+export const mailQueue = sqliteTable(
+  "mail_queue",
+  {
+    id: text("id").primaryKey(),
+    teamId: text("team_id")
+      .notNull()
+      .references(() => teams.id),
+    recipientId: text("recipient_id").notNull(),
+    changes: text("changes", { mode: "json" }).$type<AvailabilityChange[]>().notNull(),
+    createdAt: integer("created_at").notNull(),
+    dueAt: integer("due_at").notNull(),
+    status: text("status", { enum: ["pending", "sending", "failed"] }).notNull(),
+    attempts: integer("attempts").notNull().default(0),
+    leaseUntil: integer("lease_until").notNull().default(0),
+  },
+  (t) => [
+    uniqueIndex("mail_queue_pending")
+      .on(t.teamId, t.recipientId)
+      .where(sql`${t.status} = 'pending'`),
+    index("mail_queue_due").on(t.status, t.dueAt, t.leaseUntil),
+  ],
+);

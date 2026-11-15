@@ -49,4 +49,4 @@ import type { VortojOptions } from "@repo/vortoj/server";
 export type ApplicationOptions = PokerOptions &
   Pick<VortojOptions, "resolveUser"> &
   ObservoOptions &
-  Pick<KunludoOptions, "joinSecret">;
+  Pick<KunludoOptions, "joinSecret" | "sendMail" | "deliveryAddress">;

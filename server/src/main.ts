@@ -10,7 +10,7 @@ import { applications, databaseDefinitions, type ApplicationOptions } from "./re
 
 const configuration = readConfiguration(process.env);
 const root = process.cwd();
-const cleanupHandlers = new Set<() => void>();
+const cleanupHandlers = new Set<() => void | Promise<void>>();
 const databases = databaseDefinitions.map(({ id }) => ({
   id,
   connection: connectDatabase(configuration.DATA_DIRECTORY, id, { mustExist: true }),
@@ -61,6 +61,15 @@ const readFrontend = createFrontendReader({
 });
 const authDatabase = databases.find((database) => database.id === "auth")!;
 const policy = accountPolicy(configuration);
+const sendMail = policy.sendMail
+  ? createMailSender({
+      ...(configuration.MAILTRAP_TOKEN ? { token: configuration.MAILTRAP_TOKEN } : {}),
+      ...(configuration.MAIL_FROM ? { from: configuration.MAIL_FROM } : {}),
+      ...(configuration.MAILTRAP_SANDBOX_ID
+        ? { sandboxId: configuration.MAILTRAP_SANDBOX_ID }
+        : {}),
+    })
+  : createTestMailSender();
 const auth =
   configuration.AUTH_SECRET && policy.ready
     ? createAuthService({
@@ -68,15 +77,7 @@ const auth =
         secret: configuration.AUTH_SECRET,
         testMode: policy.testMode,
         mailDelivery: policy.sendMail,
-        send: policy.sendMail
-          ? createMailSender({
-              ...(configuration.MAILTRAP_TOKEN ? { token: configuration.MAILTRAP_TOKEN } : {}),
-              ...(configuration.MAIL_FROM ? { from: configuration.MAIL_FROM } : {}),
-              ...(configuration.MAILTRAP_SANDBOX_ID
-                ? { sandboxId: configuration.MAILTRAP_SANDBOX_ID }
-                : {}),
-            })
-          : createTestMailSender(),
+        send: sendMail,
       })
     : null;
 const applicationOptions = (id: string): ApplicationOptions => {
@@ -86,6 +87,9 @@ const applicationOptions = (id: string): ApplicationOptions => {
     db: database.connection.db,
     ...(configuration.AUTH_SECRET ? { joinSecret: configuration.AUTH_SECRET } : {}),
     resolveUser: (token) => auth?.lookup(token) ?? null,
+    ...(id === "kunludo"
+      ? { sendMail, deliveryAddress: (userId: string) => auth?.deliveryAddress(userId) ?? null }
+      : {}),
     ready: () => database.connection.ready(database.migrationsFolder),
     origin: configuration.APP_ORIGIN,
     cookieName: configuration.SESSION_COOKIE_NAME,
@@ -129,7 +133,7 @@ let stopping = false;
 async function shutdown() {
   if (stopping) return;
   stopping = true;
-  for (const cleanup of cleanupHandlers) cleanup();
+  await Promise.all([...cleanupHandlers].map((cleanup) => cleanup()));
   const deadline = setTimeout(() => {
     server.closeAllConnections();
   }, 5000);

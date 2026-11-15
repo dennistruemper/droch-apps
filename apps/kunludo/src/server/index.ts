@@ -6,15 +6,19 @@ import type { connectDatabase } from "@repo/shared/database";
 import type { User } from "@repo/shared/auth";
 import { appDefinition, commandSchema } from "../contracts/index.ts";
 import { createTeamService, TeamError } from "./service.ts";
+import { createNotificationWorker } from "./notifications.ts";
+import type { SendMail } from "@repo/shared/mail";
 export { appDefinition };
 export type KunludoOptions = {
   db: ReturnType<typeof connectDatabase>["db"];
   origin: string;
   cookieName: string;
   joinSecret?: string;
+  sendMail?: SendMail;
+  deliveryAddress?: (userId: string) => string | null;
   resolveUser?: (token: string | undefined) => User | null;
   ready?: () => boolean;
-  registerCleanup?: (cleanup: () => void) => void;
+  registerCleanup?: (cleanup: () => void | Promise<void>) => void;
 };
 export function createRoutes(options?: KunludoOptions) {
   const routes = new Hono();
@@ -23,6 +27,16 @@ export function createRoutes(options?: KunludoOptions) {
   const service = options.joinSecret
     ? createTeamService(options.db, { secret: options.joinSecret })
     : null;
+  if (service && options.sendMail && options.deliveryAddress) {
+    const worker = createNotificationWorker(options.db, {
+      send: options.sendMail,
+      deliveryAddress: options.deliveryAddress,
+      origin: options.origin,
+      ...(options.ready ? { ready: options.ready } : {}),
+    });
+    worker.start();
+    options.registerCleanup?.(() => worker.stop());
+  }
   const listeners = new Set<() => void>(),
     closers = new Set<() => void>();
   options.registerCleanup?.(() => {

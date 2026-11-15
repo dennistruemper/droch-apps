@@ -49,6 +49,8 @@ describe("email-code accounts", () => {
     expect(row.digest).not.toBe("012345");
     const first = f.service.verify("alice@example.test", "012345", "Alice");
     expect(f.service.lookup(first.token)).toEqual(first.user);
+    expect(f.service.deliveryAddress(first.user.id)).toBe("alice@example.test");
+    expect(f.service.deliveryAddress("missing")).toBeNull();
     const stored = f.connection.db.$client.prepare("SELECT digest FROM sessions").get() as {
       digest: string;
     };

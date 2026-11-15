@@ -82,3 +82,30 @@ describe("Mailtrap transport", () => {
     },
   );
 });
+
+it("honors shutdown cancellation of an in-flight provider request", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const controller = new AbortController();
+  let started!: () => void;
+  const entered = new Promise<void>((resolve) => {
+    started = resolve;
+  });
+  const send = createMailSender({
+    token: "secret",
+    from: "sender@example.test",
+    fetch: async (_url, init) => {
+      started();
+      await new Promise<void>((_resolve, reject) =>
+        init!.signal!.addEventListener("abort", () => reject(new Error("aborted")), { once: true }),
+      );
+      return new Response("{}");
+    },
+  });
+  const sending = send(
+    { to: "recipient@example.test", subject: "Update", text: "Example" },
+    controller.signal,
+  );
+  await entered;
+  controller.abort();
+  await expect(sending).rejects.toThrow("Email delivery failed");
+});

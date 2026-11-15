@@ -59,3 +59,23 @@ previously failing file-selection regressions.
 The countdown browser checks pass under both normal and reduced-motion preferences;
 the reduced-motion test first failed against the shared animation reset, then passed
 with the countdown-only exception.
+
+## Team-wide availability email digests — implemented
+
+All player availability changes in a team coalesce until five minutes after the
+last real change by anyone in that team. Each admin receives one combined email,
+with entries grouped by player; the recipient's own edits are excluded. Queue
+updates commit atomically with availability in `kunludo.sqlite`. Persistent claims,
+retry backoff and cancellation preserve pending deliveries across restarts and
+concurrent edits. Permissions and match revisions are rechecked at delivery.
+
+Verification: `pnpm check` passes type checking, lint, formatting and 234 tests.
+`pnpm build`, `pnpm test:image` and isolated production migration/startup pass.
+All ten Kunludo browser flows pass against that image. A real container restart
+preserves Anna/Bob's two queued digests, each containing ten Charlie/Dave G1–G5
+entries, plus the authenticated session. After making those test batches due, the
+startup worker drains them using the local no-op sender. No real email was sent.
+The team-wide regression first failed against per-player batching, then passed.
+
+See the [worked example and delivery limitations](email-notifications.md).
+Hosted Mailtrap delivery remains a deployment verification task.

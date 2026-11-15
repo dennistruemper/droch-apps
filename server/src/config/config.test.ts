@@ -74,6 +74,7 @@ describe("runtime configuration", () => {
       request: vi.fn(),
       verify: vi.fn(),
       lookup: vi.fn(),
+      deliveryAddress: vi.fn(),
       logout: vi.fn(),
     };
     const routes = createAuthRoutes({
