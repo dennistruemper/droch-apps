@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM node:24.21.0-bookworm-slim AS development
+FROM node:24.21.0-bookworm-slim AS dependencies
 WORKDIR /workspace
 RUN npm install --global pnpm@11.25.0
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/*
@@ -10,14 +10,22 @@ COPY --chown=node:node pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm fetch --frozen-lockfile --store-dir /pnpm/store
 USER root
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/playwright-browsers
-# Cache the browser with dependencies, independently of application source edits.
-RUN node node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/cli.js install --with-deps --only-shell chromium
+# Download Chromium without system libraries; compilation does not launch it.
+RUN node node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/cli.js install --only-shell chromium
+USER node
+
+FROM dependencies AS development
+USER root
+# Development runs Observo, so its browser still needs runtime libraries.
+RUN node node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/cli.js install-deps chromium && rm -rf /var/lib/apt/lists/*
 USER node
 COPY --chown=node:node . .
 # Copy avoids overlayfs hardlink copy-up from the fetched store's image layer.
 RUN pnpm install --offline --frozen-lockfile --store-dir /pnpm/store --package-import-method=copy
 
-FROM development AS build
+FROM dependencies AS build
+COPY --chown=node:node . .
+RUN pnpm install --offline --frozen-lockfile --store-dir /pnpm/store --package-import-method=copy
 # Quality checks run before image builds in CI. Keep the runtime build independent
 # of Oxlint's JS-plugin allocator (upstream issue oxc-project/oxc#20331).
 RUN pnpm typecheck && pnpm build

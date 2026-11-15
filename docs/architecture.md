@@ -53,6 +53,11 @@ Docker fetches dependencies in a lockfile/workspace-configuration layer before c
 source files, then installs offline. Files are created as the non-root user instead
 of recursively changing ownership after installation. The fetched store stays in
 build/development layers and is excluded from the production image.
+The shared dependency stage downloads Chromium without installing its Linux
+runtime libraries. Development installs those libraries before copying source;
+the production compilation stage skips them because it never launches a browser.
+The final production stage copies Chromium and installs its runtime libraries.
+Both runnable images retain browser support for Observo.
 
 CI builds the production image and installs the Playwright browser in a native
 parallel step group within one job. The group waits for both steps and propagates

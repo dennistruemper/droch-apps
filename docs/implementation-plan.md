@@ -142,3 +142,18 @@ Kunludo/Schlezaz and narrow typed browser/store seams in Observo tests.
 `pnpm check` passes with zero lint findings and 234 tests across 30 files; the
 production build passes for all registered apps. All 47 browser checks were
 verified (46 in the full suite, followed by the corrected calendar-race check).
+
+## Browser dependency build optimization — verified locally
+
+Split the shared dependency stage from development so production compilation
+downloads Chromium without installing its runtime libraries. Both development
+and production install the libraries required to run Observo.
+
+- Local production build with `--no-cache`: 89.9s before, 69.8s after.
+- Type checking and compilation pass inside the production build.
+- Host `pnpm check` passes type checking, lint, formatting, and all 234 unit tests.
+- Non-root Chromium launch, rendering, clicking, and DOM updates pass in both images.
+- Development migrations, startup, Vite page transformation, and backend hot reload
+  pass in a disposable container with `--init`, matching Compose.
+- Production migrations/startup and all 47 browser checks pass against fresh,
+  isolated disposable data; cleanup removes only this worktree's test resources.

@@ -285,3 +285,17 @@ For the delayed-mail regression test, capture its rejection immediately and
 assert after the delayed failure, preserving the intended concurrency sequence.
 Use explicit sort comparators that retain the prior ordering and specific error
 expectations in tests. Keep all recommended rules and correctness defaults active.
+
+## Browser dependencies during compilation — 2026-11-16
+
+Download the pinned Chromium headless shell in the shared dependency stage, but
+install its Linux runtime libraries only in the development and final production
+stages. Compilation needs the downloaded files for packaging, not a runnable
+browser. Keep development browser support and the production runtime non-root.
+
+On local Colima (ARM64, 2 CPUs, about 2 GiB RAM), production builds with
+`--no-cache` took 89.9s before and 69.8s after this split. Chromium setup in the
+shared stage fell from 25.3s to 9.7s; other step times also varied, so this is a
+single before/after measurement rather than a guaranteed 20-second saving. Both
+measurements reused the downloaded Node base image. No persistent CI cache is
+needed for this reduction.
