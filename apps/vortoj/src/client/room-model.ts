@@ -27,7 +27,7 @@ export type Move =
   | { kind: "exchange"; tiles: string[] };
 export type Request = { id: number } & (
   | { kind: "load" }
-  | { kind: "join" }
+  | { kind: "join"; playerName?: string | undefined }
   | { kind: "action"; action: Action; version: number }
 );
 export type Command =
@@ -49,7 +49,7 @@ export type Model = {
 };
 export type Message =
   | { kind: "refresh" }
-  | { kind: "join" }
+  | { kind: "join"; playerName?: string | undefined }
   | { kind: "action"; action: Action }
   | { kind: "snapshot"; room: Snapshot }
   | { kind: "loaded"; id: number; room: Snapshot }
@@ -150,7 +150,7 @@ export function update(model: Model, message: Message, userId: string): Transiti
       return !model.pending &&
         model.screen.kind === "invite" &&
         model.screen.info.phase === "waiting"
-        ? request({ kind: "join", id: model.nextId })
+        ? request({ kind: "join", id: model.nextId, playerName: message.playerName })
         : unchanged;
     case "action":
       return room && !model.pending

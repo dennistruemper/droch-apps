@@ -125,3 +125,17 @@ describe("account transitions", () => {
     expect(update(failed.model, { kind: "resend" }).commands[0]?.kind).toBe("send-code");
   });
 });
+
+it("requests an account name only after verified code and reuses that code", () => {
+  const verify = update(enteringCode(), { kind: "submit", email: "", code: "9999", name: "" });
+  expect(verify.commands[0]).not.toHaveProperty("name");
+  const naming = update(verify.model, { kind: "name-needed", id: verify.commands[0]!.id });
+  expect(naming.model.screen.kind).toBe("name");
+  const confirm = update(naming.model, {
+    kind: "submit",
+    email: "",
+    code: "",
+    name: "Office Name",
+  });
+  expect(confirm.commands[0]).toMatchObject({ kind: "verify", code: "9999", name: "Office Name" });
+});

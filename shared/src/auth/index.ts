@@ -125,11 +125,18 @@ export function createAuthService(options: {
           return null;
         }
         let user = db.select().from(users).where(eq(users.email, email)).get();
-        if (!user && !name) throw new AuthError("Bitte wähle deinen Anzeigenamen.", 422);
+        if ((!user || !user.nameConfirmed) && !name)
+          throw new AuthError("Bitte wähle deinen Anzeigenamen.", 422);
         db.update(codes).set({ digest: "", attempts: 5 }).where(eq(codes.email, email)).run();
         if (!user) {
-          user = { id: randomUUID(), email, name: name!, createdAt: now() };
+          user = { id: randomUUID(), email, name: name!, nameConfirmed: true, createdAt: now() };
           db.insert(users).values(user).run();
+        } else if (!user.nameConfirmed) {
+          db.update(users)
+            .set({ name: name!, nameConfirmed: true })
+            .where(eq(users.id, user.id))
+            .run();
+          user = { ...user, name: name!, nameConfirmed: true };
         }
         db.delete(sessions).where(lt(sessions.expiresAt, now())).run();
         const token = randomBytes(32).toString("hex");

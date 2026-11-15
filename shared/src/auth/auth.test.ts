@@ -285,3 +285,19 @@ it("collects a display name only after verifying a new account's code and reuses
   const next = f.service.verify("new@example.test", "012345");
   expect(next.user).toEqual(first.user);
 });
+
+it("asks legacy accounts to set their shared name once after a valid code", async () => {
+  const f = fixture();
+  const id = "e6de83f5-49e2-4e89-8bf0-1829fb77b099";
+  f.connection.db.$client
+    .prepare("INSERT INTO users (id,email,name,created_at) VALUES (?,?,?,?)")
+    .run(id, "legacy@example.test", "Old handle", 1);
+  await f.service.request("legacy@example.test");
+  expect(() => f.service.verify("legacy@example.test", "000000")).toThrow(/incorrect/);
+  expect(() => f.service.verify("legacy@example.test", "012345")).toThrow(/Anzeigenamen/);
+  const confirmed = f.service.verify("legacy@example.test", "012345", "Office Name");
+  expect(confirmed.user).toEqual({ id, name: "Office Name" });
+  f.advance(60001);
+  await f.service.request("legacy@example.test");
+  expect(f.service.verify("legacy@example.test", "012345").user).toEqual(confirmed.user);
+});

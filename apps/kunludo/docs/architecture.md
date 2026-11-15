@@ -3,7 +3,10 @@
 `/kunludo/` is a German, email-authenticated team planner in one workspace
 package. It uses the shared Drochsign styles, settings and side panel. The shared
 account is the player: a valid code for a new account leads to display-name entry,
-and returning accounts sign in without entering a name again. The auth API's optional
+and confirmed returning accounts sign in without entering a name again. Legacy accounts
+confirm their shared default once on their next sign-in. Kunludo refreshes its cached
+roster name from the authenticated account on snapshot delivery, advancing the app
+revision only when the name changes. The auth API's optional
 name preserves compatibility with Vortoj. New-account naming is requested only after
 code verification; it does not expose account existence to unauthenticated probes.
 

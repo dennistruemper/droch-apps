@@ -106,6 +106,16 @@ export function createTeamService(
     };
   }
   function snapshot(user: User): Snapshot {
+    // Auth owns the current shared name; refresh this app's cached roster identity.
+    db.transaction(() => {
+      const cached = db.select().from(profiles).where(eq(profiles.id, user.id)).get();
+      if (cached && cached.name !== user.name) {
+        profile(user);
+        db.update(revision)
+          .set({ value: version() + 1 })
+          .run();
+      }
+    });
     const allTeams = db.select().from(teams).all();
     const allMembers = db.select().from(memberships).all();
     const names = new Map(

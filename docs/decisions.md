@@ -213,3 +213,16 @@ matching light/dark variants of its own palette. The shared AppAppearance provid
 wraps each app from startup, including signed-out pages; Settings consumes it rather
 than creating independent theme state on each screen. Media listeners clean up on
 disposal. No account, network request or state-management package is needed.
+
+## Shared account names and game identities — 2026-11-15
+
+The account display name is shared across authenticated apps. Existing accounts set
+or confirm it once on their next verified code sign-in; new accounts set it once.
+Persist confirmation in auth and preserve existing sessions and IDs. Never disclose
+whether naming is needed until a valid code is verified, and do not consume that
+code while requesting the name. Once confirmed, later sign-ins do not ask again.
+
+Vortoj uses the account name as the default for creating/joining a game, while allowing
+a different name in each game. Keep aliases in the game and shared identity in auth;
+account confirmation must not rewrite existing game names or expose account names to
+other players who only know the chosen game alias.

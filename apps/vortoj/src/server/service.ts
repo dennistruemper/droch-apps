@@ -98,7 +98,7 @@ export function createVortojService(
           updatedAt: row.updatedAt,
         }));
     },
-    create(user: User, title: string, tileSetId: string) {
+    create(user: User, title: string, tileSetId: string, playerName = user.name) {
       const set = presets.find((p) => p.id === tileSetId) ?? ownedSet(tileSetId, user),
         id = effects.id();
       db.transaction(() => {
@@ -134,7 +134,7 @@ export function createVortojService(
             tileSet: { name: set.name, tiles: set.tiles },
             createdAt: effects.now(),
             updatedAt: effects.now(),
-            state: newGame(user),
+            state: newGame({ id: user.id, name: playerName }),
           })
           .run();
         db.insert(members).values({ roomId: id, userId: user.id }).run();
@@ -150,7 +150,7 @@ export function createVortojService(
         playerCount: row.state.players.length,
       };
     },
-    join(id: string, user: User) {
+    join(id: string, user: User, playerName = user.name) {
       db.transaction(() => {
         const row = room(id);
         if (row.state.players.some((p) => p.id === user.id)) return;
@@ -162,7 +162,7 @@ export function createVortojService(
         if (row.state.players.length >= 4)
           throw new VortojError("This room already has four players.", 409);
         const state = structuredClone(row.state);
-        state.players.push({ ...user, score: 0, rack: [] });
+        state.players.push({ id: user.id, name: playerName, score: 0, rack: [] });
         state.version++;
         db.insert(members).values({ roomId: id, userId: user.id }).run();
         db.update(rooms).set({ state, updatedAt: effects.now() }).where(eq(rooms.id, id)).run();

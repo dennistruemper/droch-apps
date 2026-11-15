@@ -12,6 +12,10 @@ Vortoj changes, including `migrations/vortoj/`, `e2e/vortoj.spec.ts`,
   the opponents, rounded up, must approve. Turns and votes have no deadline.
 - Include English/German presets and per-user named reusable custom tile sets.
 - Use the shared auth API and modes; do not introduce app-specific authentication.
+- Account naming happens once after verified code, including legacy-account confirmation.
+  Default create/join player names to the shared account name, allow a game-specific
+  override, and never replace existing game aliases when the account name changes.
+  Other players receive only the game alias in room snapshots/streams.
 
 ## Local documentation
 

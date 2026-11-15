@@ -142,3 +142,16 @@ models remain feature-local rather than becoming one global store.
 The former `/words/` frontend redirects to `/vortoj/`. The previous `words.sqlite` file
 was an empty scaffold: it is left on existing volumes, while migrations create
 `vortoj.sqlite`. There is no gameplay data to convert.
+
+## Account and player names
+
+Sign-in first verifies the email code without a name. HTTP 422 requests a shared account
+name for a new/unconfirmed legacy account; the account model retains the verified code
+for that confirmation. Returning confirmed accounts sign in without another name prompt.
+
+Create/join forms default to the shared name and accept a trimmed 1–32-character
+`playerName`. The server uses the authenticated account ID for authorization and stores
+only the chosen name in game state. Omitted names use the account default. Existing
+members rejoining retain their recorded name, and existing games need no migration.
+Room snapshots, history and streams use game identities; the local account control
+is labelled Account, while Playing as identifies the current game's alias.

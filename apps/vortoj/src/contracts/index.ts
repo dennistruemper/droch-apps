@@ -41,7 +41,10 @@ export const tileSetSchema = z
   });
 export type TileSet = z.infer<typeof tileSetSchema>;
 export const savedTileSetSchema = tileSetSchema.safeExtend({ id: z.string() });
+export const playerNameSchema = z.string().trim().min(1).max(32);
+export const joinRoomSchema = z.object({ playerName: playerNameSchema.optional() });
 export const createRoomSchema = z.object({
+  playerName: playerNameSchema.optional(),
   title: z.string().trim().min(1).max(80),
   tileSetId: z.string().min(1).max(100),
 });

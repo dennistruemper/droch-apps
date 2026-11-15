@@ -40,9 +40,12 @@ export function Account(props: {
   };
   const email = () => {
     const value = screen();
-    return value.kind === "email" || value.kind === "code" ? value.email : "";
+    return value.kind === "email" || value.kind === "code" || value.kind === "name"
+      ? value.email
+      : "";
   };
-  const sent = () => screen().kind === "code";
+  const sent = () => screen().kind === "code" || screen().kind === "name";
+  const naming = () => screen().kind === "name";
   const instructions = () => {
     const value = screen();
     return value.kind === "code" ? value.instructions : { codeLength: 6, message: "" };
@@ -85,7 +88,7 @@ export function Account(props: {
                 value={email()}
                 readonly={sent()}
               />
-              <Show when={sent()}>
+              <Show when={screen().kind === "code"}>
                 <p>{instructions().message}</p>
                 <label for="code">Sign-in code</label>
                 <input
@@ -97,7 +100,9 @@ export function Account(props: {
                   autocomplete="one-time-code"
                   required
                 />
-                <label for="account-name">Your name</label>
+              </Show>
+              <Show when={naming()}>
+                <label for="account-name">Account display name</label>
                 <input
                   id="account-name"
                   name="name"
@@ -106,21 +111,29 @@ export function Account(props: {
                   required
                 />
                 <small class="account-note">
-                  Your display name is shared with room members. Your email stays private.
+                  Used across apps. You can choose a different name for each Vortoj game.
                 </small>
               </Show>
               <div class="account-actions">
                 <button disabled={busy()}>
-                  {busy() ? "Please wait…" : sent() ? "Sign in" : "Send sign-in code"}
+                  {busy()
+                    ? "Please wait…"
+                    : naming()
+                      ? "Save name"
+                      : sent()
+                        ? "Sign in"
+                        : "Send sign-in code"}
                 </button>
                 <Show when={sent()}>
-                  <button
-                    type="button"
-                    disabled={busy()}
-                    onClick={() => void dispatch({ kind: "resend" })}
-                  >
-                    Request another code
-                  </button>
+                  <Show when={!naming()}>
+                    <button
+                      type="button"
+                      disabled={busy()}
+                      onClick={() => void dispatch({ kind: "resend" })}
+                    >
+                      Request another code
+                    </button>
+                  </Show>
                   <button
                     type="button"
                     disabled={busy()}

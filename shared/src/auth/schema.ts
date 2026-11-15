@@ -3,6 +3,7 @@ export const users = sqliteTable("users", {
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),
   name: text("name").notNull(),
+  nameConfirmed: integer("name_confirmed", { mode: "boolean" }).notNull().default(false),
   createdAt: integer("created_at").notNull(),
 });
 export const codes = sqliteTable("codes", {

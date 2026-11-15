@@ -8,6 +8,13 @@
       "when": 1791116397719,
       "tag": "0000_rich_stature",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1794776673678,
+      "tag": "0001_short_chat",
+      "breakpoints": true
     }
   ]
 }

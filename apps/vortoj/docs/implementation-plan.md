@@ -40,3 +40,15 @@ resizing. That flow also passes with WebKit against the development stack.
 Local production testing uses HTTP; WebKit does not accept its Secure session cookie,
 so the production WebKit account flow requires an HTTPS test origin. The standalone explorations are removed.
 Real Mailtrap delivery and streaming through Coolify still need deployment verification.
+
+## Account name and per-game aliases — implemented
+
+Legacy accounts confirm the shared account name once after a verified code; confirmed
+accounts no longer enter a name on sign-in. Create/join forms offer the account default
+with a per-game override. Existing games retain their names. Regression tests first
+failed for legacy confirmation, account transitions and per-game isolation, then passed.
+`pnpm check` passes with 212 tests, and `pnpm build` passes. All 22 account/Vortoj
+and ten Kunludo browser checks pass on the isolated local preview. Browser flows cover returning/new account
+naming, create/join defaults and overrides, persistence and absence of shared handles
+from other players' room payloads. `TEST_AUTH_MODE=local` explicitly enables real local
+auth browser flows on a disposable preview outside the documented Compose stacks.

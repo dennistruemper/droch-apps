@@ -5,11 +5,12 @@ export type Screen =
   | { kind: "loading" }
   | { kind: "email"; email: string }
   | { kind: "code"; email: string; instructions: Instructions }
+  | { kind: "name"; email: string; code: string }
   | { kind: "signed-in"; user: User };
 export type Command = { id: number } & (
   | { kind: "load-session" }
   | { kind: "send-code"; email: string }
-  | { kind: "verify"; email: string; code: string; name: string }
+  | { kind: "verify"; email: string; code: string; name?: string }
   | { kind: "sign-out" }
 );
 export type Model = {
@@ -26,6 +27,7 @@ export type Message =
   | { kind: "session-loaded"; id: number; user: User | null }
   | { kind: "code-sent"; id: number; instructions: Instructions }
   | { kind: "verified"; id: number; user: User }
+  | { kind: "name-needed"; id: number }
   | { kind: "signed-out"; id: number }
   | { kind: "failed"; id: number; error: string };
 export type Transition = { model: Model; commands: Command[] };
@@ -62,12 +64,19 @@ export function update(model: Model, message: Message): Transition {
           id: model.nextId,
           email: model.screen.email,
           code: message.code,
-          name: message.name,
+        });
+      if (model.screen.kind === "name")
+        return start({
+          kind: "verify",
+          id: model.nextId,
+          email: model.screen.email,
+          code: model.screen.code,
+          name: message.name.trim(),
         });
       return unchanged;
     }
     case "change-email":
-      return !model.pending && model.screen.kind === "code"
+      return !model.pending && (model.screen.kind === "code" || model.screen.kind === "name")
         ? finish({ kind: "email", email: model.screen.email })
         : unchanged;
     case "resend":
@@ -96,6 +105,10 @@ export function update(model: Model, message: Message): Transition {
                 email: model.pending.email,
                 instructions: message.instructions,
               })
+            : unchanged;
+        case "name-needed":
+          return model.pending.kind === "verify"
+            ? finish({ kind: "name", email: model.pending.email, code: model.pending.code })
             : unchanged;
         case "verified":
           return model.pending.kind === "verify"

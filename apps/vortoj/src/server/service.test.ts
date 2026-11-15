@@ -411,3 +411,16 @@ describe("Vortoj durable rooms", () => {
     await reader.cancel();
   });
 });
+
+it("keeps per-game names separate from the shared account and other games", () => {
+  const f = fixture();
+  const first = f.service.create(f.a, "Work", "english", "Office Alice");
+  const joined = f.service.join(first.id, f.b, "Office Bob");
+  expect(joined.players.map((p) => p.name)).toEqual(["Office Alice", "Office Bob"]);
+  expect(JSON.stringify(joined)).not.toContain('"name":"Alice"');
+  const other = f.service.create(f.a, "Friends", "english");
+  expect(other.players[0]!.name).toBe(f.a.name);
+  expect(f.service.join(first.id, f.b, "Different handle").players[1]!.name).toBe("Office Bob");
+  expect(f.service.snapshot(first.id, f.a).players[0]!.name).toBe("Office Alice");
+  expect(f.a.name).toBe("Alice");
+});

@@ -394,3 +394,18 @@ it("applies calendar cancellations to existing and newly imported matches idempo
   f.send(alice, { ...action(true), teamId: other });
   expect(f.service.snapshot(alice).games.find((g) => g.teamId === other)!.cancelled).toBe(true);
 });
+
+it("refreshes a confirmed account name in every team when its session reconnects", () => {
+  const f = fixture();
+  f.create(alice, "First");
+  f.create(alice, "Second");
+  const before = f.service.snapshot(alice).version;
+  const changed = f.service.snapshot({ ...alice, name: "Shared name" });
+  expect(
+    changed.teams.every((t) =>
+      t.members.some((m) => m.id === alice.id && m.name === "Shared name"),
+    ),
+  ).toBe(true);
+  expect(changed.version).toBeGreaterThan(before);
+  expect(f.service.snapshot({ ...alice, name: "Shared name" }).version).toBe(changed.version);
+});

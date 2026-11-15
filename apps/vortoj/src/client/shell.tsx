@@ -74,7 +74,7 @@ export function Shell(props: {
             <header class="vortoj-page-heading">
               <strong>Vortoj</strong>
               <Show when={props.user()} keyed>
-                {(person) => <small>Playing as {person.name}</small>}
+                {(person) => <small>Account: {person.name}</small>}
               </Show>
             </header>
             <main class="vortoj-content">{props.children}</main>

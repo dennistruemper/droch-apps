@@ -174,7 +174,9 @@ verification internals.
 
 Account creation happens on first verification. New accounts provide a display name;
 a valid first code can request that name without consuming the code. Existing accounts
-reuse their name without a new prompt. Shared identity
+reuse their name without a new prompt once confirmed. A persistent name-confirmed flag
+marks legacy accounts for one confirmation on their next code sign-in; confirmation
+changes the shared default without rewriting existing game identities. Shared identity
 does not imply access to every app or match; app authorization remains explicit.
 
 Codes have ten-minute expiry, five verification attempts, a one-minute resend interval,
