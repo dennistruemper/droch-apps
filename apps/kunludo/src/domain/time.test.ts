@@ -23,6 +23,7 @@ describe("planner date formatting", () => {
 
   it("preserves native formatting across zones and cache eviction", () => {
     const time = Date.parse("2026-01-01T00:15:00Z");
+    localDay(time, "Pacific/Kiritimati");
     const zones = ["UTC", ...Intl.supportedValuesOf("timeZone").slice(0, 80)];
 
     for (const zone of [...zones, "UTC"]) {
@@ -47,6 +48,17 @@ describe("planner date formatting", () => {
           .format(time)
           .replace(" ", "T"),
       );
+    }
+
+    const constructor = vi.spyOn(Intl, "DateTimeFormat");
+
+    try {
+      // The old zone must be evicted, then reused again after reinsertion.
+      localDay(time, "Pacific/Kiritimati");
+      localDay(time, "Pacific/Kiritimati");
+      expect(constructor).toHaveBeenCalledTimes(1);
+    } finally {
+      constructor.mockRestore();
     }
   });
 
