@@ -89,3 +89,7 @@ notifications. No email address is exposed through the app API or stored in the 
 The backend injects the shared mail sender and a server-only auth delivery-address
 lookup. The app owns its persistent queue, retry/lease worker and graceful asynchronous
 cleanup. Read the [worked example and delivery details](email-notifications.md).
+
+Calendar and snapshot date helpers lazily reuse at most 64 immutable ICU date
+formatters across locale/options combinations. FIFO eviction bounds retention of
+user-supplied timezone names; formatting and DST validation keep their existing semantics.

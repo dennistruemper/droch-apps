@@ -1,5 +1,21 @@
 import type { Game, MatchInput } from "../contracts/index.ts";
 
+// Reuse ICU formatters on snapshot/import hot paths without retaining every supplied zone.
+const dateFormats = new Map<string, Intl.DateTimeFormat>();
+
+function dateFormat(locale: string, options: Intl.DateTimeFormatOptions) {
+  const key = JSON.stringify([locale, options]);
+  const existing = dateFormats.get(key);
+
+  if (existing) return existing;
+  const formatter = new Intl.DateTimeFormat(locale, options);
+
+  if (dateFormats.size >= 64) dateFormats.delete(dateFormats.keys().next().value!);
+  dateFormats.set(key, formatter);
+
+  return formatter;
+}
+
 export function overlaps(a: MatchInput["window"], b: MatchInput["window"]) {
   return (
     a.start - a.buffer * 60000 < b.end + b.buffer * 60000 &&
@@ -8,7 +24,7 @@ export function overlaps(a: MatchInput["window"], b: MatchInput["window"]) {
 }
 
 export function localDay(time: number, timezone: string) {
-  return new Intl.DateTimeFormat("en-CA", {
+  return dateFormat("en-CA", {
     timeZone: timezone,
     year: "numeric",
     month: "2-digit",
@@ -17,7 +33,7 @@ export function localDay(time: number, timezone: string) {
 }
 
 export function localInput(time: number, timezone: string) {
-  const parts = new Intl.DateTimeFormat("sv-SE", {
+  const parts = dateFormat("sv-SE", {
     timeZone: timezone,
     year: "numeric",
     month: "2-digit",
