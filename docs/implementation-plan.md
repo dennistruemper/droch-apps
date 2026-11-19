@@ -147,4 +147,9 @@ verified (46 in the full suite, followed by the corrected calendar-race check).
 Removed the app, API, scheduler, migrations and runtime browser dependencies.
 Existing deployed data files remain untouched. `pnpm check` passes type checking,
 lint, formatting and 213 tests across 24 files; the production build passes for
-Kunludo, Poker, Vortoj, Schlezaz and Enigmo. Preview verification remains pending.
+Kunludo, Poker, Vortoj, Schlezaz and Enigmo. All 45 browser checks pass against
+the isolated local production build. Five real browser flows pass on PR 18’s HTTPS
+preview: Enigmo puzzle/reload, Poker private voting/reveal/reconnect, Schlezaz draws,
+Vortoj accounts/private racks/word voting, and Kunludo accounts/teams/calendar import.
+Preview health and remaining app APIs return 200; Observo paths return 404 and its
+landing-page entry is absent. The production-image CI workflow also passes.
