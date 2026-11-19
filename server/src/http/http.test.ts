@@ -10,11 +10,6 @@ describe("HTTP composition", () => {
   });
 
   it("mounts app APIs and redirects app roots", async () => {
-    expect(await (await app.request("/api/observo/status")).json()).toEqual({
-      app: "observo",
-      stage: "monitoring",
-    });
-    expect((await app.request("/observo")).headers.get("location")).toBe("/observo/");
     expect(await (await app.request("/api/poker/status")).json()).toEqual({
       app: "poker",
       stage: "foundation",
@@ -33,6 +28,22 @@ describe("HTTP composition", () => {
       expect((await app.request(path)).status).toBe(404);
     },
   );
+  it("removes Observo routes, discovery and database registration", async () => {
+    for (const path of [
+      "/observo",
+      "/observo/",
+      "/api/observo/status",
+      "/api/observo/sites",
+      "/api/observo/activate",
+    ]) {
+      expect(
+        (await app.request(path, { method: path.endsWith("activate") ? "POST" : "GET" })).status,
+      ).toBe(404);
+    }
+
+    expect(await (await app.request("/")).text()).not.toContain("observo");
+    expect(databaseDefinitions.map(({ id }) => id)).toEqual(["auth", "kunludo", "poker", "vortoj"]);
+  });
   it("serves Schlezaz without calling the database options provider", async () => {
     const composed = createApplication({
       ready: async () => true,

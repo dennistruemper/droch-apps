@@ -73,7 +73,6 @@ if (command === "build") {
         migrate: { image },
         application: {
           image,
-          environment: { OBSERVO_CHECKS: "false" },
           ports: [`127.0.0.1:${new URL(origin).port}:3000`],
         },
       },

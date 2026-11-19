@@ -108,7 +108,6 @@ const applicationOptions = (id: string): ApplicationOptions => {
     origin: configuration.APP_ORIGIN,
     cookieName: configuration.SESSION_COOKIE_NAME,
     secureCookies: configuration.NODE_ENV === "production",
-    checksDisabled: !configuration.OBSERVO_CHECKS,
     registerCleanup: (cleanup) => {
       cleanupHandlers.add(cleanup);
     },

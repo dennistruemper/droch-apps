@@ -5,11 +5,6 @@ import {
 } from "@repo/kunludo/server";
 import { appDefinition as enigmo } from "@repo/enigmo/contracts";
 import { appDefinition as schlezaz } from "@repo/schlezaz/contracts";
-import {
-  appDefinition as observo,
-  createRoutes as createObservoRoutes,
-  type ObservoOptions,
-} from "@repo/observo/server";
 import { appDefinition as poker, createRoutes as createPokerRoutes } from "@repo/poker/server";
 import { appDefinition as words, createRoutes as createWordsRoutes } from "@repo/vortoj/server";
 
@@ -20,7 +15,6 @@ export const applications = [
   { ...words, createRoutes: createWordsRoutes },
   schlezaz,
   enigmo,
-  { ...observo, createRoutes: createObservoRoutes },
 ] as const;
 
 export function validateApplications(apps: readonly { id: string }[]) {
@@ -51,5 +45,4 @@ import type { VortojOptions } from "@repo/vortoj/server";
 
 export type ApplicationOptions = PokerOptions &
   Pick<VortojOptions, "resolveUser"> &
-  ObservoOptions &
   Pick<KunludoOptions, "joinSecret" | "sendMail" | "deliveryAddress">;

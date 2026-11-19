@@ -28,7 +28,6 @@ Read only the app documentation relevant to the task:
 - [Poker](../apps/poker/AGENTS.md)
 - [Vortoj](../apps/vortoj/AGENTS.md)
 - [Schlezaz](../apps/schlezaz/AGENTS.md)
-- [Observo](../apps/observo/AGENTS.md)
 - [Enigmo](../apps/enigmo/AGENTS.md)
 - [Kunludo](../apps/kunludo/AGENTS.md)
 
@@ -207,7 +206,7 @@ System in the theme picker restores this behavior; Use app default also selects
 System. Explicit presets and custom palettes remain app-specific and take priority.
 
 Each app declares themes.light and themes.dark in its app definition. Kunludo,
-Poker and Observo use Paper / Ink. Vortoj keeps Antique paper for light and uses Ink
+Poker uses Paper / Ink. Vortoj keeps Antique paper for light and uses Ink
 for dark. Enigmo keeps its own light palette and uses Ink for dark. SchleZaZ has
 matching light/dark variants of its own palette. The shared AppAppearance provider
 wraps each app from startup, including signed-out pages; Settings consumes it rather
@@ -285,3 +284,11 @@ For the delayed-mail regression test, capture its rejection immediately and
 assert after the delayed failure, preserving the intended concurrency sequence.
 Use explicit sort comparators that retain the prior ordering and specific error
 expectations in tests. Keep all recommended rules and correctness defaults active.
+
+## Observo removal — 2026-11-19
+
+The user requested removing Observo before experimenting with a Go backend. Remove
+its dashboard, API, scheduler, migrations and configuration, together with the
+production Playwright/Chromium runtime. Browser testing remains a development/CI
+dependency. Existing deployed `observo.sqlite` files are left untouched; the server
+no longer opens them. The remaining apps and shared auth retain their current data.
