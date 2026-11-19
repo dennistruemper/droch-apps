@@ -6,7 +6,6 @@ verification history live in the app directories:
 - [Poker](../apps/poker/AGENTS.md)
 - [Vortoj](../apps/vortoj/AGENTS.md)
 - [Schlezaz](../apps/schlezaz/AGENTS.md)
-- [Observo](../apps/observo/AGENTS.md)
 - [Enigmo](../apps/enigmo/AGENTS.md)
 - [Kunludo](../apps/kunludo/AGENTS.md)
 
@@ -291,3 +290,9 @@ prints its URL. Local runtime settings are ignored, never committed.
 
 Use the same migrations and database conventions locally and in production. The
 development Compose override adds source mounts and hot reload.
+
+## Retired apps
+
+Observo is removed from hosting, APIs, database registration and migration runs.
+The production image no longer includes Playwright or Chromium; browser tests use
+host/CI tooling. Existing Observo database files are not opened or deleted.

@@ -21,7 +21,6 @@ Product rules, app architecture and implementation status live with each app:
 - [Poker](apps/poker/AGENTS.md): account-free planning poker.
 - [Vortoj](apps/vortoj/AGENTS.md): multiplayer word board game.
 - [Schlezaz](apps/schlezaz/AGENTS.md): random-choice generator.
-- [Observo](apps/observo/AGENTS.md): website monitoring dashboard.
 - [Enigmo](apps/enigmo/AGENTS.md): code-based anagram puzzles; see its [authoring guide](apps/enigmo/README.md).
 
 - [Kunludo](apps/kunludo/AGENTS.md): team schedules and player availability across clubs.

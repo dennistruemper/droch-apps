@@ -28,7 +28,7 @@ await buildServer({
   format: "esm",
   define: { "process.env.DROCH_BUILD": '"production"' },
   sourcemap: true,
-  external: ["playwright", "vite", "@solidjs/vite-plugin", resolve(root, "tooling/frontend.ts")],
+  external: ["vite", "@solidjs/vite-plugin", resolve(root, "tooling/frontend.ts")],
   banner: {
     js: 'import { createRequire as __createRequire } from "node:module"; const require = __createRequire(import.meta.url);',
   },

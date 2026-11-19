@@ -84,7 +84,6 @@ and documented app creation requiring only repository changes and deployment.
 ## Other app implementation status
 
 - [Schlezaz](../apps/schlezaz/docs/implementation-plan.md)
-- [Observo](../apps/observo/docs/implementation-plan.md)
 - [Enigmo](../apps/enigmo/docs/implementation-plan.md)
 
 - [Kunludo](../apps/kunludo/docs/implementation-plan.md)
@@ -142,3 +141,15 @@ Kunludo/Schlezaz and narrow typed browser/store seams in Observo tests.
 `pnpm check` passes with zero lint findings and 234 tests across 30 files; the
 production build passes for all registered apps. All 47 browser checks were
 verified (46 in the full suite, followed by the corrected calendar-race check).
+
+## Observo removal — 2026-11-19
+
+Removed the app, API, scheduler, migrations and runtime browser dependencies.
+Existing deployed data files remain untouched. `pnpm check` passes type checking,
+lint, formatting and 213 tests across 24 files; the production build passes for
+Kunludo, Poker, Vortoj, Schlezaz and Enigmo. All 45 browser checks pass against
+the isolated local production build. Five real browser flows pass on PR 18’s HTTPS
+preview: Enigmo puzzle/reload, Poker private voting/reveal/reconnect, Schlezaz draws,
+Vortoj accounts/private racks/word voting, and Kunludo accounts/teams/calendar import.
+Preview health and remaining app APIs return 200; Observo paths return 404 and its
+landing-page entry is absent. The production-image CI workflow also passes.

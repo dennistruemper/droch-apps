@@ -63,7 +63,6 @@ migrations, external tests, or shared integrations:
 - [Poker](apps/poker/AGENTS.md)
 - [Vortoj](apps/vortoj/AGENTS.md)
 - [Schlezaz](apps/schlezaz/AGENTS.md)
-- [Observo](apps/observo/AGENTS.md)
 - [Enigmo](apps/enigmo/AGENTS.md)
 - [Kunludo](apps/kunludo/AGENTS.md)
 
