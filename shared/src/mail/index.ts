@@ -40,6 +40,10 @@ export function createMailSender(options: {
       throw new Error("Email delivery failed");
     }
 
+    // The provider body is unused. Release it without buffering private/unbounded text.
+    // Cleanup failure must not turn an accepted send into a duplicate-producing retry.
+    await response.body?.cancel().catch(() => {});
+
     if (!response.ok) {
       // Provider responses may contain addresses or message contents; log only metadata.
       console.error("Mailtrap delivery failed", { transport, status: response.status });

@@ -127,3 +127,52 @@ it("honors shutdown cancellation of an in-flight provider request", async () => 
   controller.abort();
   await expect(sending).rejects.toThrow("Email delivery failed");
 });
+
+it.each([200, 403])("cancels the unused provider body for HTTP %s", async (status) => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const cancel = vi.fn<() => void>();
+
+  const send = createMailSender({
+    token: "synthetic-token",
+    from: "sender@example.test",
+    fetch: async () => new Response(new ReadableStream({ cancel }), { status }),
+  });
+
+  const sending = send({ to: "recipient@example.test", subject: "Test", text: "Local only" });
+
+  expect(
+    await sending.then(
+      () => "accepted",
+      (error: Error) => error.message,
+    ),
+  ).toBe(status === 200 ? "accepted" : "Email delivery failed");
+  expect(cancel).toHaveBeenCalledOnce();
+});
+
+it.each([200, 403])(
+  "preserves HTTP %s delivery semantics if body cancellation rejects",
+  async (status) => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const cancel = vi.fn<() => Promise<void>>(async () => {
+      throw new Error("private provider details");
+    });
+
+    const send = createMailSender({
+      token: "synthetic-token",
+      from: "sender@example.test",
+      fetch: async () => new Response(new ReadableStream({ cancel }), { status }),
+    });
+
+    const sending = send({ to: "recipient@example.test", subject: "Test", text: "Local only" });
+
+    expect(
+      await sending.then(
+        () => "accepted",
+        (error: Error) => error.message,
+      ),
+    ).toBe(status === 200 ? "accepted" : "Email delivery failed");
+    expect(cancel).toHaveBeenCalledOnce();
+    expect(JSON.stringify(log.mock.calls)).not.toContain("private provider details");
+  },
+);

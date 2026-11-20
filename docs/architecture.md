@@ -171,6 +171,8 @@ verification internals. A server-only auth delivery-address lookup resolves stab
 IDs for app-authorized recipients; emails never enter browser account contracts. The
 backend supplies the same environment-selected mail sender to auth and Kunludo.
 Asynchronous cleanup handlers are awaited before database connections close.
+The mail transport cancels unused provider response bodies on successful and failed
+HTTP responses. Cleanup failures do not change delivery status or expose provider text.
 
 - No passwords or password hashes.
 - Store a keyed digest of codes; keep the key outside the database.
