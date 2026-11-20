@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { instant, localDay, localInput } from "./index.ts";
+import { formatWindow, instant, localDay, localInput } from "./index.ts";
 
 describe("planner date formatting", () => {
   it("reuses formatters during local-time conversion and repeated snapshots", () => {
@@ -69,5 +69,51 @@ describe("planner date formatting", () => {
     expect(localInput(instant("2026-10-25T03:30", "Europe/Berlin"), "Europe/Berlin")).toBe(
       "2026-10-25T03:30",
     );
+  });
+});
+
+describe("planner display dates", () => {
+  it("reuses display formatters across repeated match rendering", () => {
+    const window = {
+      start: Date.parse("2026-07-12T16:30Z"),
+      end: Date.parse("2026-07-12T18:30Z"),
+      buffer: 30,
+    };
+
+    const constructor = vi.spyOn(Intl, "DateTimeFormat");
+
+    try {
+      const expected = formatWindow(window, "Pacific/Tongatapu");
+
+      for (let i = 0; i < 200; i++)
+        expect(formatWindow(window, "Pacific/Tongatapu")).toBe(expected);
+      expect(constructor.mock.calls.length).toBeLessThanOrEqual(2);
+    } finally {
+      constructor.mockRestore();
+    }
+  });
+
+  it("preserves German start-date labels across timezones and DST", () => {
+    for (const zone of ["UTC", "Europe/Berlin", "America/New_York"]) {
+      for (const start of [Date.parse("2026-01-01T00:15Z"), Date.parse("2026-07-12T16:30Z")]) {
+        const date = new Intl.DateTimeFormat("de-DE", {
+          timeZone: zone,
+          weekday: "short",
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        }).format(start);
+
+        const time = new Intl.DateTimeFormat("de-DE", {
+          timeZone: zone,
+          hour: "2-digit",
+          minute: "2-digit",
+        }).format(start);
+
+        expect(formatWindow({ start, end: start + 7200000, buffer: 30 }, zone)).toBe(
+          `${date} · ${time}`,
+        );
+      }
+    }
   });
 });
