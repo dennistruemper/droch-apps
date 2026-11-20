@@ -154,6 +154,14 @@ export function createRoutes(options?: KunludoOptions) {
 
         closers.add(stop);
         c.req.raw.signal.addEventListener("abort", stop, { once: true });
+
+        // A disconnect before listener registration must also release the subscription.
+        if (c.req.raw.signal.aborted) {
+          stop();
+
+          return;
+        }
+
         send();
       },
       cancel() {
