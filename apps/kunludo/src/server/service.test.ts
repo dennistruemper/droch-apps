@@ -456,3 +456,15 @@ it("refreshes a confirmed account name in every team when its session reconnects
   expect(changed.version).toBeGreaterThan(before);
   expect(f.service.snapshot({ ...alice, name: "Shared name" }).version).toBe(changed.version);
 });
+
+it("does not decode an unrelated team's game JSON when building a snapshot", () => {
+  const f = fixture();
+  const visible = f.create(alice, "Visible");
+  const unrelated = f.create(charlie, "Unrelated");
+  // Unrelated stored data must not be materialized into this viewer's snapshot.
+  f.connection.db.$client
+    .prepare("UPDATE teams SET games = ? WHERE id = ?")
+    .run("not-json", unrelated);
+  expect(f.service.snapshot(alice).teams.map((team) => team.id)).toEqual([visible]);
+  expect(f.service.snapshot(bob).teams).toEqual([]);
+});

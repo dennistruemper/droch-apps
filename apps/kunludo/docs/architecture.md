@@ -93,3 +93,9 @@ cleanup. Read the [worked example and delivery details](email-notifications.md).
 Calendar and snapshot date helpers lazily reuse at most 64 immutable ICU date
 formatters across locale/options combinations. FIFO eviction bounds retention of
 user-supplied timezone names; formatting and DST validation keep their existing semantics.
+
+Snapshot queries load teams belonging to the viewer and to members of their visible
+rosters. Those members' hidden teams remain available only to calculate generic
+conflict states; unrelated teams and profiles are not materialized. Local-day
+values are reused within one snapshot and discarded afterward. No schema or
+authorization change is required.
