@@ -1,0 +1,557 @@
+{
+  "oxlint": "1.86.0",
+  "rules": {
+    "catch-error-name": {
+      "status": "off",
+      "reason": "Error variable spelling does not improve lifecycle correctness; keep context-specific names."
+    },
+    "consistent-assert": {
+      "status": "off",
+      "reason": "Tests use Vitest and runtime inputs use schemas; no additional assertion convention is needed."
+    },
+    "consistent-date-clone": {
+      "status": "off",
+      "reason": "Date-cloning syntax is a preference and is not a current resource issue."
+    },
+    "consistent-empty-array-spread": {
+      "status": "off",
+      "reason": "Conditional immutable construction is intentional in feature models."
+    },
+    "consistent-existence-index-check": {
+      "status": "off",
+      "reason": "Existing index comparisons can express their boundary conditions explicitly."
+    },
+    "consistent-function-scoping": {
+      "status": "off",
+      "reason": "Feature-local closures deliberately own injected dependencies and state."
+    },
+    "consistent-template-literal-escape": {
+      "status": "off",
+      "reason": "Escape spelling adds style churn without changing resource safety."
+    },
+    "custom-error-definition": {
+      "status": "off",
+      "reason": "Existing typed app errors intentionally carry status fields and need no new class template."
+    },
+    "empty-brace-spaces": {
+      "status": "off",
+      "reason": "Oxfmt owns whitespace; a second formatter policy would duplicate it."
+    },
+    "error-message": {
+      "status": "error",
+      "reason": "Require useful error messages for failures surfaced through adapters and logs."
+    },
+    "escape-case": {
+      "status": "off",
+      "reason": "Oxfmt and readable regexes suffice; escape capitalization is cosmetic."
+    },
+    "explicit-length-check": {
+      "status": "off",
+      "reason": "Boolean collection checks are already clear and need no mechanical rewrite."
+    },
+    "explicit-timer-delay": {
+      "status": "error",
+      "reason": "Make scheduling delays explicit when creating asynchronous work."
+    },
+    "filename-case": {
+      "status": "off",
+      "reason": "Oxlint exposes this as a compatibility placeholder; it cannot enforce filename policy here."
+    },
+    "import-style": {
+      "status": "off",
+      "reason": "Package export boundaries matter more than a uniform named/default import preference."
+    },
+    "max-nested-calls": {
+      "status": "off",
+      "reason": "Schema and model composition legitimately nests calls; a depth limit is arbitrary."
+    },
+    "new-for-builtins": {
+      "status": "error",
+      "reason": "Catch accidental calls or constructions with the wrong built-in constructor convention."
+    },
+    "no-abusive-eslint-disable": {
+      "status": "off",
+      "reason": "The rule targets ESLint directives; this repository uses Oxlint directives."
+    },
+    "no-accessor-recursion": {
+      "status": "error",
+      "reason": "Prevent accessors recursively reading or writing themselves until stack exhaustion."
+    },
+    "no-anonymous-default-export": {
+      "status": "off",
+      "reason": "Small Vite and Vitest configuration exports do not need artificial names."
+    },
+    "no-array-callback-reference": {
+      "status": "off",
+      "reason": "Typed pure helpers are useful callbacks; do not ban all function references."
+    },
+    "no-array-fill-with-reference-type": {
+      "status": "error",
+      "reason": "Prevent repeated references sharing mutable board cells or model rows."
+    },
+    "no-array-for-each": {
+      "status": "off",
+      "reason": "For-each and loops are both valid; existing cleanup callbacks are readable."
+    },
+    "no-array-method-this-argument": {
+      "status": "off",
+      "reason": "No architectural reason to prohibit an explicit callback receiver."
+    },
+    "no-array-reduce": {
+      "status": "off",
+      "reason": "Pure reductions are valid domain/model code; blanket bans do not prevent leaks."
+    },
+    "no-array-reverse": {
+      "status": "off",
+      "reason": "Mutation of freshly owned arrays can be intentional; ownership needs semantic review."
+    },
+    "no-array-sort": {
+      "status": "off",
+      "reason": "Sorting local query/result arrays is intentional; avoid unconditional copying."
+    },
+    "no-await-expression-member": {
+      "status": "off",
+      "reason": "Reading a property of an awaited result is safe and compact."
+    },
+    "no-await-in-promise-methods": {
+      "status": "error",
+      "reason": "Prevent accidentally serializing operations intended to run concurrently."
+    },
+    "no-confusing-array-with": {
+      "status": "error",
+      "reason": "Catch easily mistaken Array.with calls that silently replace an element."
+    },
+    "no-console-spaces": {
+      "status": "off",
+      "reason": "Spacing in console strings is cosmetic and unrelated to redaction or retention."
+    },
+    "no-document-cookie": {
+      "status": "off",
+      "reason": "Browser tests inspect cookie isolation; production credentials already use HttpOnly cookies."
+    },
+    "no-empty-file": {
+      "status": "off",
+      "reason": "Empty fixture files can intentionally represent missing content."
+    },
+    "no-hex-escape": {
+      "status": "off",
+      "reason": "Equivalent escape notation does not warrant source churn."
+    },
+    "no-immediate-mutation": {
+      "status": "off",
+      "reason": "Building then populating locally owned data is explicit and valid."
+    },
+    "no-instanceof-array": {
+      "status": "error",
+      "reason": "Use cross-realm-safe Array.isArray at validation boundaries."
+    },
+    "no-instanceof-builtins": {
+      "status": "off",
+      "reason": "Existing Error and browser-object narrowing is intentional; blanket restrictions are unsuitable."
+    },
+    "no-invalid-fetch-options": {
+      "status": "error",
+      "reason": "Catch invalid request options before transport behavior fails at runtime."
+    },
+    "no-invalid-remove-event-listener": {
+      "status": "error",
+      "reason": "Reject fresh functions or bound functions that cannot remove the registered listener."
+    },
+    "no-length-as-slice-end": {
+      "status": "off",
+      "reason": "Redundant slice bounds are readability preferences rather than a resource defect."
+    },
+    "no-lonely-if": {
+      "status": "off",
+      "reason": "Guard grouping sometimes documents state relationships better than flattened branches."
+    },
+    "no-magic-array-flat-depth": {
+      "status": "off",
+      "reason": "The few explicit flattening depths describe known domain structures."
+    },
+    "no-negated-condition": {
+      "status": "off",
+      "reason": "Early returns and discriminated-state branches can read naturally with negation."
+    },
+    "no-negation-in-equality-check": {
+      "status": "error",
+      "reason": "Avoid inverted equality expressions whose coercion or precedence is easy to misread."
+    },
+    "no-nested-ternary": {
+      "status": "off",
+      "reason": "Compact discriminated-state projections are already checked by types and tests."
+    },
+    "no-new-array": {
+      "status": "error",
+      "reason": "Avoid ambiguous Array constructor overloads and accidental sparse arrays."
+    },
+    "no-new-buffer": {
+      "status": "error",
+      "reason": "Reject deprecated Buffer constructors with unsafe allocation semantics."
+    },
+    "no-null": {
+      "status": "off",
+      "reason": "Null is intentional in SQL, contracts, schemas and discriminated client state."
+    },
+    "no-object-as-default-parameter": {
+      "status": "off",
+      "reason": "Explicit options defaults are valid; do not impose one signature style."
+    },
+    "no-process-exit": {
+      "status": "off",
+      "reason": "CLI tooling may terminate with a status; application shutdown has its own cleanup path."
+    },
+    "no-single-promise-in-promise-methods": {
+      "status": "off",
+      "reason": "Uniform aggregation can preserve adapter structure and timing; no blanket simplification."
+    },
+    "no-static-only-class": {
+      "status": "off",
+      "reason": "This is an abstraction preference; existing public API boundaries are already enforced."
+    },
+    "no-thenable": {
+      "status": "error",
+      "reason": "Prevent objects from unexpectedly participating in promise assimilation."
+    },
+    "no-this-assignment": {
+      "status": "off",
+      "reason": "Receiver capture is not inherently a leak and may be required by a callback API."
+    },
+    "no-typeof-undefined": {
+      "status": "off",
+      "reason": "Explicit transport/browser parsing checks are intentionally allowed by project policy."
+    },
+    "no-unnecessary-array-flat-depth": {
+      "status": "off",
+      "reason": "An explicit depth may document expected structure; this is a style preference."
+    },
+    "no-unnecessary-array-splice-count": {
+      "status": "off",
+      "reason": "Explicit deletion counts can communicate intent in local mutation."
+    },
+    "no-unnecessary-await": {
+      "status": "off",
+      "reason": "Await can intentionally introduce ordering even for a currently synchronous value."
+    },
+    "no-unnecessary-slice-end": {
+      "status": "off",
+      "reason": "Explicit bounds are harmless and may aid boundary reasoning."
+    },
+    "no-unreadable-array-destructuring": {
+      "status": "off",
+      "reason": "Tuple positions sometimes matter; enforce readability through review rather than hole counts."
+    },
+    "no-unreadable-iife": {
+      "status": "off",
+      "reason": "No project-wide IIFE form is needed; initialization code can stay local."
+    },
+    "no-useless-collection-argument": {
+      "status": "off",
+      "reason": "Redundant empty construction arguments are cosmetic rather than retained-state defects."
+    },
+    "no-useless-error-capture-stack-trace": {
+      "status": "off",
+      "reason": "Error stack customization is rare and is better reviewed with the concrete error type."
+    },
+    "no-useless-fallback-in-spread": {
+      "status": "off",
+      "reason": "Keep explicit immutable construction and defaults consistent with existing model policy."
+    },
+    "no-useless-iterator-to-array": {
+      "status": "off",
+      "reason": "Nursery rule; defer adoption until implementation and diagnostics stabilize."
+    },
+    "no-useless-length-check": {
+      "status": "off",
+      "reason": "An explicit empty guard may document a case; no safety gain justifies rewriting it."
+    },
+    "no-useless-promise-resolve-reject": {
+      "status": "off",
+      "reason": "Promise normalization can document an adapter contract and preserve timing intent."
+    },
+    "no-useless-spread": {
+      "status": "off",
+      "reason": "Explicit copy boundaries can matter for model ownership; avoid broad simplification."
+    },
+    "no-useless-switch-case": {
+      "status": "off",
+      "reason": "Explicit grouped cases support exhaustive message handling and future changes."
+    },
+    "no-useless-undefined": {
+      "status": "off",
+      "reason": "Explicit undefined values are meaningful in typed optional fields and test fixtures."
+    },
+    "no-zero-fractions": {
+      "status": "off",
+      "reason": "Numeric spelling is cosmetic and does not affect precision."
+    },
+    "number-literal-case": {
+      "status": "off",
+      "reason": "Literal capitalization is a style preference."
+    },
+    "numeric-separators-style": {
+      "status": "off",
+      "reason": "Numeric grouping should follow domain readability rather than one enforced grouping width."
+    },
+    "prefer-add-event-listener": {
+      "status": "off",
+      "reason": "Owned EventSource error handlers use property assignment legitimately; cleanup is explicit."
+    },
+    "prefer-array-find": {
+      "status": "error",
+      "reason": "Avoid allocating a filtered array when only its first match is needed."
+    },
+    "prefer-array-flat": {
+      "status": "off",
+      "reason": "Changing concatenation idioms is not needed for correctness or current resource findings."
+    },
+    "prefer-array-flat-map": {
+      "status": "off",
+      "reason": "Existing filter/map and domain transformations are intentionally permitted by project policy."
+    },
+    "prefer-array-index-of": {
+      "status": "off",
+      "reason": "Equivalent search forms can preserve clearer domain intent."
+    },
+    "prefer-array-some": {
+      "status": "off",
+      "reason": "Existence checks are readable in several forms; broader transformations are not necessary."
+    },
+    "prefer-at": {
+      "status": "off",
+      "reason": "Index arithmetic can express board and tuple relationships explicitly."
+    },
+    "prefer-bigint-literals": {
+      "status": "off",
+      "reason": "BigInt spelling is a style preference and is not a current domain concern."
+    },
+    "prefer-blob-reading-methods": {
+      "status": "off",
+      "reason": "FileReader adapters deliberately model cancellation and stale reads; do not rewrite their lifecycle."
+    },
+    "prefer-class-fields": {
+      "status": "off",
+      "reason": "Class layout is a style choice; models use plain data and functions."
+    },
+    "prefer-classlist-toggle": {
+      "status": "off",
+      "reason": "Explicit DOM branches can preserve lifecycle intent without changing behavior."
+    },
+    "prefer-code-point": {
+      "status": "off",
+      "reason": "Tile code intentionally distinguishes code points from code units where needed; review each case."
+    },
+    "prefer-date-now": {
+      "status": "error",
+      "reason": "Avoid allocating Date objects just to obtain the current timestamp."
+    },
+    "prefer-default-parameters": {
+      "status": "off",
+      "reason": "Defaulting inside validated adapters may be more explicit than signature defaults."
+    },
+    "prefer-dom-node-append": {
+      "status": "off",
+      "reason": "DOM insertion choice is not relevant to the current allocation fixes."
+    },
+    "prefer-dom-node-dataset": {
+      "status": "off",
+      "reason": "Attribute access is useful in test and generic DOM adapters."
+    },
+    "prefer-dom-node-remove": {
+      "status": "off",
+      "reason": "DOM removal style is not the same as lifecycle cleanup correctness."
+    },
+    "prefer-dom-node-text-content": {
+      "status": "off",
+      "reason": "The syntactic rule also flags Playwright Locator.innerText, where rendered visible text is intentional."
+    },
+    "prefer-event-target": {
+      "status": "off",
+      "reason": "Do not replace Node event APIs solely to satisfy a stylistic architecture preference."
+    },
+    "prefer-export-from": {
+      "status": "off",
+      "reason": "Explicit imported bindings may also be used locally and aid boundary review."
+    },
+    "prefer-global-this": {
+      "status": "off",
+      "reason": "Browser APIs remain clearly browser-local; qualifying every access adds churn."
+    },
+    "prefer-import-meta-properties": {
+      "status": "off",
+      "reason": "Existing URL/path helpers are explicit and compatible with the pinned toolchain."
+    },
+    "prefer-includes": {
+      "status": "off",
+      "reason": "Existing index comparisons may encode more than simple membership."
+    },
+    "prefer-keyboard-event-key": {
+      "status": "error",
+      "reason": "Use meaningful keyboard keys instead of obsolete numeric key codes."
+    },
+    "prefer-logical-operator-over-ternary": {
+      "status": "off",
+      "reason": "Explicit conditional defaults can be clearer at parsing boundaries."
+    },
+    "prefer-math-min-max": {
+      "status": "off",
+      "reason": "Explicit boundary branches can be easier to verify than mechanical min/max rewrites."
+    },
+    "prefer-math-trunc": {
+      "status": "off",
+      "reason": "Numeric conversion intent must be reviewed with the input type; no blanket rewrite."
+    },
+    "prefer-modern-dom-apis": {
+      "status": "off",
+      "reason": "Generic DOM adapters and tests may need established APIs with explicit behavior."
+    },
+    "prefer-modern-math-apis": {
+      "status": "off",
+      "reason": "Rare math expressions are domain-specific and are not a memory-safety concern."
+    },
+    "prefer-module": {
+      "status": "off",
+      "reason": "The repository is ESM already; native bundle interop intentionally uses createRequire."
+    },
+    "prefer-native-coercion-functions": {
+      "status": "off",
+      "reason": "Explicit parsing and validation must not be reduced to coercion preferences."
+    },
+    "prefer-negative-index": {
+      "status": "off",
+      "reason": "Existing indices can communicate position and board bounds explicitly."
+    },
+    "prefer-node-protocol": {
+      "status": "error",
+      "reason": "Make built-in Node imports unambiguous from third-party packages."
+    },
+    "prefer-number-coercion": {
+      "status": "off",
+      "reason": "Do not mechanically replace deliberate parsing/coercion at runtime boundaries."
+    },
+    "prefer-number-properties": {
+      "status": "off",
+      "reason": "Global versus Number predicates can differ in coercion; changes need input-specific review."
+    },
+    "prefer-object-from-entries": {
+      "status": "off",
+      "reason": "Explicit dictionary construction can preserve validation and inference more clearly."
+    },
+    "prefer-optional-catch-binding": {
+      "status": "off",
+      "reason": "Unused catch binding cleanup is cosmetic and already visible to other diagnostics."
+    },
+    "prefer-prototype-methods": {
+      "status": "off",
+      "reason": "Explicit calls can be clearer than prototype rewrites at compatibility boundaries."
+    },
+    "prefer-query-selector": {
+      "status": "off",
+      "reason": "DOM lookup choices are context-specific and do not establish listener cleanup."
+    },
+    "prefer-reflect-apply": {
+      "status": "off",
+      "reason": "Conflicts with the agreed anti-slop/no-reflect-apply rule."
+    },
+    "prefer-regexp-test": {
+      "status": "off",
+      "reason": "Some match calls intentionally retain captures; changing matching idioms is unnecessary."
+    },
+    "prefer-response-static-json": {
+      "status": "off",
+      "reason": "Hono owns response construction; raw Responses in tests intentionally exercise body lifecycle."
+    },
+    "prefer-set-has": {
+      "status": "off",
+      "reason": "Tiny immutable arrays are appropriate; adding long-lived sets can increase retained memory."
+    },
+    "prefer-set-size": {
+      "status": "error",
+      "reason": "Read collection size directly instead of allocating an intermediate array."
+    },
+    "prefer-single-call": {
+      "status": "off",
+      "reason": "Separate calls can communicate command or cleanup ordering."
+    },
+    "prefer-spread": {
+      "status": "off",
+      "reason": "Avoid imposing extra copies solely to replace equivalent iterator/array helpers."
+    },
+    "prefer-string-raw": {
+      "status": "off",
+      "reason": "Raw template syntax is a readability preference for the specific string."
+    },
+    "prefer-string-replace-all": {
+      "status": "off",
+      "reason": "Regex replacement may intentionally document flags and pattern semantics."
+    },
+    "prefer-string-slice": {
+      "status": "off",
+      "reason": "Existing explicit substring bounds are harmless and well tested."
+    },
+    "prefer-string-starts-ends-with": {
+      "status": "off",
+      "reason": "Regexes can intentionally retain anchors/flags; a blanket replacement is not needed."
+    },
+    "prefer-string-trim-start-end": {
+      "status": "error",
+      "reason": "Prefer current trim APIs over legacy left/right aliases."
+    },
+    "prefer-structured-clone": {
+      "status": "off",
+      "reason": "JSON serialization is intentional at database and transport boundaries."
+    },
+    "prefer-ternary": {
+      "status": "off",
+      "reason": "Explicit branches align with feature-model readability and effects separation."
+    },
+    "prefer-top-level-await": {
+      "status": "off",
+      "reason": "Tooling and shutdown adapters may intentionally expose asynchronous functions."
+    },
+    "prefer-type-error": {
+      "status": "off",
+      "reason": "Existing app error classes carry HTTP status and expected user-facing errors."
+    },
+    "relative-url-style": {
+      "status": "off",
+      "reason": "Relative URL spelling is cosmetic; trusted origin validation is enforced separately."
+    },
+    "require-array-join-separator": {
+      "status": "off",
+      "reason": "Default comma joins may be intentional; no uniform separator policy is needed."
+    },
+    "require-module-attributes": {
+      "status": "off",
+      "reason": "Tooling already pins ESM/JSON behavior; no additional import attribute policy is needed."
+    },
+    "require-module-specifiers": {
+      "status": "off",
+      "reason": "Empty export markers intentionally make declaration files modules; TypeScript validates real dependencies."
+    },
+    "require-number-to-fixed-digits-argument": {
+      "status": "off",
+      "reason": "The default zero digits may be intentional and is not a safety problem."
+    },
+    "require-post-message-target-origin": {
+      "status": "error",
+      "reason": "Require an explicit target origin when communicating across window boundaries."
+    },
+    "switch-case-braces": {
+      "status": "off",
+      "reason": "Existing explicit case blocks already follow variable-lifetime needs; no universal brace style."
+    },
+    "switch-case-break-position": {
+      "status": "off",
+      "reason": "Switch layout is formatting preference; exhaustive variants are checked separately."
+    },
+    "text-encoding-identifier-case": {
+      "status": "off",
+      "reason": "Encoding aliases are equivalent; normalizing spelling has no resource benefit."
+    },
+    "throw-new-error": {
+      "status": "error",
+      "reason": "Keep exception construction explicit and reject accidental non-constructed Error calls."
+    }
+  }
+}

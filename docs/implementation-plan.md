@@ -153,3 +153,14 @@ preview: Enigmo puzzle/reload, Poker private voting/reveal/reconnect, Schlezaz d
 Vortoj accounts/private racks/word voting, and Kunludo accounts/teams/calendar import.
 Preview health and remaining app APIs return 200; Observo paths return 404 and its
 landing-page entry is absent. The production-image CI workflow also passes.
+
+## Unicorn lint review — implemented
+
+Enabled 22 explicitly selected built-in Unicorn checks. The complete
+[rule catalog](unicorn-lint-policy.md) explains 116 disabled registered rules
+and 247 additional upstream names unavailable in the pinned Oxlint version.
+Registry-drift checks require reviewing additions on tool upgrades; actual-linter
+fixtures cover listener cleanup, array reference sharing, invalid fetch options,
+recursive accessors and message origins, plus allowed model conventions.
+`pnpm check` passes with 224 tests. No application behavior or runtime dependency
+changes; the one applicable allocation finding in a test helper uses `findLast`.

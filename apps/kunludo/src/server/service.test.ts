@@ -53,10 +53,7 @@ function fixture() {
       },
     });
 
-    return service
-      .snapshot(alice)
-      .games.filter((g) => g.teamId === tid)
-      .at(-1)!;
+    return service.snapshot(alice).games.findLast((g) => g.teamId === tid)!;
   };
 
   return { service, connection, send, create, enter, game, secret, now };

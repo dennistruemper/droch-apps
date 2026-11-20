@@ -292,3 +292,13 @@ its dashboard, API, scheduler, migrations and configuration, together with the
 production Playwright/Chromium runtime. Browser testing remains a development/CI
 dependency. Existing deployed `observo.sqlite` files are left untouched; the server
 no longer opens them. The remaining apps and shared auth retain their current data.
+
+## Unicorn lint selection — 2026-11-20
+
+The user requested useful Unicorn checks and a reason for every enabled/disabled
+rule. Use Oxlint's built-in Unicorn plugin with an explicit versioned selection,
+retaining TypeScript, import, boundary, anti-slop and type-aware checks. The
+[complete rule review](unicorn-lint-policy.md) covers all registered rules and the
+wider upstream collection, distinguishing unavailable checks from deliberate
+exclusions. Avoid blanket style rewrites that conflict with pure models, explicit
+null contracts or browser/test adapter semantics.
