@@ -218,6 +218,14 @@ export function createRoutes(options?: PokerOptions) {
 
         streamClosers.add(stop);
         c.req.raw.signal.addEventListener("abort", stop, { once: true });
+
+        // A disconnect before listener registration must also release the subscription.
+        if (c.req.raw.signal.aborted) {
+          stop();
+
+          return;
+        }
+
         // Subscribe first, then send the authoritative full snapshot. Reconnects
         // always receive current state, even if a previous event was missed.
         send();
