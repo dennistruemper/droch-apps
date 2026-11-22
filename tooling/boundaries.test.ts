@@ -19,6 +19,7 @@ describe("module boundaries", () => {
     expect(checkImport(client, "@repo/shared/navigation")).toBeNull();
     expect(checkImport(client, "@repo/shared/contracts/auth")).toBeNull();
     expect(checkImport(server, "@repo/poker/server")).toBeNull();
+    expect(checkImport(server, "@repo/shared/events")).toBeNull();
   });
   it.each([
     "../server/index.ts",
@@ -27,6 +28,7 @@ describe("module boundaries", () => {
     "@repo/shared/database",
     "@repo/shared/auth",
     "@repo/shared/mail",
+    "@repo/shared/events",
     "pg",
     "better-sqlite3",
     "node:sqlite",

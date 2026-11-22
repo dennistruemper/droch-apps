@@ -164,3 +164,12 @@ fixtures cover listener cleanup, array reference sharing, invalid fetch options,
 recursive accessors and message origins, plus allowed model conventions.
 `pnpm check` passes with 224 tests. No application behavior or runtime dependency
 changes; the one applicable allocation finding in a test helper uses `findLast`.
+
+## Shared SSE lifecycle — implemented
+
+Poker, Vortoj and Kunludo reuse `@repo/shared/events` for transport cleanup,
+timers, cancellation, abort races, response headers and shutdown. App-specific
+authorization, wire frames, intervals and backpressure policies remain local.
+Shared lifecycle tests cover pre-aborted requests, synchronous setup aborts,
+subscriber/send failures and idempotent cleanup; app integration regressions
+continue to cover private snapshots and session/membership changes.

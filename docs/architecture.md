@@ -140,8 +140,11 @@ Clients submit commands over HTTP. The server authorizes and validates them, com
 the resulting state, and then notifies connected clients over SSE. Connections carry
 authorized snapshots and versioned updates. Reconnection reloads authoritative state.
 Periodic snapshots and browser visibility changes reconcile missed updates.
-SSE setup checks already-aborted request signals after registering cleanup, so a
-disconnect before subscription setup cannot retain its timer or listener. Account or room access must be checked on
+The server-only `@repo/shared/events` module owns SSE timers, abort/cancel cleanup,
+response headers and per-app stream shutdown. It checks already-aborted signals
+and releases subscriptions even when they abort synchronously during setup. Apps
+retain authorization, snapshot/error frames, subscription ownership and their
+existing slow-reader policy. Account or room access must be checked on
 event streams as well as commands.
 
 One backend process owns `auth.sqlite` and each persisted app's `<app>.sqlite` under
