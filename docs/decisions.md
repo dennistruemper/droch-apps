@@ -356,14 +356,19 @@ Use Renovate-driven merging (`platformAutomerge: false`), require passing checks
 not automate merges of other PRs or change repository settings. Keep the three-day
 routine cooldown and version constraints; respect reviews/branch rules added later.
 
-### Daily update window — 2026-11-23
+### Continuous PR creation and overnight merges — 2026-11-23
 
-Allow routine Renovate PRs every day from 00:00 through 11:59 Europe/Berlin,
-superseding the Sunday-only window. Checks are inexpensive, and a daily window
-reduces the wait for eligible dependency fixes. The hosted app controls actual
-execution times. Keep the three-day release-age protection, PR limits and merge
-policy; actionable vulnerability alerts continue to bypass the routine window
-and Renovate cooldown.
+Allow Renovate PR creation all day, every day, superseding the Sunday-only window.
+Checks are inexpensive, and continuous eligibility reduces the wait for dependency
+fixes. The user requested automatic merges from 01:00 to 05:30 Europe/Berlin to
+reduce user disruption because deployments do not have zero downtime. Renovate
+supports only whole-hour windows; use `automergeSchedule: ["* 1-4 * * *"]`
+(01:00–04:59) to stay within that cutoff. Keep `platformAutomerge: false` so
+Renovate enforces the merge window. This does not constrain deployment completion
+or manual merges. The hosted app controls actual execution times. Keep the
+three-day release-age protection, PR limits and merge eligibility rules; actionable
+vulnerability alerts continue to bypass the routine Renovate cooldown and remain
+manual.
 
 ## Playwright accessibility audit — 2026-11-22
 
