@@ -1,5 +1,26 @@
 # Decisions
 
+## Browser coverage — 2026-11-22
+
+The owner requested coverage for the existing browser suite. Instrument frontend
+modules with Istanbul only in a coverage-enabled test build, then collect counters
+through a shared Playwright fixture, including independent player contexts and
+document lifecycle transitions. Remap through source maps to TS/TSX and publish
+lines, statements, functions and branches as a separate CI artifact. Avoid relying
+on Chromium's coverage retention across document navigation. Keep the ordinary
+production build uninstrumented. Coverage reports describe execution, not assertion
+quality; no new percentage gate is introduced.
+
+## Vitest coverage — 2026-11-22
+
+The owner requested Vitest coverage and asked about coverage for the current code
+delta. Use Vitest's matching V8 provider and native changed-file reporting, with
+HTML for inspection and LCOV/JSON for further analysis. Run coverage once within
+the existing quality checks and publish the report in the same CI job. Include
+unimported source files to avoid overstating coverage. Establish a visible baseline
+without an arbitrary percentage gate. Exact changed-line or historical test-gap
+analysis would need additional tooling; it is not provided by this setup.
+
 Recorded on 2026-10-02. These capture agreed constraints and implementation choices; milestone status lives
 in the implementation plan.
 

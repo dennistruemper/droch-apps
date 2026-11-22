@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 
 test("SchleZaZ selection, repeated draws, editing focus and mobile layout", async ({ page }) => {
   await page.goto("/");

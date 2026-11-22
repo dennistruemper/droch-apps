@@ -23,8 +23,16 @@ jobs:
         uses: jdx/mise-action@v4
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
+      - name: Upload unit and integration coverage
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: vitest-coverage
+          path: coverage/full/
+          retention-days: 14
+          if-no-files-found: warn
       - parallel:
-          - name: Build production image
+          - name: Build instrumented test image
             run: pnpm test:image
           - name: Install browser and system dependencies
             run: pnpm exec playwright install --with-deps chromium
@@ -32,6 +40,14 @@ jobs:
         run: |
           pnpm test:stack
           cat .local/test/browser.env >> "$GITHUB_ENV"
-      - run: pnpm test:e2e
+      - run: pnpm test:e2e:coverage
+      - name: Upload browser coverage
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-coverage
+          path: coverage/browser/
+          retention-days: 14
+          if-no-files-found: warn
       - if: always()
         run: pnpm test:stack:stop

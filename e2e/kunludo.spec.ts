@@ -5,7 +5,8 @@ declare global {
   }
 }
 
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
+import type { Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 

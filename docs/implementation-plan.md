@@ -9,6 +9,9 @@ Account lifecycle operations and deployment recovery work remain pending. See [a
 - Add mise pins for Node and pnpm, workspace manifests, and the lockfile.
 - Create one package per app plus server composition and shared modules.
 - Configure strict TypeScript, Solid 2 compilation, Oxlint, Oxfmt, and Vitest.
+- Collect V8 unit/integration and Istanbul browser coverage, with separate CI artifacts
+  and a native changed-file report. Exact changed-line and historical test-gap analysis
+  remain optional follow-up tooling.
 - Add explicit exports and resolved module-boundary enforcement.
 - Add root commands for development, checks, tests, builds, and migrations.
 - Integrate Drochsign after deciding how to consume and update it.

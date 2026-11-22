@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 
 test("two anonymous players vote privately, reveal, reset, and reconnect", async ({
   browser,

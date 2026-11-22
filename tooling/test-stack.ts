@@ -56,7 +56,16 @@ async function availablePort() {
 }
 
 if (command === "build") {
-  docker(["build", "--target", "production", "-t", image, "."]);
+  docker([
+    "build",
+    "--target",
+    "production",
+    "--build-arg",
+    "BROWSER_COVERAGE=1",
+    "-t",
+    image,
+    ".",
+  ]);
 } else if (command === "up") {
   await mkdir(directory, { recursive: true });
   const origin = `http://localhost:${await availablePort()}`;

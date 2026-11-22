@@ -1,4 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
+import type { Page } from "@playwright/test";
 
 async function createRoom(page: Page) {
   await page.goto("/poker/");

@@ -13,9 +13,10 @@ COPY --chown=node:node . .
 RUN pnpm install --offline --frozen-lockfile --store-dir /pnpm/store --package-import-method=copy
 
 FROM development AS build
+ARG BROWSER_COVERAGE=0
 # Quality checks run before image builds in CI. Keep the runtime build independent
 # of Oxlint's JS-plugin allocator (upstream issue oxc-project/oxc#20331).
-RUN pnpm typecheck && pnpm build
+RUN pnpm typecheck && BROWSER_COVERAGE=$BROWSER_COVERAGE pnpm build
 
 FROM node:24.21.0-bookworm-slim AS production
 ENV NODE_ENV=production

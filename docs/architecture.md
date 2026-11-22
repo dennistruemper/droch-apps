@@ -36,6 +36,20 @@ squash-merges stable patch/minor updates after passing checks and rebasing onto
 current `main`; major, prerelease/pre-1.0 and vulnerability updates stay manual.
 It does not enable GitHub-wide auto-merge.
 
+Vitest uses the matching V8 coverage provider. `pnpm check` collects unit/integration
+coverage for all app, server, shared and tooling sources, including unimported
+files; tests and declarations are excluded. HTML, LCOV and JSON totals are generated
+under ignored `coverage/full/` and retained as a CI artifact. A separate changed-file report is available under `coverage/changed/`;
+it does not measure only the changed lines or track historical test gaps.
+
+The test image enables Istanbul instrumentation and frontend source maps through
+the `BROWSER_COVERAGE=1` build argument. Ordinary production builds leave this off.
+Playwright's shared fixture collects counters before navigation/reload and closure,
+and on pagehide for page-initiated navigation. It includes explicitly created
+multiplayer contexts. Source-mapped browser HTML, LCOV and JSON reports live under
+`coverage/browser/` and are published in the same CI job. Browser and Vitest reports
+remain separate: their instrumentation and measured source populations differ.
+
 Exact versions are pinned in manifests and the lockfile. Node 24.21.0 and pnpm
 11.25.0 are pinned in mise and Docker. CI uses `jdx/mise-action` to install both
 tools from `mise.toml` and add them to PATH.

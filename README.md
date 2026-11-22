@@ -73,6 +73,94 @@ bug](https://github.com/oxc-project/oxc/issues/20331) on small Docker VMs. Run
 `pnpm check` on the host or a suitably provisioned CI runner; image builds run type
 checking and compilation separately. The rule is enforced by host/CI checks.
 
+## Test coverage
+
+`pnpm test` runs unit/integration tests without coverage. `pnpm test:coverage`
+runs the same suite with V8 coverage and writes an HTML report to
+`coverage/full/index.html`, LCOV to `coverage/full/lcov.info`, and totals to
+`coverage/full/coverage-summary.json`. `pnpm check` includes this coverage run;
+CI publishes the reports as the `vitest-coverage` artifact for 14 days, including
+reports produced when tests fail.
+
+Coverage includes app, server, shared and tooling source files, including files
+never imported by tests. Test files and type declarations are excluded. These
+reports measure Vitest execution only; the separate Playwright reports do not
+contribute to these totals. Frontend views exercised only in Playwright therefore appear
+uncovered. There is initially no percentage gate: use the report to establish a
+baseline and identify meaningful missing behavior tests.
+
+`pnpm test:coverage:changed` runs the full suite and limits its report to files
+with staged or unstaged changes, under `coverage/changed/`. To compare with a
+branch or commit instead:
+
+```sh
+git fetch origin main
+pnpm test:coverage --coverage.changed=origin/main --coverage.reportsDirectory=coverage/changed
+```
+
+The reference must exist locally. For a PR, use its merge-base commit with the
+target branch to focus on the PR's changes. This is **whole-file coverage for
+changed files**, not a percentage for only added/modified lines. It also differs
+from `vitest --changed`, which selects related tests. Exact changed-line coverage
+needs a diff-aware consumer of LCOV. Two options are
+[diff-cover](https://github.com/Bachmann1234/diff_cover) (a local/CI tool that can
+produce HTML and enforce a changed-line percentage) and
+[Codecov patch coverage](https://docs.codecov.com/docs/coverage-percentages)
+(a hosted PR integration). Neither is configured here. Teamscale's historical
+test-gap analysis additionally tracks changes and test execution over time.
+
+See [Vitest coverage options](https://vitest.dev/config/coverage#coverage-changed).
+
+### Browser coverage
+
+The test image (`pnpm test:image`) includes Istanbul counters and frontend source
+maps. Ordinary production image builds do not enable instrumentation. Start the
+test stack as usual, then run the browser coverage command against its URL:
+
+```sh
+pnpm test:image
+pnpm test:stack
+set -a
+. .local/test/browser.env
+set +a
+pnpm test:e2e:coverage
+pnpm test:stack:stop
+```
+
+The report is `coverage/browser/index.html`, with `lcov.info`,
+`coverage-final.json` and `coverage-summary.json` alongside it. CI uploads the
+`browser-coverage` artifact for 14 days, including reports from failed tests.
+Raw snapshots are isolated under ignored `.local/browser-coverage/` and cleared
+before each coverage run. Collect only one browser coverage run per checkout at a time.
+For a local host build, use `BROWSER_COVERAGE=1 pnpm build` before starting the
+bundled server. Coverage against a development server requires starting that server
+with `BROWSER_COVERAGE=1` too. Missing instrumentation causes report generation to fail.
+
+All browser specs import `test` and `expect` from `e2e/fixtures.ts`. The fixture
+captures explicitly created multiplayer contexts as well as the default page;
+it saves counters before explicit navigation/reload/close and on pagehide. Keep
+using the fixture for new specs. Counters are cumulative snapshots: hit counts are
+not a performance or invocation-frequency measurement.
+Per-tab session storage carries pagehide snapshots across same-origin document
+navigation; the fixture captures the native storage methods before tests simulate
+storage failures.
+
+Browser percentages cover instrumented modules loaded by the suite. They do not
+include backend code or frontend modules never loaded by a page. Keep the broad
+Vitest report alongside this report to see source files without Vitest coverage;
+do not average the two percentages or compare their totals directly. Istanbul
+instruments Solid's compiled output and remaps locations to TS/TSX; compiler-generated
+branches/functions can affect the reported counts.
+`unobserved-sources.json` lists candidate frontend source files absent from the browser
+report, including modules eliminated from frontend bundles or used only on the server.
+
+Both reports expose line, statement, function and branch coverage. Prioritize
+branches for error handling and state transitions, functions for adapters never
+called, and lines/statements for locating missing execution. None measures every
+combination of boolean conditions, meaningful assertions, or all asynchronous
+interleavings; those need targeted behavior and concurrency tests. Mutation testing
+is a separate way to evaluate whether assertions detect incorrect behavior.
+
 ## Production deployment
 
 `compose.yaml` builds one application image and runs a one-shot migration service

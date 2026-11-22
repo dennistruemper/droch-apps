@@ -17,6 +17,12 @@ if (!baseURL) throw new Error("Start pnpm dev first or set TEST_BASE_URL");
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
+  ...(process.env.BROWSER_COVERAGE === "1"
+    ? {
+        globalSetup: "./tooling/browser-coverage-setup.ts",
+        globalTeardown: "./tooling/browser-coverage-report.ts",
+      }
+    : {}),
   use: {
     baseURL,
     browserName: "chromium",
