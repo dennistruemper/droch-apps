@@ -10,5 +10,8 @@ allowBuilds:
   esbuild: true
   better-sqlite3: true
 
+# Wait 72 hours before resolving newly published direct or transitive packages.
+minimumReleaseAge: 4320
+
 minimumReleaseAgeExclude:
   - "@types/node@24.19.1"

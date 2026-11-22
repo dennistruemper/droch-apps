@@ -173,3 +173,11 @@ authorization, wire frames, intervals and backpressure policies remain local.
 Shared lifecycle tests cover pre-aborted requests, synchronous setup aborts,
 subscriber/send failures and idempotent cleanup; app integration regressions
 continue to cover private snapshots and session/membership changes.
+
+## Renovate dependency updates — configured, activation pending
+
+Repository configuration and [setup instructions](dependency-updates.md) cover
+npm/pnpm, mise, Docker and GitHub Actions, including the pnpm installation inside
+the Dockerfile. Remaining owner setup: merge the PR, enable the hosted Renovate
+GitHub app for this repository, inspect its dashboard and verify the first update
+PR's lockfile and full Check workflow. No hosted run is claimed yet.
