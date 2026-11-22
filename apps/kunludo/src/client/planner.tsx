@@ -2,14 +2,9 @@ import { createSignal, For, Show, onSettled } from "solid-js";
 import type { User } from "@repo/shared/contracts/auth";
 import { AppSettings } from "@repo/shared/settings";
 import { SidePanel } from "@repo/shared/navigation";
+import { snapshotSchema, type GameView, type Action, type Team } from "../contracts/index.ts";
 import {
-  snapshotSchema,
-  type GameView,
-  type Action,
-  type Team,
-  type MatchInput,
-} from "../contracts/index.ts";
-import {
+  formatWindow,
   instant,
   localInput,
   parseCalendar,
@@ -39,23 +34,6 @@ const states: Record<GameView["mine"], string> = {
   elsewhere: "Anderweitig zugesagt",
   committed: "Verbindlich zugesagt",
 };
-
-export function formatWindow(w: MatchInput["window"], tz: string) {
-  const date = new Intl.DateTimeFormat("de-DE", {
-    timeZone: tz,
-    weekday: "short",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(w.start);
-
-  const time = (t: number) =>
-    new Intl.DateTimeFormat("de-DE", { timeZone: tz, hour: "2-digit", minute: "2-digit" }).format(
-      t,
-    );
-
-  return `${date} · ${time(w.start)}`;
-}
 
 export function Planner(props: { user: User; logout: () => void }) {
   let current = init(Date.now());

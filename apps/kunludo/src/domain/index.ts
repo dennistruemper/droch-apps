@@ -23,6 +23,21 @@ export function overlaps(a: MatchInput["window"], b: MatchInput["window"]) {
   );
 }
 
+export function formatWindow(w: MatchInput["window"], tz: string) {
+  const date = dateFormat("de-DE", {
+    timeZone: tz,
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(w.start);
+
+  const time = (t: number) =>
+    dateFormat("de-DE", { timeZone: tz, hour: "2-digit", minute: "2-digit" }).format(t);
+
+  return `${date} · ${time(w.start)}`;
+}
+
 export function localDay(time: number, timezone: string) {
   return dateFormat("en-CA", {
     timeZone: timezone,
