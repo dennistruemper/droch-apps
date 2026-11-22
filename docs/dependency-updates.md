@@ -21,11 +21,10 @@ no service to deploy and no Renovate dependency in the application.
 Merging this configuration alone does not install the app. No repository secret,
 GitHub Actions schedule, or Coolify change is required for the hosted service.
 
-## Initial update policy
+## Update policy
 
-- Routine PR creation is allowed on Sundays from 00:00 through 11:59 in
-  `Europe/Berlin`. The hosted service chooses when it runs within that window;
-  this is not a guaranteed execution time. Existing PRs can still be refreshed.
+- PR creation is allowed all day, every day. The hosted service chooses when it
+  runs; this is not a guaranteed execution time.
 - Routine updates must be at least **three days (72 hours)** old. Renovate uses
   `minimumReleaseAge: "3 days"`, requires a release timestamp, and uses strict
   internal filtering so updates wait before a PR is raised. Missing timestamps
@@ -46,8 +45,13 @@ GitHub Actions schedule, or Coolify change is required for the hosted service.
   Pending, failing or missing checks prevent merging (`ignoreTests: false`).
   `platformAutomerge: false` makes Renovate wait for checks itself; it does not
   enable GitHub's repository-wide auto-merge setting or affect other PRs.
-  Eligible PRs can merge on a later Renovate run outside the Sunday creation
-  window. Required reviews or other branch rules, if added later, still apply.
+  Automatic merges are allowed daily from 01:00 through 04:59 in `Europe/Berlin`
+  (`automergeSchedule: ["* 1-4 * * *"]`). The requested cutoff is 05:30, but Renovate
+  supports only whole hours, so the window ends at 05:00 to stay within it.
+  Overnight merges reduce user disruption from deployments without zero downtime.
+  This controls merge times, not deployment completion; a queued or slow deployment
+  can finish later. Manual merges are unrestricted by this setting. Required
+  reviews and branch rules still apply.
 - Renovate's recommended presets supply standard monorepo grouping and supported
   dependency handling. Native managers cover workspace npm dependencies and the
   pnpm lockfile, mise tools, Docker images and GitHub Actions. A custom regex

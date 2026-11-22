@@ -28,7 +28,10 @@ See [decisions](decisions.md) for fixed choices versus proposed defaults.
 
 [Renovate](dependency-updates.md) proposes updates for dependencies, mise
 tools, Docker images and GitHub Actions. Its repository policy is in
-`renovate.json`; activation requires the hosted GitHub app. Routine updates wait
+`renovate.json`; activation requires the hosted GitHub app. PR creation is allowed
+all day, every day; automatic merges are limited to 01:00–04:59 Europe/Berlin
+to reduce deployment disruption. Renovate supports only whole-hour windows, so
+this stays within the requested 05:30 cutoff. Routine updates wait
 three days, with a matching pnpm resolution cooldown for direct and transitive
 packages. Renovate requires release timestamps; vulnerability-fix PRs bypass its
 delay, while pnpm still enforces the repository installation policy. Renovate
