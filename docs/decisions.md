@@ -355,3 +355,56 @@ Use Renovate-driven merging (`platformAutomerge: false`), require passing checks
 (`ignoreTests: false`), and rebase branches when behind the base branch. This does
 not automate merges of other PRs or change repository settings. Keep the three-day
 routine cooldown and version constraints; respect reviews/branch rules added later.
+
+## Playwright accessibility audit — 2026-11-22
+
+Use axe as a development-only dependency within Playwright, reusing actual browser
+flows and the existing isolated local-auth stack. A separate command keeps the
+initial findings visible as failing accessibility checks without silently changing
+the existing functional CI gate. Do not suppress known elements or rules to make
+this audit green. Best-practice findings are reported separately from WCAG-tagged
+violations. Automated checks supplement keyboard, screen-reader and other manual
+assessment; they do not establish accessibility compliance.
+
+Run against a fresh local stack with `AUTH_MODE=local` and no real mail delivery:
+`TEST_AUTH_MODE=local TEST_BASE_URL=<local-origin> pnpm test:a11y`.
+Account flows skip unless the caller explicitly declares local auth; public scans
+still run. Playwright writes `playwright-report/a11y/` and `test-results/a11y/`.
+
+## Full-contrast text hierarchy — 2026-11-22
+
+The user chose full foreground/background colors for readable text rather than
+faded theme colors. Use size, weight and spacing for secondary text; do not use
+static text opacity. Override the vendored Drochsign snapshot in the integration
+stylesheet, including small text, section headings, citations and placeholders.
+Disabled controls retain full-opacity labels with dashed outlines and their
+existing disabled behavior/cursor. Remove app-specific text-opacity overrides;
+retain motion and visibility transitions. This does not redesign app palettes or
+decorative borders, overlays and illustrations.
+
+## Axe in CI — 2026-11-22
+
+The user requested running the accessibility checks in CI. Run `pnpm test:a11y`
+after the functional browser suite against the existing production test stack;
+set `TEST_AUTH_MODE=local` explicitly so authenticated scans are exercised. Run
+axe even if a functional browser test fails, provided stack startup succeeded.
+For the current markup backlog, keep this audit non-blocking with an explicit
+warning and job summary on failure, and upload the Playwright report and raw
+results for 14 days. Do not suppress any rule or finding. Making the audit
+blocking remains a follow-up after the known findings are fixed.
+
+## Blocking axe checks and semantic fixes — 2026-11-22
+
+The user requested a blocking accessibility audit and resolution of its remaining
+confirmed findings. This supersedes the non-blocking CI policy above. Remove
+`continue-on-error`; an axe failure fails the Check workflow, while report upload,
+summary and stack cleanup still run after failures.
+
+Use a neutral container for the shared menu title so it does not create another
+page banner. Kunludo's standalone account content is a main landmark; the planner
+keeps a visible view-specific h1 inside its existing main on every viewport.
+Preserve the account layout when changing its semantic element. Vortoj's score
+button uses its visible text as its accessible name and describes its game-details
+action separately. Tile names include the visible letter/points with matching
+spacing; the submit button's accessible name includes its visible singular label.
+These fixes preserve auth, gameplay, focus handling and the two-color styling.

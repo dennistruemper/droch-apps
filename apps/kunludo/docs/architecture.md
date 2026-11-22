@@ -99,3 +99,9 @@ rosters. Those members' hidden teams remain available only to calculate generic
 conflict states; unrelated teams and profiles are not materialized. Local-day
 values are reused within one snapshot and discarded afterward. No schema or
 authorization change is required.
+
+## Accessible page structure
+
+The standalone account screen owns its main landmark. Signed-in planner views
+retain their existing main and one visible view-specific h1 on desktop/mobile.
+Shared navigation titles do not create additional banner landmarks.

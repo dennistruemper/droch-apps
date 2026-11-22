@@ -437,10 +437,10 @@ export function Room(props: { id: string; user: User }) {
               <nav class="game-heading-actions" aria-label="Game information">
                 <button
                   type="button"
-                  aria-label="Players, scores and game details"
+                  aria-description="Players, scores and game details"
                   onClick={() => detailsDialog?.showModal()}
                 >
-                  <small>Your score</small>
+                  <small>Your score</small>{" "}
                   <strong>
                     {current().players.find((player) => player.id === props.user.id)?.score} points
                   </strong>
@@ -559,15 +559,14 @@ export function Room(props: { id: string; user: User }) {
                           ? "true"
                           : "false"
                       }
-                      aria-label={`Tile ${tile.letter}, ${tile.points} points`}
+                      aria-label={`Tile ${tile.letter} ${tile.points} points`}
                       data-used={
                         draft().some((place) => place.tileId === tile.id) ? "true" : "false"
                       }
                       disabled={!turn() || busy()}
                       onClick={() => selectTile(tile.id)}
                     >
-                      <strong>{tile.letter}</strong>
-                      <small>{tile.points}</small>
+                      <strong>{tile.letter}</strong> <small>{tile.points}</small>
                     </button>
                   )}
                 </For>
@@ -630,7 +629,7 @@ export function Room(props: { id: string; user: User }) {
                       <button
                         type="button"
                         class="submit-move"
-                        aria-label="Submit words for approval"
+                        aria-label="Submit word for approval"
                         disabled={!preview().move || busy()}
                         onClick={() => void command({ kind: "place", placements: draft() })}
                       >

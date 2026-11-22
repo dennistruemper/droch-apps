@@ -448,7 +448,9 @@ test("match responses group by answer and update without losing reserve controls
     await games(page);
     await expect(page.getByRole("button", { name: "Team erstellen", exact: true })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Team beitreten", exact: true })).toHaveCount(0);
-    await expect(page.getByRole("heading", { level: 1 })).toHaveCount(0);
+    await expect(
+      page.getByRole("heading", { name: "Spiele", level: 1, exact: true }),
+    ).toBeVisible();
     await page.screenshot({ path: ".local/demos/compact-games.png" });
     const card = page.getByTestId("game-card");
     await expect(card.getByRole("button", { name: /zusagen|Zusage aufheben/ })).toHaveCount(0);

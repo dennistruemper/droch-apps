@@ -1,5 +1,36 @@
 @import "./drochsign.css";
 
+/* Keep text in the theme foreground; size and weight provide hierarchy.
+   Override the vendored stylesheet here so its upstream snapshot stays intact. */
+small,
+section > h2,
+blockquote footer,
+blockquote cite {
+  opacity: 1;
+}
+
+/* Vendor input selectors enumerate types, so these two control overrides
+   deliberately take precedence over their higher specificity. */
+input::placeholder,
+textarea::placeholder {
+  opacity: 1 !important;
+  font-style: italic;
+}
+
+/* Disabled controls retain readable labels; cursor and outline convey state. */
+button:disabled,
+[type="submit"]:disabled,
+[type="button"]:disabled,
+[type="reset"]:disabled,
+[role="button"][aria-disabled="true"],
+input:disabled,
+textarea:disabled,
+select:disabled {
+  opacity: 1 !important;
+  border-style: dashed !important;
+  border-color: var(--color-fg) !important;
+}
+
 [data-theme="antique-paper"] {
   --color-bg: #f3e8c8;
   --color-fg: #231f18;

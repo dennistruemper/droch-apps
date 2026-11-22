@@ -184,3 +184,12 @@ recoverable leases; later changes survive in-flight delivery. Retried summaries 
 with newer pending edits and wait for their quiet period. Recheck permissions and
 current match data at delivery. Keep shared auth/mail boundaries and local no-op
 mail behavior. No additional queue service, dependency or infrastructure is needed.
+
+## Accessible page structure — 2026-11-22
+
+The request to resolve the axe findings supersedes the compact planning view's
+omission of page headings. Keep one concise, visible h1 (Spiele or Teams) in the
+planner's main content on every viewport; do not add a repeated account name or
+introductory copy. The standalone sign-in screen uses main instead of section,
+with its existing layout preserved. Shared menu headings are neutral containers,
+not additional page banners.
