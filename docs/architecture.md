@@ -139,7 +139,12 @@ No extra DNS, domains, Coolify resources, or per-app ingress rules.
 Clients submit commands over HTTP. The server authorizes and validates them, commits
 the resulting state, and then notifies connected clients over SSE. Connections carry
 authorized snapshots and versioned updates. Reconnection reloads authoritative state.
-Periodic snapshots and browser visibility changes reconcile missed updates. Account or room access must be checked on
+Periodic snapshots and browser visibility changes reconcile missed updates.
+The server-only `@repo/shared/events` module owns SSE timers, abort/cancel cleanup,
+response headers and per-app stream shutdown. It checks already-aborted signals
+and releases subscriptions even when they abort synchronously during setup. Apps
+retain authorization, snapshot/error frames, subscription ownership and their
+existing slow-reader policy. Account or room access must be checked on
 event streams as well as commands.
 
 One backend process owns `auth.sqlite` and each persisted app's `<app>.sqlite` under

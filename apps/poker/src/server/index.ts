@@ -1,3 +1,4 @@
+import { createEventStreams } from "@repo/shared/events";
 import { Hono } from "hono";
 import { getCookie, setCookie } from "hono/cookie";
 import { bodyLimit } from "hono/body-limit";
@@ -34,10 +35,8 @@ export function createRoutes(options?: PokerOptions) {
   if (!options) return routes.get("/status", (c) => c.json(status()));
   const service = createPokerService(options.db, options.now);
   const subscribers = new Map<string, Set<() => void>>();
-  const streamClosers = new Set<() => void>();
-  options.registerCleanup?.(() => {
-    for (const close of streamClosers) close();
-  });
+  const streams = createEventStreams();
+  options.registerCleanup?.(streams.close);
   const cookieName = `${options.cookieName}_poker`;
 
   const token = (c: Parameters<typeof getCookie>[0]) => {
@@ -172,67 +171,30 @@ export function createRoutes(options?: PokerOptions) {
       viewer = credential(c);
 
     service.snapshot(id, viewer); // Authorize before opening the response.
-    const encoder = new TextEncoder();
-    let cleanup = () => {};
-    let closed = false;
 
-    const body = new ReadableStream<Uint8Array>({
-      start(controller) {
-        const stop = () => {
-          if (closed) return;
-          closed = true;
-          cleanup();
-          controller.close();
-        };
-
-        const send = () => {
-          if (closed || (controller.desiredSize ?? 0) <= 0) return;
-
-          try {
-            const snapshot = service.snapshot(id, viewer);
-            controller.enqueue(
-              encoder.encode(
-                `id: ${snapshot.version}\nevent: snapshot\ndata: ${JSON.stringify(snapshot)}\n\n`,
-              ),
-            );
-          } catch (error) {
-            if (error instanceof PokerError)
-              controller.enqueue(encoder.encode("event: expired\ndata: {}\n\n"));
-            stop();
-          }
-        };
-
+    return streams.response({
+      signal: c.req.raw.signal,
+      interval: 10000,
+      slowReader: "skip",
+      subscribe(send) {
         const listeners = subscribers.get(id) ?? new Set<() => void>();
         subscribers.set(id, listeners);
         listeners.add(send);
-        const timer = setInterval(send, 10000);
-        timer.unref();
-        cleanup = () => {
-          clearInterval(timer);
+
+        return () => {
           listeners.delete(send);
-          streamClosers.delete(stop);
 
           if (!listeners.size) subscribers.delete(id);
-          c.req.raw.signal.removeEventListener("abort", stop);
         };
-
-        streamClosers.add(stop);
-        c.req.raw.signal.addEventListener("abort", stop, { once: true });
-        // Subscribe first, then send the authoritative full snapshot. Reconnects
-        // always receive current state, even if a previous event was missed.
-        send();
       },
-      cancel() {
-        closed = true;
-        cleanup();
-      },
-    });
-
-    return new Response(body, {
-      headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache, no-transform",
-        "X-Accel-Buffering": "no",
+      send({ write, close }) {
+        try {
+          const snapshot = service.snapshot(id, viewer);
+          write(`id: ${snapshot.version}\nevent: snapshot\ndata: ${JSON.stringify(snapshot)}\n\n`);
+        } catch (error) {
+          if (error instanceof PokerError) write("event: expired\ndata: {}\n\n");
+          close();
+        }
       },
     });
   });

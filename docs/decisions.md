@@ -302,3 +302,11 @@ retaining TypeScript, import, boundary, anti-slop and type-aware checks. The
 wider upstream collection, distinguishing unavailable checks from deliberate
 exclusions. Avoid blanket style rewrites that conflict with pure models, explicit
 null contracts or browser/test adapter semantics.
+
+## Shared SSE lifecycle — 2026-11-22
+
+The user requested removing repeated SSE cleanup from the app servers. Use one
+server-only shared event-stream helper for transport resources and shutdown.
+Apps keep authorization, payloads, room subscriptions and explicit slow-reader
+policy; preserve existing event framing and reconciliation intervals. No new
+dependency or messaging framework is needed.

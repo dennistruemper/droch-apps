@@ -1,3 +1,4 @@
+import { createEventStreams } from "@repo/shared/events";
 import { Hono } from "hono";
 import { getCookie } from "hono/cookie";
 import { bodyLimit } from "hono/body-limit";
@@ -34,7 +35,7 @@ export function createRoutes(options?: VortojOptions) {
 
   const service = createVortojService(options.db),
     listeners = new Map<string, Set<() => void>>(),
-    closers = new Set<() => void>();
+    streams = createEventStreams();
 
   const resolveUser = (c: Parameters<typeof getCookie>[0]) =>
     options.resolveUser?.(getCookie(c, `${options.cookieName}_auth`));
@@ -51,9 +52,7 @@ export function createRoutes(options?: VortojOptions) {
     for (const send of listeners.get(id) ?? []) send();
   };
 
-  options.registerCleanup?.(() => {
-    for (const close of closers) close();
-  });
+  options.registerCleanup?.(streams.close);
   routes.onError((error, c) => {
     if (error instanceof VortojError) return c.json({ error: error.message }, error.status);
     const reference = randomUUID();
@@ -147,71 +146,36 @@ export function createRoutes(options?: VortojOptions) {
       initial = user(c);
 
     service.snapshot(id, initial);
-    const encoder = new TextEncoder();
 
-    let cleanup = () => {},
-      closed = false;
-
-    const stream = new ReadableStream<Uint8Array>({
-      start(controller) {
-        const stop = () => {
-          if (closed) return;
-          closed = true;
-          cleanup();
-          controller.close();
-        };
-
-        const send = () => {
-          if (closed || (controller.desiredSize ?? 0) <= 0) return;
-
-          try {
-            const user = resolveUser(c);
-
-            if (!user || user.id !== initial.id) throw new VortojError("Sign in again", 401);
-            const snapshot = service.snapshot(id, user);
-            controller.enqueue(
-              encoder.encode(
-                `id: ${snapshot.version}\nevent: snapshot\ndata: ${JSON.stringify(snapshot)}\n\n`,
-              ),
-            );
-          } catch (error) {
-            const event =
-              error instanceof VortojError && error.status === 404 ? "removed" : "expired";
-
-            controller.enqueue(encoder.encode(`event: ${event}\ndata: {}\n\n`));
-            stop();
-          }
-        };
-
+    return streams.response({
+      signal: c.req.raw.signal,
+      interval: 5000,
+      slowReader: "skip",
+      subscribe(send) {
         const callbacks = listeners.get(id) ?? new Set<() => void>();
         listeners.set(id, callbacks);
         callbacks.add(send);
-        const timer = setInterval(send, 5000);
-        timer.unref();
-        cleanup = () => {
-          clearInterval(timer);
+
+        return () => {
           callbacks.delete(send);
-          closers.delete(stop);
 
           if (!callbacks.size) listeners.delete(id);
-          c.req.raw.signal.removeEventListener("abort", stop);
         };
-
-        closers.add(stop);
-        c.req.raw.signal.addEventListener("abort", stop, { once: true });
-        send();
       },
-      cancel() {
-        closed = true;
-        cleanup();
-      },
-    });
+      send({ write, close }) {
+        try {
+          const user = resolveUser(c);
 
-    return new Response(stream, {
-      headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache, no-transform",
-        "X-Accel-Buffering": "no",
+          if (!user || user.id !== initial.id) throw new VortojError("Sign in again", 401);
+          const snapshot = service.snapshot(id, user);
+          write(`id: ${snapshot.version}\nevent: snapshot\ndata: ${JSON.stringify(snapshot)}\n\n`);
+        } catch (error) {
+          const event =
+            error instanceof VortojError && error.status === 404 ? "removed" : "expired";
+
+          write(`event: ${event}\ndata: {}\n\n`);
+          close();
+        }
       },
     });
   });

@@ -1,3 +1,4 @@
+import { createEventStreams } from "@repo/shared/events";
 import { Hono } from "hono";
 import { getCookie } from "hono/cookie";
 import { bodyLimit } from "hono/body-limit";
@@ -46,11 +47,9 @@ export function createRoutes(options?: KunludoOptions) {
   }
 
   const listeners = new Set<() => void>(),
-    closers = new Set<() => void>();
+    streams = createEventStreams();
 
-  options.registerCleanup?.(() => {
-    for (const close of closers) close();
-  });
+  options.registerCleanup?.(streams.close);
 
   function user(c: Parameters<typeof getCookie>[0]): User {
     const value = options?.resolveUser?.(getCookie(c, `${options.cookieName}_auth`));
@@ -102,71 +101,30 @@ export function createRoutes(options?: KunludoOptions) {
     return c.json(result);
   });
   routes.get("/events", (c) => {
-    const initial = user(c),
-      encoder = new TextEncoder();
+    const initial = user(c);
 
-    let cleanup = () => {},
-      closed = false;
-
-    const body = new ReadableStream<Uint8Array>({
-      start(controller) {
-        const stop = () => {
-          if (closed) return;
-          closed = true;
-          cleanup();
-          controller.close();
-        };
-
-        const send = () => {
-          if (closed) return;
-
-          if ((controller.desiredSize ?? 0) <= 0) {
-            stop();
-
-            return;
-          }
-
-          try {
-            const current = user(c);
-
-            if (current.id !== initial.id) throw new TeamError("Sitzung abgelaufen.", 401);
-            const value = service!.snapshot(current);
-            controller.enqueue(
-              encoder.encode(
-                `event: snapshot\nid: ${value.version}\ndata: ${JSON.stringify(value)}\n\n`,
-              ),
-            );
-          } catch {
-            controller.enqueue(encoder.encode("event: expired\ndata: {}\n\n"));
-            stop();
-          }
-        };
-
+    return streams.response({
+      signal: c.req.raw.signal,
+      interval: 5000,
+      slowReader: "close",
+      subscribe(send) {
         listeners.add(send);
-        const timer = setInterval(send, 5000);
-        timer.unref();
-        cleanup = () => {
-          clearInterval(timer);
+
+        return () => {
           listeners.delete(send);
-          closers.delete(stop);
-          c.req.raw.signal.removeEventListener("abort", stop);
         };
-
-        closers.add(stop);
-        c.req.raw.signal.addEventListener("abort", stop, { once: true });
-        send();
       },
-      cancel() {
-        closed = true;
-        cleanup();
-      },
-    });
+      send({ write, close }) {
+        try {
+          const current = user(c);
 
-    return new Response(body, {
-      headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache, no-transform",
-        "X-Accel-Buffering": "no",
+          if (current.id !== initial.id) throw new TeamError("Sitzung abgelaufen.", 401);
+          const value = service!.snapshot(current);
+          write(`event: snapshot\nid: ${value.version}\ndata: ${JSON.stringify(value)}\n\n`);
+        } catch {
+          write("event: expired\ndata: {}\n\n");
+          close();
+        }
       },
     });
   });
