@@ -392,3 +392,19 @@ For the current markup backlog, keep this audit non-blocking with an explicit
 warning and job summary on failure, and upload the Playwright report and raw
 results for 14 days. Do not suppress any rule or finding. Making the audit
 blocking remains a follow-up after the known findings are fixed.
+
+## Blocking axe checks and semantic fixes — 2026-11-22
+
+The user requested a blocking accessibility audit and resolution of its remaining
+confirmed findings. This supersedes the non-blocking CI policy above. Remove
+`continue-on-error`; an axe failure fails the Check workflow, while report upload,
+summary and stack cleanup still run after failures.
+
+Use a neutral container for the shared menu title so it does not create another
+page banner. Kunludo's standalone account content is a main landmark; the planner
+keeps a visible view-specific h1 inside its existing main on every viewport.
+Preserve the account layout when changing its semantic element. Vortoj's score
+button uses its visible text as its accessible name and describes its game-details
+action separately. Tile names include the visible letter/points with matching
+spacing; the submit button's accessible name includes its visible singular label.
+These fixes preserve auth, gameplay, focus handling and the two-color styling.

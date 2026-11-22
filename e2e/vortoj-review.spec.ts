@@ -155,17 +155,17 @@ test("board has one tab stop and supports keyboard navigation and placement", as
       ),
     )
     .toBe(1);
-  await page.getByRole("button", { name: "Tile A, 1 points", exact: true }).first().click();
+  await page.getByRole("button", { name: "Tile A 1 points", exact: true }).first().click();
   await centre.focus();
   await page.keyboard.press("Enter");
   await expect(page.locator('.game-board [data-proposed="true"]')).toHaveCount(1);
-  await page.getByRole("button", { name: "Tile A, 1 points", exact: true }).nth(1).click();
+  await page.getByRole("button", { name: "Tile A 1 points", exact: true }).nth(1).click();
   await centre.focus();
   await page.keyboard.press("ArrowRight");
   await expect(squares.nth(113)).toBeFocused();
   await page.keyboard.press("Space");
   await expect(page.locator('.game-board [data-proposed="true"]')).toHaveCount(2);
-  await expect(page.getByRole("button", { name: "Submit words for approval" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Submit word for approval" })).toBeEnabled();
   await page.keyboard.press("Home");
   await expect(squares.nth(105)).toBeFocused();
   await page.keyboard.press("ArrowLeft");
@@ -625,9 +625,7 @@ for (const viewport of [
       ).toHaveCount(0);
 
       if (game)
-        await expect(
-          page.getByRole("button", { name: "Players, scores and game details" }),
-        ).toHaveCount(1);
+        await expect(page.getByRole("button", { name: /Your score.*points/ })).toHaveCount(1);
     }
   });
 }

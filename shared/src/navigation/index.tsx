@@ -137,14 +137,14 @@ export function SidePanel(props: {
             close();
         }}
       >
-        <header data-panel-heading>
+        <div data-panel-heading>
           <strong>Menu</strong>
           <Show when={!desktop()}>
             <button type="button" aria-label="Close menu panel" onClick={close}>
               ×
             </button>
           </Show>
-        </header>
+        </div>
         {props.menu(controls)}
       </dialog>
       <div data-panel-main>{props.children(controls)}</div>

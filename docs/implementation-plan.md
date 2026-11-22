@@ -227,3 +227,21 @@ on PRs and pushes to main. Its separate step is non-blocking while the remaining
 button-name, landmark and heading findings are unresolved. Failures produce a
 warning/job summary; report artifacts retain the HTML report, raw results,
 screenshots and traces for 14 days. Promotion to a blocking gate remains pending.
+
+## Blocking accessibility checks — 2026-11-22
+
+Resolved all confirmed axe findings: shared menu banner semantics, Kunludo
+account landmarks and visible planner headings, and Vortoj score/tile/submit
+control names. Updated browser locators and the old no-heading assertion to match
+the accessible interface; preserved the account layout after its semantic change.
+All 33 accessibility tests and 69 scans pass with zero violations and no skips.
+
+Removed `continue-on-error` from the axe CI step. Violations or audit errors now
+fail Check; report upload, summary and stack cleanup still run after failure.
+The [current report](accessibility-results.html) links the two historical audits.
+Manual assessment of incomplete results and untested states remains separate.
+
+Type checking, lint, formatting, 245 unit tests and the production build pass.
+All 45 distinct functional browser flows were verified: 44 passed in the final
+full run, followed by the corrected joker-tile locator's mobile flow passing a
+targeted rerun. No application changes were required for that locator correction.

@@ -98,7 +98,7 @@ export function Account(props: { children: (user: User, logout: () => void) => J
       when={user()}
       keyed
       fallback={
-        <section class="zs-login">
+        <main class="zs-login">
           <span class="zs-eyebrow">Gemeinsam planen</span>
           <h1>
             Deine Teams.
@@ -188,7 +188,7 @@ export function Account(props: { children: (user: User, logout: () => void) => J
           <Show when={model().error}>
             <p role="alert">{model().error}</p>
           </Show>
-        </section>
+        </main>
       }
     >
       {(u) => props.children(u, () => dispatch({ kind: "logout" }))}

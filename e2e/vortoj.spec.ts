@@ -96,16 +96,16 @@ test("accounts, saved sets, invitations, private racks, word voting and recovery
 
     for (const tile of ownerSnapshot.you.rack)
       expect(JSON.stringify(guestWire)).not.toContain(tile.id);
-    await owner.getByRole("button", { name: "Tile A, 1 points", exact: true }).nth(0).click();
+    await owner.getByRole("button", { name: "Tile A 1 points", exact: true }).nth(0).click();
     await owner
       .getByRole("button", {
         name: "Row 8, column 8, empty, 2× word bonus, starting square",
         exact: true,
       })
       .click();
-    await owner.getByRole("button", { name: "Tile A, 1 points", exact: true }).nth(1).click();
+    await owner.getByRole("button", { name: "Tile A 1 points", exact: true }).nth(1).click();
     await owner.getByRole("button", { name: "Row 8, column 9, empty", exact: true }).click();
-    await owner.getByRole("button", { name: "Submit words for approval" }).click();
+    await owner.getByRole("button", { name: "Submit word for approval" }).click();
     await guest.getByRole("button", { name: "Accept AA", exact: true }).click();
     await expect(guest.getByText("Your turn", { exact: true })).toBeVisible();
     await owner.reload();
@@ -115,7 +115,7 @@ test("accounts, saved sets, invitations, private racks, word voting and recovery
         exact: true,
       }),
     ).toBeVisible();
-    await expect(owner.getByRole("button", { name: "Tile A, 1 points", exact: true })).toHaveCount(
+    await expect(owner.getByRole("button", { name: "Tile A 1 points", exact: true })).toHaveCount(
       7,
     );
 
@@ -123,11 +123,11 @@ test("accounts, saved sets, invitations, private racks, word voting and recovery
       await (await guest.request.get(`${baseURL}/api/vortoj/rooms/${id}`)).json(),
     );
 
-    await guest.getByRole("button", { name: "Tile A, 1 points", exact: true }).nth(0).click();
+    await guest.getByRole("button", { name: "Tile A 1 points", exact: true }).nth(0).click();
     await guest.getByRole("button", { name: "Row 8, column 10, empty", exact: true }).click();
-    await guest.getByRole("button", { name: "Tile A, 1 points", exact: true }).nth(1).click();
+    await guest.getByRole("button", { name: "Tile A 1 points", exact: true }).nth(1).click();
     await guest.getByRole("button", { name: "Row 8, column 11, empty", exact: true }).click();
-    await guest.getByRole("button", { name: "Submit words for approval" }).click();
+    await guest.getByRole("button", { name: "Submit word for approval" }).click();
     await owner.getByRole("button", { name: "Reject AAAA", exact: true }).click();
     await expect(owner.getByText("Your turn", { exact: true })).toBeVisible();
 
@@ -184,7 +184,7 @@ test("small-phone board camera, joker placement, approvals and desktop resizing"
     page.getByRole("button", { name: new RegExp(`^Row ${row}, column ${col},`) });
 
   const placeJoker = async (page: Page, index: number, row: number, col: number) => {
-    await page.getByRole("button", { name: "Tile *, 0 points", exact: true }).nth(index).tap();
+    await page.getByRole("button", { name: "Tile * 0 points", exact: true }).nth(index).tap();
     await page.getByLabel("Joker letter", { exact: true }).fill("A");
     await page.getByRole("button", { name: "Use this letter", exact: true }).tap();
     await square(page, row, col).tap();
@@ -244,7 +244,7 @@ test("small-phone board camera, joker placement, approvals and desktop resizing"
     await fitsViewport(owner);
     await owner.screenshot({ path: testInfo.outputPath("phone-overview.png") });
     // First overview tap changes the camera only, even with a tile selected.
-    await owner.getByRole("button", { name: "Tile *, 0 points", exact: true }).first().tap();
+    await owner.getByRole("button", { name: "Tile * 0 points", exact: true }).first().tap();
     await owner.getByLabel("Joker letter", { exact: true }).fill("Z");
     await owner.getByRole("button", { name: "Use this letter", exact: true }).tap();
     await expect(owner.getByRole("alert")).toContainText("letter from this tile set");
@@ -257,7 +257,7 @@ test("small-phone board camera, joker placement, approvals and desktop resizing"
     await expect(
       owner.getByText("The first word must cover the centre star", { exact: true }),
     ).toBeVisible();
-    await expect(owner.getByRole("button", { name: "Submit words for approval" })).toBeDisabled();
+    await expect(owner.getByRole("button", { name: "Submit word for approval" })).toBeDisabled();
     await owner.getByRole("button", { name: "Clear placement" }).tap();
     await placeJoker(owner, 0, 8, 8);
     await placeJoker(owner, 1, 8, 9);
@@ -285,7 +285,7 @@ test("small-phone board camera, joker placement, approvals and desktop resizing"
     await owner.setViewportSize({ width: 375, height: 667 });
     await fitsViewport(owner);
     await expect(owner.locator('.game-board [data-proposed="true"]')).toHaveCount(2);
-    await owner.getByRole("button", { name: "Submit words for approval" }).tap();
+    await owner.getByRole("button", { name: "Submit word for approval" }).tap();
     await expect(guest.getByRole("region", { name: "Word approval", exact: true })).toBeVisible();
     await guest.getByRole("button", { name: "Close word approval" }).tap();
     await guest.getByRole("button", { name: "Centre board" }).tap();
@@ -332,7 +332,7 @@ test("small-phone board camera, joker placement, approvals and desktop resizing"
       await fitsViewport(guest);
     }
 
-    await guest.getByRole("button", { name: "Players, scores and game details" }).tap();
+    await guest.getByRole("button", { name: /Your score.*points/ }).tap();
     await expect(guest.getByRole("heading", { name: "Players and scores" })).toBeVisible();
     await guest.getByText("Game history", { exact: true }).tap();
     await expect(guest.locator("dialog[open] ol")).toContainText("AA");
@@ -385,10 +385,8 @@ test("game side panel adapts, restores focus, persists desktop choice and signs 
     await expect(owner.locator(".game-player")).toHaveText("Playing as PanelAlice");
     await expect(menu).not.toContainText("Panel word night");
     await expect(menu).not.toContainText("Playing as");
-    await owner.getByRole("button", { name: "Players, scores and game details" }).focus();
-    await expect(
-      owner.getByRole("button", { name: "Players, scores and game details" }),
-    ).toBeFocused();
+    await owner.getByRole("button", { name: /Your score.*points/ }).focus();
+    await expect(owner.getByRole("button", { name: /Your score.*points/ })).toBeFocused();
     await close().click();
     await expect(menu).not.toBeVisible();
     await owner.reload();

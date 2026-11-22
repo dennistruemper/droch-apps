@@ -48,11 +48,11 @@ rules through 2.2 plus separately identifiable best-practice rules, with light/d
 desktop and light mobile profiles. Raw axe results and violation screenshots are
 attached to the Playwright HTML report. The ordinary browser suite excludes this
 folder; CI runs the axe suite separately against the same production test stack
-with explicit local auth. It is currently non-blocking while the initial markup
-backlog is reviewed. Failures produce a workflow warning and summary; the HTML
+with explicit local auth. Accessibility violations or audit errors fail the Check
+workflow. Failures produce an error annotation and summary; the HTML
 report, raw results, screenshots and traces are uploaded for 14 days. The audit
 itself asserts zero violations without exclusions or disabled rules. See
-[the initial findings](accessibility-report.html).
+[the current results](accessibility-results.html).
 
 The built-in Unicorn plugin adds explicitly selected correctness and allocation
 checks; [the full rule policy](unicorn-lint-policy.md) records every enabled,

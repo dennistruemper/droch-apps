@@ -37,6 +37,10 @@ button {
   padding: 2.5rem 2rem 4rem;
   box-sizing: border-box;
 }
+.zs-main > h1 {
+  font-size: var(--font-size-xl);
+  margin-bottom: 1.25rem;
+}
 .zs-login h1 {
   font-size: clamp(2.3rem, 5vw, 4.1rem);
   line-height: 1.05;
@@ -386,7 +390,8 @@ summary {
   padding-left: 0.75rem;
   font-size: 0.85rem;
 }
-.zs-login {
+#app > .zs-login {
+  gap: var(--space-md);
   max-width: 34rem;
   margin: 5rem auto;
   padding: 1.5rem;
@@ -458,7 +463,7 @@ summary {
   .zs-date {
     font-size: 0.9rem;
   }
-  .zs-login {
+  #app > .zs-login {
     margin: 2rem auto;
   }
   .zs-code code {

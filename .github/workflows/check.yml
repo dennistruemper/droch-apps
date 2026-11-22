@@ -34,11 +34,9 @@ jobs:
           pnpm test:stack
           cat .local/test/browser.env >> "$GITHUB_ENV"
       - run: pnpm test:e2e
-      # Report the existing accessibility backlog without blocking functional CI.
-      - name: Audit accessibility with axe (non-blocking)
+      - name: Audit accessibility with axe
         id: a11y
         if: ${{ !cancelled() && steps.test_stack.outcome == 'success' }}
-        continue-on-error: true
         env:
           TEST_AUTH_MODE: local
         run: pnpm test:a11y
@@ -57,8 +55,8 @@ jobs:
           AXE_OUTCOME: ${{ steps.a11y.outcome }}
         run: |
           if [ "$AXE_OUTCOME" = "failure" ]; then
-            echo "::warning::Axe accessibility audit reported findings or failed. Download axe-accessibility-report for details."
+            echo "::error::Axe accessibility audit failed. Download axe-accessibility-report for details."
           fi
-          printf '### Axe accessibility audit\n\nOutcome: %s. This audit is currently non-blocking while known markup findings remain.\n\nDownload the axe-accessibility-report artifact for the HTML report, raw results, screenshots and traces.\n' "$AXE_OUTCOME" >> "$GITHUB_STEP_SUMMARY"
+          printf '### Axe accessibility audit\n\nOutcome: %s. Accessibility failures fail the Check workflow.\n\nDownload the axe-accessibility-report artifact for the HTML report, raw results, screenshots and traces.\n' "$AXE_OUTCOME" >> "$GITHUB_STEP_SUMMARY"
       - if: always()
         run: pnpm test:stack:stop
