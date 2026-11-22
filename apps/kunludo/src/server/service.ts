@@ -1,4 +1,4 @@
-import { and, eq, lt } from "drizzle-orm";
+import { and, eq, lt, inArray, sql } from "drizzle-orm";
 import {
   createCipheriv,
   createDecipheriv,
@@ -142,19 +142,55 @@ export function createTeamService(
           .run();
       }
     });
-    const allTeams = db.select().from(teams).all();
-    const allMembers = db.select().from(memberships).all();
+
+    const mine = db
+      .select()
+      .from(memberships)
+      .where(eq(memberships.userId, user.id))
+      .orderBy(sql`${memberships}.rowid`)
+      .all();
+
+    const visible = new Set(mine.map((m) => m.teamId));
+
+    const visibleTeamIds = db
+      .select({ id: memberships.teamId })
+      .from(memberships)
+      .where(eq(memberships.userId, user.id));
+
+    const visibleUserIds = db
+      .select({ id: memberships.userId })
+      .from(memberships)
+      .where(inArray(memberships.teamId, visibleTeamIds));
+
+    // Include hidden teams of visible roster members for generic conflict states.
+    // Other teams' game JSON must never be loaded into this viewer's snapshot.
+    const relevantTeamIds = db
+      .select({ id: memberships.teamId })
+      .from(memberships)
+      .where(inArray(memberships.userId, visibleUserIds));
+
+    const allTeams = db
+      .select()
+      .from(teams)
+      .where(inArray(teams.id, relevantTeamIds))
+      .orderBy(sql`${teams}.rowid`)
+      .all();
+
+    const allMembers = db
+      .select()
+      .from(memberships)
+      .where(inArray(memberships.userId, visibleUserIds))
+      .orderBy(sql`${memberships}.rowid`)
+      .all();
 
     const names = new Map(
       db
         .select()
         .from(profiles)
+        .where(inArray(profiles.id, visibleUserIds))
         .all()
         .map((p) => [p.id, p.name]),
     );
-
-    const mine = allMembers.filter((m) => m.userId === user.id),
-      visible = new Set(mine.map((m) => m.teamId));
 
     const allGames = allTeams.flatMap((t) =>
       t.games.map((raw) => ({ team: t, game: gameSchema.parse(raw) })),
@@ -165,6 +201,7 @@ export function createTeamService(
     const committed = db
       .select()
       .from(commitments)
+      .where(inArray(commitments.userId, visibleUserIds))
       .all()
       .filter((c) =>
         active.some(
@@ -174,6 +211,19 @@ export function createTeamService(
             allMembers.some((m) => m.teamId === t.id && m.userId === c.userId),
         ),
       );
+
+    const days = new Map<string, string>();
+
+    const day = (g: Game, timezone: string) => {
+      const key = JSON.stringify([g.window.start, timezone]);
+      const existing = days.get(key);
+
+      if (existing !== undefined) return existing;
+      const value = localDay(g.window.start, timezone);
+      days.set(key, value);
+
+      return value;
+    };
 
     const currentYes = (g: Game, uid: string) =>
       g.responses[uid]?.answer === "yes" && g.responses[uid]?.revision === g.revision;
@@ -267,10 +317,7 @@ export function createTeamService(
             g.cancelled || g.window.end < now()
               ? []
               : others
-                  .filter(
-                    ({ game: o }) =>
-                      localDay(g.window.start, t.timezone) === localDay(o.window.start, t.timezone),
-                  )
+                  .filter(({ game: o }) => day(g, t.timezone) === day(o, t.timezone))
                   .map(({ game: o }) => o.id),
           ready: members.filter((m) => m.state === "yes" || m.state === "committed").length,
           uncertain: members.filter((m) =>
