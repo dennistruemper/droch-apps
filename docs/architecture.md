@@ -75,6 +75,12 @@ and the production Compose migration gate. `pnpm test:stack` publishes an alloca
 per-checkout project, cookie and disposable SQLite volume; cleanup does not affect
 development stacks. Worktree identity coverage remains in the ordinary unit tests.
 
+The active [main protection policy](repository-protection.md) requires PRs,
+the GitHub Actions `foundation` check, an up-to-date branch and resolved review
+conversations. Force pushes/deletion are blocked, and there are no bypass actors.
+The recorded payload in `.github/rulesets/main.json` documents the live GitHub
+setting; committing that file does not apply settings automatically.
+
 ## Layout and dependency direction
 
 ```text

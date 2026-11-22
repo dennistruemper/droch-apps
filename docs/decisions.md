@@ -133,6 +133,16 @@ future preview numbers automatically. Validate the selected URL strictly and fai
 closed for malformed values; do not infer trusted origins from request headers or
 accept every preview subdomain.
 
+## Main branch protection — 2026-11-22
+
+The user approved an active ruleset for `main`: require PRs, the GitHub Actions
+`foundation` status check, up-to-date branches and resolved review conversations;
+block force pushes/deletion and leave the bypass list empty. Require zero approving
+reviews to support solo maintenance and CI-gated Renovate updates. Do not require
+signed commits or a merge queue. Record the settings and maintenance process in
+[repository protection](repository-protection.md); apply them in GitHub separately
+from the documentation PR. Neither administrators nor Renovate receive a bypass.
+
 ## Still to settle
 
 - Account deletion, email-change behavior, and app-data cleanup across independent files.
