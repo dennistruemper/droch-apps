@@ -310,3 +310,15 @@ server-only shared event-stream helper for transport resources and shutdown.
 Apps keep authorization, payloads, room subscriptions and explicit slow-reader
 policy; preserve existing event framing and reconciliation intervals. No new
 dependency or messaging framework is needed.
+
+## Renovate dependency updates — 2026-11-22
+
+The user requested Renovate configuration in a separate PR. Use the hosted GitHub
+app with a Dependency Dashboard and manual merges; do not add a service or runtime
+dependency. The initial policy allows routine Sunday-morning PRs in Europe/Berlin,
+limited to three open and two new per hour. Security fixes retain Renovate's default
+priority behavior. Group Node 24, pnpm, Oxlint/plugins and the Solid stack where
+versions must be reviewed together. Keep the current toolchain and Solid major
+lines until deliberately changed; allow Solid prerelease updates. The
+[setup and policy](dependency-updates.md) documents activation, validation and the
+limits of grouping. App installation remains a one-time owner action after merge.

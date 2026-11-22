@@ -1,0 +1,64 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "timezone": "Europe/Berlin",
+  "schedule": ["* 0-11 * * 0"],
+  "dependencyDashboard": {
+    "enabled": true
+  },
+  "prConcurrentLimit": 3,
+  "prHourlyLimit": 2,
+  "automerge": false,
+  "enabledManagers": ["npm", "mise", "dockerfile", "github-actions", "custom.regex"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update the pnpm installation in the Docker build alongside mise and packageManager.",
+      "managerFilePatterns": ["/^Dockerfile$/"],
+      "matchStrings": ["RUN npm install --global pnpm@(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"],
+      "depNameTemplate": "pnpm",
+      "datasourceTemplate": "npm",
+      "versioningTemplate": "semver"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Keep every Node pin and its types on the agreed Node 24 line.",
+      "matchPackageNames": ["node", "@types/node"],
+      "allowedVersions": "/^24\\./",
+      "groupName": "Node 24 toolchain",
+      "separateMajorMinor": false
+    },
+    {
+      "description": "Keep pnpm pins in mise, packageManager and Docker together on pnpm 11.",
+      "matchPackageNames": ["pnpm"],
+      "allowedVersions": "/^11\\./",
+      "groupName": "pnpm toolchain",
+      "separateMajorMinor": false
+    },
+    {
+      "description": "The JS plugin API and Oxlint must share an exact version.",
+      "matchPackageNames": ["oxlint", "@oxlint/plugins"],
+      "groupName": "Oxlint and plugins",
+      "separateMajorMinor": false
+    },
+    {
+      "description": "Review Solid runtime, router and compiler integration together, including accepted prereleases.",
+      "matchPackageNames": ["solid-js", "@solidjs/web", "@solidjs/router", "@solidjs/vite-plugin"],
+      "groupName": "Solid stack",
+      "ignoreUnstable": false,
+      "respectLatest": false,
+      "separateMajorMinor": false
+    },
+    {
+      "description": "Preserve Solid 2 rather than upgrading its major automatically.",
+      "matchPackageNames": ["solid-js", "@solidjs/web", "@solidjs/router"],
+      "allowedVersions": "/^2\\./"
+    },
+    {
+      "description": "Preserve the current Solid 2 compiler plugin major.",
+      "matchPackageNames": ["@solidjs/vite-plugin"],
+      "allowedVersions": "/^3\\./"
+    }
+  ]
+}

@@ -26,6 +26,10 @@ See [decisions](decisions.md) for fixed choices versus proposed defaults.
 | Quality      | Strict TypeScript, Oxlint, Oxfmt, Vitest, Playwright       |
 | Deployment   | Docker Compose in Coolify                                  |
 
+[Renovate](dependency-updates.md) proposes reviewed updates for dependencies, mise
+tools, Docker images and GitHub Actions. Its repository policy is in
+`renovate.json`; activation requires the hosted GitHub app.
+
 Exact versions are pinned in manifests and the lockfile. Node 24.21.0 and pnpm
 11.25.0 are pinned in mise and Docker. CI uses `jdx/mise-action` to install both
 tools from `mise.toml` and add them to PATH.
