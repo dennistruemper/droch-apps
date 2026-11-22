@@ -59,12 +59,25 @@
       "description": "Preserve the current Solid 2 compiler plugin major.",
       "matchPackageNames": ["@solidjs/vite-plugin"],
       "allowedVersions": "/^3\\./"
+    },
+    {
+      "description": "Automatically merge stable patch/minor Renovate updates after passing checks; keep majors, prereleases and security fixes manual.",
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchCurrentVersion": "/^[1-9][0-9]*\\.[0-9]+\\.[0-9]+$/",
+      "automerge": true,
+      "matchNewValue": "/^[1-9][0-9]*\\.[0-9]+\\.[0-9]+$/"
     }
   ],
   "minimumReleaseAge": "3 days",
   "minimumReleaseAgeBehaviour": "timestamp-required",
   "internalChecksFilter": "strict",
   "vulnerabilityAlerts": {
-    "minimumReleaseAge": null
-  }
+    "minimumReleaseAge": null,
+    "automerge": false
+  },
+  "automergeType": "pr",
+  "platformAutomerge": false,
+  "automergeStrategy": "squash",
+  "ignoreTests": false,
+  "rebaseWhen": "behind-base-branch"
 }

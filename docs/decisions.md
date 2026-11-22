@@ -332,3 +332,16 @@ resolved direct/transitive packages as well; keep the existing exact-version
 exclusion. Vulnerability-fix PRs bypass Renovate's delay, but the pnpm policy still
 requires a reviewed exact-version exception for fixes younger than three days.
 This is time for detection, not proof that a release is safe.
+
+### Renovate-only automatic merging — 2026-11-22
+
+The user requested automatic merging for Renovate PRs only. This supersedes the
+initial all-manual default for stable patch/minor updates. Enable PR-based squash
+merging for patch/minor updates from stable versions 1.0.0 and above; keep major,
+prerelease/pre-1.0 and vulnerability updates manual. Automatic approval review
+rejected blanket automerging including major and vulnerability changes because
+`main` has no branch protection or required checks; use this narrower scope.
+Use Renovate-driven merging (`platformAutomerge: false`), require passing checks
+(`ignoreTests: false`), and rebase branches when behind the base branch. This does
+not automate merges of other PRs or change repository settings. Keep the three-day
+routine cooldown and version constraints; respect reviews/branch rules added later.

@@ -26,12 +26,15 @@ See [decisions](decisions.md) for fixed choices versus proposed defaults.
 | Quality      | Strict TypeScript, Oxlint, Oxfmt, Vitest, Playwright       |
 | Deployment   | Docker Compose in Coolify                                  |
 
-[Renovate](dependency-updates.md) proposes reviewed updates for dependencies, mise
+[Renovate](dependency-updates.md) proposes updates for dependencies, mise
 tools, Docker images and GitHub Actions. Its repository policy is in
 `renovate.json`; activation requires the hosted GitHub app. Routine updates wait
 three days, with a matching pnpm resolution cooldown for direct and transitive
 packages. Renovate requires release timestamps; vulnerability-fix PRs bypass its
-delay, while pnpm still enforces the repository installation policy.
+delay, while pnpm still enforces the repository installation policy. Renovate
+squash-merges stable patch/minor updates after passing checks and rebasing onto
+current `main`; major, prerelease/pre-1.0 and vulnerability updates stay manual.
+It does not enable GitHub-wide auto-merge.
 
 Exact versions are pinned in manifests and the lockfile. Node 24.21.0 and pnpm
 11.25.0 are pinned in mise and Docker. CI uses `jdx/mise-action` to install both

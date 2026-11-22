@@ -37,7 +37,17 @@ GitHub Actions schedule, or Coolify change is required for the hosted service.
   The delay gives malicious releases time to be detected; it cannot guarantee
   safety, and timestamp reliability depends on the registry/datasource.
 - At most three routine PRs are open, with at most two created per hour. The
-  Dependency Dashboard shows pending updates. Nothing merges automatically.
+  Dependency Dashboard shows pending updates.
+- Renovate automatically squash-merges patch/minor updates from stable versions
+  (1.0.0 and above), after passing status checks and check runs and once the branch
+  is up to date with `main`. Both old and new values must be plain
+  stable versions. Major upgrades, prerelease/pre-1.0 updates, Docker tag changes
+  with variant suffixes, and vulnerability-fix PRs remain manual.
+  Pending, failing or missing checks prevent merging (`ignoreTests: false`).
+  `platformAutomerge: false` makes Renovate wait for checks itself; it does not
+  enable GitHub's repository-wide auto-merge setting or affect other PRs.
+  Eligible PRs can merge on a later Renovate run outside the Sunday creation
+  window. Required reviews or other branch rules, if added later, still apply.
 - Renovate's recommended presets supply standard monorepo grouping and supported
   dependency handling. Native managers cover workspace npm dependencies and the
   pnpm lockfile, mise tools, Docker images and GitHub Actions. A custom regex
@@ -62,7 +72,7 @@ GitHub Actions schedule, or Coolify change is required for the hosted service.
   a fix released within 72 hours can require a reviewed, exact-version pnpm
   exclusion. Security PRs still need review.
 
-Before merging an update, require the existing Check workflow: type checking,
+Every update PR runs the existing Check workflow: type checking,
 linting, formatting, unit/integration tests, the production image build and browser
 flows. Native SQLite, Solid prereleases and Oxlint plugin compatibility need those
 checks. Vendored Drochsign and anti-slop snapshots remain explicit reviewed updates.
