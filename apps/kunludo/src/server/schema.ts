@@ -54,6 +54,11 @@ export const revision = sqliteTable("revision", {
   value: integer("value").notNull(),
 });
 
+export const conflictRevisions = sqliteTable("conflict_revisions", {
+  userId: text("user_id").primaryKey().notNull(),
+  value: integer("value").notNull(),
+});
+
 export const receipts = sqliteTable(
   "receipts",
   {

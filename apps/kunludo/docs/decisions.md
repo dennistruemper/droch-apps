@@ -208,3 +208,21 @@ visible changes, including permission/membership changes; a subsequent unrelated
 revision must not silently accept an earlier real conflict. Server revision checks,
 receipt-based retries and stale PIN protection remain unchanged. Run both suites
 against the same stack to retain exposure to this multi-user interaction.
+
+## Concurrent unrelated commands — 2026-11-23
+
+A deterministic API regression reproduced the ordering missed by draft rebasing:
+Alice and Bob prepare commands at revision v; Alice commits; Bob submits before
+processing SSE and receives 409 despite having no teams or games in common. The user
+requested fixing this production race after reproducing it in a test.
+
+Keep the global revision for snapshot ordering and persist the latest conflicting
+revision per account in the existing app database. Accept older global revisions only
+when no relevant write occurred since them. Invalidate the actor, target-team members
+and their teammates, before and after each command, so private schedule effects,
+new memberships and removals remain protected. Refreshing a cached account name
+invalidates its teammates too. This conservatively treats changes among connected
+teammates as conflicts; it does not attempt field-level merging or automatic retries.
+SQLite transactions, authorization, PIN checks and idempotent receipts remain intact.
+Backfill existing profiles at the migration's current app revision. One row per affected
+account bounds storage without keeping snapshot history or adding client tokens.

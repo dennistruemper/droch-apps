@@ -15,6 +15,13 @@
       "when": 1794778291218,
       "tag": "0001_rare_james_howlett",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1795391134254,
+      "tag": "0002_gigantic_tag",
+      "breakpoints": true
     }
   ]
 }

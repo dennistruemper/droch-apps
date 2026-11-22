@@ -36,7 +36,19 @@ an account or create an independent named player.
 
 HTTP commands carry a UUID, expected app revision and runtime-validated action.
 Synchronous SQLite transactions serialize commands, including cross-team commitment
-changes. Receipt fingerprints make retries idempotent and reject command-ID reuse
+changes. The global revision orders snapshots; a persisted `conflict_revisions` row
+per affected account records the latest revision that invalidates its commands.
+A command may use an older global revision if it is at least that account's conflict
+revision; future revisions are rejected. Writes invalidate the actor, the target team's
+members, and their teammates whose generic conflict states can depend on that team.
+The union before and after the write covers joins and removals. Auth name refreshes
+invalidate the account and its teammates. This deliberately conservative scope retains
+shared-team, private-schedule and PIN conflict checks without rejecting unrelated
+accounts' concurrent writes. Revision updates, state changes and receipts commit together.
+The migration initializes existing accounts at the current global revision, preserving
+stale-draft protection across upgrades. No HTTP payload shape changes are required.
+
+Receipt fingerprints make retries idempotent and reject command-ID reuse
 for a different action; receipts are retained seven days. Authorized per-viewer SSE
 snapshots subscribe before initial delivery, reconcile every five seconds and recheck
 sessions/membership on each delivery. Slow streams close instead of growing queues.

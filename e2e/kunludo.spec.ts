@@ -718,3 +718,54 @@ test("another account's private team changes do not invalidate an open calendar 
     await outsider.close();
   }
 });
+
+test("unrelated accounts can save commands that overlap before SSE delivery", async ({
+  page,
+  browser,
+}) => {
+  await login(page, "Alice concurrent");
+  const outsider = await browser.newContext({ baseURL: new URL(page.url()).origin });
+  const other = await outsider.newPage();
+  let intercept!: () => void;
+  let release!: () => void;
+
+  const intercepted = new Promise<void>((resolve) => {
+    intercept = resolve;
+  });
+
+  const released = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+
+  try {
+    await login(other, "Bob concurrent");
+    await page.route("**/api/kunludo/command", async (route) => {
+      intercept();
+      await released;
+      await route.continue();
+    });
+
+    // Capture Alice's original payload, commit Bob's write, then release Alice's request.
+    // Even if SSE arrives meanwhile, the already submitted command keeps its old revision.
+    await Promise.all([
+      create(page, "Alice concurrent team", ""),
+      (async () => {
+        await intercepted;
+
+        try {
+          await create(other, "Bob concurrent team", "");
+        } finally {
+          release();
+        }
+      })(),
+    ]);
+    await expect(teamCard(page, "Alice concurrent team")).toBeVisible();
+    await expect(teamCard(other, "Bob concurrent team")).toBeVisible();
+    await expect(teamCard(page, "Bob concurrent team")).toHaveCount(0);
+    await expect(teamCard(other, "Alice concurrent team")).toHaveCount(0);
+  } finally {
+    release();
+    await page.unroute("**/api/kunludo/command");
+    await outsider.close();
+  }
+});

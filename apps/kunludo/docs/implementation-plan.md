@@ -92,3 +92,18 @@ team privacy. It passes locally against the production build. Type checking,
 lint, formatting and all 285 unit/integration tests pass; two new model regressions
 were demonstrated failing before the fix. Keep the original calendar flow and
 concurrent axe against the shared stack for CI validation.
+
+## Overlapping commands from unrelated accounts — 2026-11-23
+
+The API regression first failed with HTTP 409 when two unrelated accounts prepared
+commands at one revision and submitted before receiving SSE. Persisted per-account
+conflict revisions now allow both writes while retaining the global snapshot ordering.
+Tests cover an existing team's unrelated-write draft, receipt replay through a new
+SQLite connection, shared-team settings/PIN/removal conflicts, generic conflicts from
+a shared player's hidden schedule, account-name refreshes and future revisions.
+An upgrade test starts from the previous migrations, preserves an existing team and
+membership, rejects pre-upgrade drafts and verifies migration reruns. All 293 unit
+and integration tests, type checking, lint and formatting pass. A browser regression
+holds an already-submitted request until an unrelated account commits, forcing the
+ordering without sleeps or test retries. All 48 production-build browser checks pass;
+the combined changed-line coverage gate passes at 98.51%.

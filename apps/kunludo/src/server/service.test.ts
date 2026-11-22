@@ -1,8 +1,9 @@
 import { afterEach, describe, it, expect } from "vitest";
-import { mkdtempSync, rmSync, readFileSync } from "node:fs";
+import { mkdtempSync, rmSync, readFileSync, cpSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
+import { z } from "zod";
 import { connectDatabase, migrateDatabase } from "@repo/shared/database";
 import { createTeamService } from "./service.ts";
 import { createRoutes } from "./index.ts";
@@ -56,7 +57,7 @@ function fixture() {
     return service.snapshot(alice).games.findLast((g) => g.teamId === tid)!;
   };
 
-  return { service, connection, send, create, enter, game, secret, now };
+  return { service, connection, send, create, enter, game, secret, now, directory };
 }
 
 describe("teams, privacy and transactional planning", () => {
@@ -323,6 +324,217 @@ describe("teams, privacy and transactional planning", () => {
     await reader.cancel();
     abort.abort();
   });
+});
+
+it("accepts unrelated accounts' team creation commands prepared at the same revision", async () => {
+  const f = fixture();
+
+  const routes = createRoutes({
+    db: f.connection.db,
+    joinSecret: f.secret,
+    origin: "https://local.test",
+    cookieName: "test",
+    resolveUser: (token) => (token === "alice" ? alice : token === "bob" ? bob : null),
+  });
+
+  // Both clients prepare their commands before either write or an SSE update arrives.
+  // Do not use fixture.send: it refreshes the revision immediately before each write.
+  const aliceVersion = f.service.snapshot(alice).version;
+  const bobBefore = f.service.snapshot(bob);
+  expect(bobBefore.version).toBe(aliceVersion);
+
+  const createTeam = (user: typeof alice, version: number) =>
+    routes.request("/command", {
+      method: "POST",
+      headers: {
+        Cookie: `test_auth=${user.id}`,
+        Origin: "https://local.test",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        commandId: randomUUID(),
+        version,
+        action: {
+          kind: "create-team",
+          team: { name: `${user.name}'s team`, club: "", needed: 4, timezone: "Europe/Berlin" },
+        },
+      }),
+    });
+
+  const aliceResponse = await createTeam(alice, aliceVersion);
+  expect(aliceResponse.status).toBe(200);
+
+  const bobAfterAlice = f.service.snapshot(bob);
+  expect(bobAfterAlice.teams).toEqual(bobBefore.teams);
+  expect(bobAfterAlice.games).toEqual(bobBefore.games);
+  expect(bobAfterAlice.version).toBeGreaterThan(bobBefore.version);
+
+  const bobResponse = await createTeam(bob, bobBefore.version);
+  expect(bobResponse.status).toBe(200);
+  expect(f.service.snapshot(alice).teams.map((team) => team.name)).toEqual(["Alice's team"]);
+  expect(f.service.snapshot(bob).teams.map((team) => team.name)).toEqual(["Bob's team"]);
+});
+
+it("saves an existing team's draft after an unrelated write and preserves receipts across service recreation", () => {
+  const f = fixture();
+  const aliceTeam = f.create(alice, "Alice's team");
+  const bobTeam = f.create(bob, "Bob's team");
+
+  const command = {
+    commandId: randomUUID(),
+    version: f.service.snapshot(alice).version,
+    action: {
+      kind: "settings",
+      teamId: aliceTeam,
+      team: { name: "Updated", club: "", needed: 5, timezone: "Europe/Berlin" },
+    } as const,
+  };
+
+  f.send(bob, { kind: "rotate", teamId: bobTeam });
+  const reopened = connectDatabase(f.directory, "kunludo", { mustExist: true });
+  dispose.unshift(() => reopened.close());
+  const restarted = createTeamService(reopened.db, { secret: f.secret, now: () => f.now });
+  const saved = restarted.command(alice, command);
+  expect(saved.snapshot.teams[0]!.name).toBe("Updated");
+  expect(restarted.command(alice, command)).toEqual(saved);
+  expect(restarted.snapshot(bob).teams.map((team) => team.name)).toEqual(["Bob's team"]);
+
+  expect(() => restarted.command(alice, { ...command, commandId: randomUUID() })).toThrow(
+    expect.objectContaining({ status: 409 }),
+  );
+});
+
+it.each(["settings", "rotate", "remove"] as const)(
+  "rejects a stale draft after a teammate's %s, including invisible PIN changes and lost membership",
+  (kind) => {
+    const f = fixture();
+    const teamId = f.create();
+    f.enter(teamId);
+    f.send(alice, { kind: "promote", teamId, userId: bob.id });
+    const version = f.service.snapshot(alice).version;
+    const team = { name: "Changed", club: "", needed: 5, timezone: "Europe/Berlin" };
+
+    f.send(bob, kind === "settings" ? { kind, teamId, team } : { kind, teamId, userId: alice.id });
+    const restarted = createTeamService(f.connection.db, { secret: f.secret, now: () => f.now });
+    expect(() =>
+      restarted.command(alice, {
+        commandId: randomUUID(),
+        version,
+        action: { kind: "settings", teamId, team: { ...team, name: "Stale overwrite" } },
+      }),
+    ).toThrow(expect.objectContaining({ status: 409 }));
+    expect(restarted.snapshot(bob).teams[0]!.name).toBe(kind === "settings" ? "Changed" : "Team");
+  },
+);
+
+it("rejects stale writes when a shared player's private team schedule changes", () => {
+  const f = fixture();
+  const visibleTeam = f.create(alice, "Visible");
+  const privateTeam = f.create(bob, "Private");
+  f.enter(visibleTeam, charlie);
+  f.send(charlie, { kind: "join", teamId: privateTeam, pin: f.service.code(privateTeam, bob).pin });
+  const game = f.game(visibleTeam);
+  f.send(charlie, { kind: "answer", teamId: visibleTeam, gameId: game.id, answer: "yes" });
+  const before = f.service.snapshot(alice);
+  const version = before.version;
+  expect(before.games[0]!.members.find((member) => member.id === charlie.id)!.state).toBe("yes");
+
+  f.send(bob, {
+    kind: "create-game",
+    teamId: privateTeam,
+    game: { opponent: "Secret opponent", venue: "Private hall", home: true, window: game.window },
+  });
+  const hiddenGame = f.service.snapshot(bob).games[0]!;
+  f.send(charlie, { kind: "answer", teamId: privateTeam, gameId: hiddenGame.id, answer: "yes" });
+  const after = f.service.snapshot(alice);
+  expect(after.games[0]!.members.find((member) => member.id === charlie.id)!.state).toBe("pending");
+  expect(JSON.stringify(after)).not.toContain("Secret opponent");
+  expect(() =>
+    f.service.command(alice, {
+      commandId: randomUUID(),
+      version,
+      action: { kind: "answer", teamId: visibleTeam, gameId: game.id, answer: "yes" },
+    }),
+  ).toThrow(expect.objectContaining({ status: 409 }));
+});
+
+it("invalidates teammate drafts after an account name refresh and rejects future revisions", () => {
+  const f = fixture();
+  const teamId = f.create();
+  f.enter(teamId);
+  const version = f.service.snapshot(bob).version;
+
+  f.service.snapshot({ ...alice, name: "Renamed Alice" });
+
+  const command = {
+    commandId: randomUUID(),
+    version,
+    action: {
+      kind: "create-team",
+      team: { name: "New", club: "", needed: 4, timezone: "UTC" },
+    } as const,
+  };
+
+  expect(() => f.service.command(bob, command)).toThrow(expect.objectContaining({ status: 409 }));
+  expect(() =>
+    f.service.command(bob, { ...command, version: f.service.snapshot(bob).version + 1 }),
+  ).toThrow(expect.objectContaining({ status: 409 }));
+});
+
+it("upgrades an existing SQLite file without accepting drafts older than the migration baseline", () => {
+  const directory = mkdtempSync(join(tmpdir(), "kunludo-upgrade-"));
+  dispose.push(() => rmSync(directory, { recursive: true, force: true }));
+  const oldMigrations = join(directory, "old-migrations");
+  cpSync(resolve("migrations/kunludo"), oldMigrations, { recursive: true });
+  const journalPath = join(oldMigrations, "meta/_journal.json");
+
+  const journal = z
+    .object({ entries: z.array(z.unknown()) })
+    .passthrough()
+    .parse(JSON.parse(readFileSync(journalPath, "utf8")));
+
+  writeFileSync(journalPath, JSON.stringify({ ...journal, entries: journal.entries.slice(0, 2) }));
+  migrateDatabase(directory, "kunludo", oldMigrations);
+  const legacy = connectDatabase(directory, "kunludo");
+
+  try {
+    // Seed only tables that existed before conflict revisions were introduced.
+    legacy.db.run("INSERT INTO profiles (id, name) VALUES ('alice', 'Alice')");
+    legacy.db.run(
+      "INSERT INTO teams VALUES ('legacy-team', 'Before upgrade', '', 4, 'UTC', 'unused', 'unused', '[]')",
+    );
+    legacy.db.run("INSERT INTO memberships VALUES ('legacy-team', 'alice', 'admin')");
+    legacy.db.run("UPDATE revision SET value = 7 WHERE id = 1");
+  } finally {
+    legacy.close();
+  }
+
+  migrateDatabase(directory, "kunludo", resolve("migrations/kunludo"));
+  migrateDatabase(directory, "kunludo", resolve("migrations/kunludo"));
+  const upgraded = connectDatabase(directory, "kunludo");
+
+  try {
+    const service = createTeamService(upgraded.db, { secret: "s".repeat(64) });
+
+    const command = {
+      commandId: randomUUID(),
+      version: 6,
+      action: {
+        kind: "create-team",
+        team: { name: "After upgrade", club: "", needed: 4, timezone: "UTC" },
+      } as const,
+    };
+
+    expect(() => service.command(alice, command)).toThrow(expect.objectContaining({ status: 409 }));
+    const saved = service.command(alice, { ...command, version: 7 });
+    expect(saved.snapshot.version).toBe(8);
+    expect(saved.snapshot.teams.map((team) => team.name)).toEqual([
+      "Before upgrade",
+      "After upgrade",
+    ]);
+  } finally {
+    upgraded.close();
+  }
 });
 
 it("withdraws private team snapshots immediately on an open stream after removal", async () => {
