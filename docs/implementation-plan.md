@@ -81,6 +81,15 @@ App scope, acceptance criteria and historical verification are recorded in
 Acceptance: one deployable Compose stack, tested recovery, reproducible tool versions,
 and documented app creation requiring only repository changes and deployment.
 
+## Main branch protection — active
+
+Applied the [Protect main ruleset](repository-protection.md) in GitHub and verified
+the active branch rules through the API. Required CI is `foundation` from GitHub
+Actions; branches must be current and review conversations resolved. No bypass
+actors, force pushes or branch deletion. The payload is recorded in
+`.github/rulesets/main.json`; ongoing policy changes require updating both GitHub
+settings and repository documentation.
+
 ## Other app implementation status
 
 - [Schlezaz](../apps/schlezaz/docs/implementation-plan.md)
