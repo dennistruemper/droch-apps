@@ -207,3 +207,15 @@ to the required CI gate. No UI fixes or compliance claim are included in this au
 
 The existing functional test discovery remains 45 tests. Type checking, lint,
 formatting, 245 unit tests and the production build passed for the tooling change.
+
+## Full-opacity text — 2026-11-22
+
+Removed static text fading in the shared Drochsign integration and app overrides;
+size and weight retain hierarchy, placeholders use italics and disabled labels
+stay readable with dashed borders. The upstream stylesheet remains unchanged.
+All 69 follow-up axe scans completed with zero color-contrast violations.
+The separate accessibility suite still fails on the remaining button-name,
+landmark and heading issues; these markup fixes were not included. See the
+[follow-up report](accessibility-contrast-update.html).
+Type checking, lint, formatting, 245 unit tests, all 45 functional browser checks
+and the production build passed.

@@ -242,7 +242,9 @@ appear in game snapshots.
 
 Drochsign is vendored as an unmodified snapshot in `shared/src/styles/drochsign.css`;
 its revision and update process are recorded in `UPSTREAM.md`. Integration overrides
-are separate in `index.css`. Use its semantic styles and two-color theme variables. Each app has its own
+are separate in `index.css`. Use its semantic styles and two-color theme variables. Readable text stays at full
+opacity; size, weight and spacing provide hierarchy. Integration overrides also
+keep placeholder and disabled-control labels readable. Each app has its own
 light and dark defaults in appDefinition.themes and may add theme definitions and
 styles for specialized UI. A shared AppAppearance provider wraps each app before its
 screens, applies the stored per-app choice, and follows prefers-color-scheme while

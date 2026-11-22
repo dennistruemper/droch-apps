@@ -154,7 +154,6 @@ button.secondary {
   font-weight: 700;
 }
 .zs-muted {
-  opacity: 0.65;
   font-size: 0.85rem;
 }
 .zs-date {
@@ -171,12 +170,11 @@ button.secondary {
   letter-spacing: -0.07em;
 }
 .zs-readiness strong span {
+  font-weight: 400;
   font-size: 1.15rem;
-  opacity: 0.55;
 }
 .zs-readiness small {
   font-size: 0.75rem;
-  opacity: 0.7;
 }
 .zs-answer-row {
   display: flex;
@@ -280,9 +278,6 @@ summary {
   flex-direction: column;
   gap: 0.2rem;
 }
-.zs-roster small {
-  opacity: 0.65;
-}
 .zs-teams {
   display: flex;
   flex-direction: column;
@@ -367,7 +362,6 @@ summary {
 }
 .zs-import-row small {
   margin-top: 0.4rem;
-  opacity: 0.65;
 }
 .zs-code code {
   overflow-wrap: anywhere;
@@ -381,7 +375,6 @@ summary {
 }
 .zs-empty {
   padding: 2rem 0;
-  opacity: 0.7;
 }
 .zs-proposal {
   border-top: 1px solid var(--color-fg);

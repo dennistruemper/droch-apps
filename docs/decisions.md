@@ -370,3 +370,14 @@ Run against a fresh local stack with `AUTH_MODE=local` and no real mail delivery
 `TEST_AUTH_MODE=local TEST_BASE_URL=<local-origin> pnpm test:a11y`.
 Account flows skip unless the caller explicitly declares local auth; public scans
 still run. Playwright writes `playwright-report/a11y/` and `test-results/a11y/`.
+
+## Full-contrast text hierarchy — 2026-11-22
+
+The user chose full foreground/background colors for readable text rather than
+faded theme colors. Use size, weight and spacing for secondary text; do not use
+static text opacity. Override the vendored Drochsign snapshot in the integration
+stylesheet, including small text, section headings, citations and placeholders.
+Disabled controls retain full-opacity labels with dashed outlines and their
+existing disabled behavior/cursor. Remove app-specific text-opacity overrides;
+retain motion and visibility transitions. This does not redesign app palettes or
+decorative borders, overlays and illustrations.
