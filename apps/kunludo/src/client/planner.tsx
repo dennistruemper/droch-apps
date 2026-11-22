@@ -424,6 +424,7 @@ export function Planner(props: { user: User; logout: () => void }) {
                   </section>
                 }
               >
+                <h1>{model().view === "games" ? "Spiele" : "Teams"}</h1>
                 <div class="zs-tabs" role="group" aria-label="Ansicht">
                   <button
                     aria-pressed={model().view === "games" ? "true" : "false"}

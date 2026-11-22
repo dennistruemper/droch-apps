@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Accessibility · Text contrast fixed</title>
+    <style>
+      body {
+        max-width: 900px;
+        margin: 40px auto;
+        padding: 0 24px;
+        font: 17px/1.6 system-ui;
+        color: #202020;
+        background: #fff;
+      }
+      h1,
+      h2 {
+        line-height: 1.2;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      td,
+      th {
+        text-align: left;
+        padding: 12px;
+        border-bottom: 1px solid #bbb;
+        vertical-align: top;
+      }
+      a {
+        color: #164fa3;
+      }
+      code {
+        font-size: 0.9em;
+      }
+      .note {
+        border-left: 4px solid #164fa3;
+        padding-left: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Text contrast fixed</h1>
+      <p>
+        <strong>Latest:</strong> All confirmed findings are now fixed and axe is blocking in CI.
+        <a href="accessibility-results.html">See the passing results.</a> This page preserves an
+        earlier audit stage.
+      </p>
+      <p>
+        22 November 2026 · Follow-up to the
+        <a href="accessibility-report.html">initial axe audit</a>.
+      </p>
+      <p>
+        <strong>All 69 scans completed with zero color-contrast violations.</strong> Removing static
+        text fading resolved every confirmed contrast finding in the audited states. Other
+        accessibility findings remain: 32 affected scans and 6 rule IDs. Counts include repeated
+        screens/profiles, not separate underlying defects.
+      </p>
+      <h2>What changed</h2>
+      <p>
+        Shared small text, section headings, citations, placeholders and disabled labels use full
+        opacity. App-specific text fading was removed from Kunludo, Poker and SchleZaZ. Existing
+        type sizes preserve hierarchy; Kunludo’s secondary readiness count uses regular weight,
+        placeholders use italics and disabled controls use dashed borders. The vendored Drochsign
+        source was preserved; shared changes live in its integration stylesheet.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th>Before</th>
+            <th>After</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Completed scans</td>
+            <td>69</td>
+            <td>69</td>
+          </tr>
+          <tr>
+            <td>Scans with color-contrast violations</td>
+            <td>18</td>
+            <td>0</td>
+          </tr>
+          <tr>
+            <td>Scans with any violation</td>
+            <td>38</td>
+            <td>32</td>
+          </tr>
+          <tr>
+            <td>Scans without violations</td>
+            <td>31</td>
+            <td>37</td>
+          </tr>
+        </tbody>
+      </table>
+      <h2>Remaining fixes</h2>
+      <p>
+        These markup changes are proposed next steps and have not been applied in this typography
+        change.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Issue</th>
+            <th>Fix</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Vortoj score and tile button names</td>
+            <td>
+              Let the visible wording form the accessible name, preserving its wording/order and
+              spacing. Use aria-labelledby for visible text where needed and aria-describedby for
+              extra context. For score controls, include “Your score” and its value; keep the
+              explanation of players/game details in a description. Include both the visible letter
+              and points in tile names.
+            </td>
+          </tr>
+          <tr>
+            <td>Duplicate desktop page banners</td>
+            <td>
+              Replace the shared menu’s header[data-panel-heading] with a neutral container,
+              preserving its CSS hook and layout. Keep the actual page header as the banner. This
+              resolves two related axe rules without merely renaming duplicate banners.
+            </td>
+          </tr>
+          <tr>
+            <td>Kunludo account landmarks</td>
+            <td>
+              Use main for the standalone account screen’s primary content. The signed-in planner
+              already has its own main, so avoid nested main elements.
+            </td>
+          </tr>
+          <tr>
+            <td>Kunludo mobile headings</td>
+            <td>
+              Put one visible page-purpose h1 in the main content, reflecting the selected view,
+              such as “Spiele” or “Teams”. Keep it available when the mobile menu is closed; avoid
+              repeating identity or adding a slogan.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <h2>Remaining axe rules</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Rule</th>
+            <th>Affected scans</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>label-content-name-mismatch</code></td>
+            <td>3</td>
+          </tr>
+          <tr>
+            <td><code>landmark-no-duplicate-banner</code></td>
+            <td>16</td>
+          </tr>
+          <tr>
+            <td><code>landmark-one-main</code></td>
+            <td>9</td>
+          </tr>
+          <tr>
+            <td><code>landmark-unique</code></td>
+            <td>16</td>
+          </tr>
+          <tr>
+            <td><code>page-has-heading-one</code></td>
+            <td>4</td>
+          </tr>
+          <tr>
+            <td><code>region</code></td>
+            <td>9</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        Verification: type checking, lint, formatting, all 245 unit tests, all 45 functional browser
+        tests and the production build passed. The accessibility suite completed 33 tests: 22 passed
+        and 11 failed on the remaining markup findings.
+      </p>
+      <h2>Repeat the audit</h2>
+      <pre>TEST_AUTH_MODE=local TEST_BASE_URL=&lt;isolated-local-origin&gt; pnpm test:a11y</pre>
+      <p>
+        The same desktop light/dark and mobile light profiles were rerun against the compiled local
+        build with synthetic accounts, isolated SQLite files and no-op mail. Full current raw
+        results, incomplete checks, screenshots and traces are in the Playwright report at
+        playwright-report/a11y/.
+      </p>
+      <p class="note">
+        Zero contrast violations applies to these scanned states and default themes. It does not
+        certify arbitrary custom color pairs or every interaction. Decorative borders, overlays,
+        animations and app-specific palettes were not redesigned. The initial report is retained as
+        historical evidence.
+      </p>
+    </main>
+  </body>
+</html>

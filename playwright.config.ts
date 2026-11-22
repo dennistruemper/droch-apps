@@ -16,6 +16,7 @@ if (!baseURL) throw new Error("Start pnpm dev first or set TEST_BASE_URL");
 
 export default defineConfig({
   testDir: "./e2e",
+  testIgnore: "**/accessibility/**",
   fullyParallel: false,
   ...(process.env.BROWSER_COVERAGE === "1"
     ? {

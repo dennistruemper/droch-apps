@@ -24,9 +24,11 @@
     "test:stack:logs": "tsx tooling/test-stack.ts logs",
     "test:coverage": "vitest run --coverage.enabled",
     "test:coverage:changed": "vitest run --coverage.enabled --coverage.changed --coverage.reportsDirectory=coverage/changed",
-    "test:e2e:coverage": "BROWSER_COVERAGE=1 playwright test"
+    "test:e2e:coverage": "BROWSER_COVERAGE=1 playwright test",
+    "test:a11y": "playwright test --config=playwright.a11y.config.ts"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
     "@oxlint/plugins": "1.86.0",
     "@playwright/test": "1.63.0",
     "@repo/server": "workspace:*",

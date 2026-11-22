@@ -84,6 +84,15 @@ App scope, acceptance criteria and historical verification are recorded in
 Acceptance: one deployable Compose stack, tested recovery, reproducible tool versions,
 and documented app creation requiring only repository changes and deployment.
 
+## Main branch protection — active
+
+Applied the [Protect main ruleset](repository-protection.md) in GitHub and verified
+the active branch rules through the API. Required CI is `foundation` from GitHub
+Actions; branches must be current and review conversations resolved. No bypass
+actors, force pushes or branch deletion. The payload is recorded in
+`.github/rulesets/main.json`; ongoing policy changes require updating both GitHub
+settings and repository documentation.
+
 ## Other app implementation status
 
 - [Schlezaz](../apps/schlezaz/docs/implementation-plan.md)
@@ -184,3 +193,58 @@ npm/pnpm, mise, Docker and GitHub Actions, including the pnpm installation insid
 the Dockerfile. Remaining owner setup: merge the PR, enable the hosted Renovate
 GitHub app for this repository, inspect its dashboard and verify the first update
 PR's lockfile and full Check workflow. No hosted run is claimed yet.
+
+## Initial axe accessibility audit — 2026-11-22
+
+Added `pnpm test:a11y` with a separate Playwright configuration. All 69 scans
+completed across 33 tests and three profiles: 19 tests passed and 14 failed on
+unsuppressed accessibility assertions. There were 38 scans with findings and
+seven distinct axe rule IDs, including repeated manifestations of shared issues.
+See [the report](accessibility-report.html) for evidence and reproduction steps.
+
+Remaining: fix contrast in Vortoj, Enigmo and Kunludo; align Vortoj control names
+with visible labels; repair shared desktop banner semantics, Kunludo account
+landmarks and mobile headings. Review axe incomplete results manually, extend
+keyboard/screen-reader coverage and decide when to add the accessibility suite
+to the required CI gate. No UI fixes or compliance claim are included in this audit.
+
+The existing functional test discovery remains 45 tests. Type checking, lint,
+formatting, 245 unit tests and the production build passed for the tooling change.
+
+## Full-opacity text — 2026-11-22
+
+Removed static text fading in the shared Drochsign integration and app overrides;
+size and weight retain hierarchy, placeholders use italics and disabled labels
+stay readable with dashed borders. The upstream stylesheet remains unchanged.
+All 69 follow-up axe scans completed with zero color-contrast violations.
+The separate accessibility suite still fails on the remaining button-name,
+landmark and heading issues; these markup fixes were not included. See the
+[follow-up report](accessibility-contrast-update.html).
+Type checking, lint, formatting, 245 unit tests, all 45 functional browser checks
+and the production build passed.
+
+## Axe CI reporting — 2026-11-22
+
+The Check workflow now runs the complete axe suite in explicit local-auth mode
+on PRs and pushes to main. Its separate step is non-blocking while the remaining
+button-name, landmark and heading findings are unresolved. Failures produce a
+warning/job summary; report artifacts retain the HTML report, raw results,
+screenshots and traces for 14 days. Promotion to a blocking gate remains pending.
+
+## Blocking accessibility checks — 2026-11-22
+
+Resolved all confirmed axe findings: shared menu banner semantics, Kunludo
+account landmarks and visible planner headings, and Vortoj score/tile/submit
+control names. Updated browser locators and the old no-heading assertion to match
+the accessible interface; preserved the account layout after its semantic change.
+All 33 accessibility tests and 69 scans pass with zero violations and no skips.
+
+Removed `continue-on-error` from the axe CI step. Violations or audit errors now
+fail Check; report upload, summary and stack cleanup still run after failure.
+The [current report](accessibility-results.html) links the two historical audits.
+Manual assessment of incomplete results and untested states remains separate.
+
+Type checking, lint, formatting, 245 unit tests and the production build pass.
+All 45 distinct functional browser flows were verified: 44 passed in the final
+full run, followed by the corrected joker-tile locator's mobile flow passing a
+targeted rerun. No application changes were required for that locator correction.

@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Accessibility checks passing</title>
+    <style>
+      body {
+        max-width: 900px;
+        margin: 40px auto;
+        padding: 0 24px;
+        font: 17px/1.6 system-ui;
+        color: #202020;
+        background: #fff;
+      }
+      h1,
+      h2 {
+        line-height: 1.2;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #aaa;
+      }
+      a {
+        color: #164fa3;
+      }
+      code {
+        font-size: 0.9em;
+      }
+      .note {
+        border-left: 4px solid #164fa3;
+        padding-left: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Accessibility checks passing</h1>
+      <p>
+        22 November 2026 · Final follow-up for
+        <a href="https://github.com/dennistruemper/droch-apps/pull/28">PR #28</a>.
+      </p>
+      <p>
+        <strong>All 69 scans pass with zero axe violations.</strong> All 33 accessibility tests pass
+        in Chromium, using desktop light, desktop dark and mobile light profiles. No rule is
+        disabled and no element is excluded.
+      </p>
+      <h2>Resolved findings</h2>
+      <ul>
+        <li>
+          Full-opacity text replaces faded secondary text, preserving the chosen theme colors.
+        </li>
+        <li>The menu title uses a neutral container instead of a duplicate page banner.</li>
+        <li>
+          Kunludo’s account screen is a main landmark. Its signed-in screens have a visible
+          view-specific h1 on desktop and mobile; account layout is preserved.
+        </li>
+        <li>
+          Vortoj’s score button uses visible score text as its name and a separate accessible
+          description for game details. Tile names include visible letter/points with matching
+          spacing. The submit button’s name includes its visible singular label.
+        </li>
+      </ul>
+      <h2>Coverage</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>App</th>
+            <th>Scans</th>
+            <th>Violations</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>landing</td>
+            <td>3</td>
+            <td>0</td>
+          </tr>
+          <tr>
+            <td>poker</td>
+            <td>15</td>
+            <td>0</td>
+          </tr>
+          <tr>
+            <td>vortoj</td>
+            <td>15</td>
+            <td>0</td>
+          </tr>
+          <tr>
+            <td>kunludo</td>
+            <td>21</td>
+            <td>0</td>
+          </tr>
+          <tr>
+            <td>schlezaz</td>
+            <td>9</td>
+            <td>0</td>
+          </tr>
+          <tr>
+            <td>enigmo</td>
+            <td>6</td>
+            <td>0</td>
+          </tr>
+        </tbody>
+      </table>
+      <h2>Blocking CI</h2>
+      <p>
+        The Check workflow runs axe on PRs and pushes to main against the production test stack with
+        explicit local auth. An audit error or accessibility violation now fails the workflow. The
+        report, raw results, screenshots and traces are still uploaded after failure, with 14-day
+        retention. Stack cleanup still runs.
+      </p>
+      <h2>Verification</h2>
+      <p>
+        Type checking, lint, formatting, all 245 unit tests, the production build and all 45
+        functional browser checks were verified: 44 passed in the full run, followed by the
+        corrected mobile flow passing its targeted rerun. The axe suite completes all 33 tests and
+        69 scans without skips or violations.
+      </p>
+      <pre>TEST_AUTH_MODE=local TEST_BASE_URL=&lt;isolated-local-origin&gt; pnpm test:a11y</pre>
+      <h2>Scope and manual review</h2>
+      <p class="note">
+        These results cover the audited states and default themes. Automated checks do not establish
+        WCAG compliance or replace keyboard, screen-reader and other manual assessment. Arbitrary
+        custom color pairs and every gameplay/dialog state are outside this initial audit.
+      </p>
+      <p>
+        Axe also returned incomplete results requiring manual assessment, which are not confirmed
+        violations: color-contrast: 30 rule/scan results, label-content-name-mismatch: 18 rule/scan
+        results. Full details remain attached to the Playwright report.
+      </p>
+      <p>
+        Historical evidence: <a href="accessibility-report.html">initial findings</a> and
+        <a href="accessibility-contrast-update.html">contrast-only follow-up</a>.
+      </p>
+    </main>
+  </body>
+</html>

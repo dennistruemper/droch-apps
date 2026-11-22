@@ -77,7 +77,6 @@
   border-radius: var(--radius-md, 0.25rem);
 }
 .attention-scene small {
-  opacity: 0.6;
   font-size: var(--font-size-xs);
 }
 @media (min-width: 80rem) {

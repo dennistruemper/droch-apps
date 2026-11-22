@@ -155,3 +155,11 @@ only the chosen name in game state. Omitted names use the account default. Exist
 members rejoining retain their recorded name, and existing games need no migration.
 Room snapshots, history and streams use game identities; the local account control
 is labelled Account, while Playing as identifies the current game's alias.
+
+## Accessible control names
+
+Active-game score controls use the visible score text as their accessible name;
+the game-details action is supplied as an accessible description. Rack labels
+include the visible letter and point value with matching spacing. Submit actions
+retain their visible wording in the accessible name. The shared navigation title
+uses a neutral container so waiting-room/lobby pages have one banner landmark.

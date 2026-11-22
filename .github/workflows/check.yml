@@ -64,6 +64,7 @@ jobs:
           - name: Install browser and system dependencies
             run: pnpm exec playwright install --with-deps chromium
       - name: Start production test stack
+        id: test_stack
         run: |
           pnpm test:stack
           cat .local/test/browser.env >> "$GITHUB_ENV"
@@ -100,5 +101,29 @@ jobs:
           show-uncovered-lines: false
           sort-by: branches-asc
           comment-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' && 'pr' || 'none' }}
+      - name: Audit accessibility with axe
+        id: a11y
+        if: ${{ !cancelled() && steps.test_stack.outcome == 'success' }}
+        env:
+          TEST_AUTH_MODE: local
+        run: pnpm test:a11y
+      - name: Upload accessibility report
+        if: ${{ !cancelled() && steps.test_stack.outcome == 'success' && steps.a11y.outcome != 'skipped' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: axe-accessibility-report
+          path: |
+            playwright-report/a11y/
+            test-results/a11y/
+          retention-days: 14
+      - name: Summarize accessibility audit
+        if: ${{ !cancelled() && steps.test_stack.outcome == 'success' && steps.a11y.outcome != 'skipped' }}
+        env:
+          AXE_OUTCOME: ${{ steps.a11y.outcome }}
+        run: |
+          if [ "$AXE_OUTCOME" = "failure" ]; then
+            echo "::error::Axe accessibility audit failed. Download axe-accessibility-report for details."
+          fi
+          printf '### Axe accessibility audit\n\nOutcome: %s. Accessibility failures fail the Check workflow.\n\nDownload the axe-accessibility-report artifact for the HTML report, raw results, screenshots and traces.\n' "$AXE_OUTCOME" >> "$GITHUB_STEP_SUMMARY"
       - if: always()
         run: pnpm test:stack:stop

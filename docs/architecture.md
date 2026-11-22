@@ -63,6 +63,18 @@ tools from `mise.toml` and add them to PATH.
 Solid 2.0.0-rc.13, its official plugin, and Router 2 compile and run together.
 Compilation and type checking are separate; deployment verification requires both.
 
+Accessibility checks use pinned `@axe-core/playwright` through the dedicated
+`pnpm test:a11y` command and `playwright.a11y.config.ts`. Scans cover WCAG A/AA
+rules through 2.2 plus separately identifiable best-practice rules, with light/dark
+desktop and light mobile profiles. Raw axe results and violation screenshots are
+attached to the Playwright HTML report. The ordinary browser suite excludes this
+folder; CI runs the axe suite separately against the same production test stack
+with explicit local auth. Accessibility violations or audit errors fail the Check
+workflow. Failures produce an error annotation and summary; the HTML
+report, raw results, screenshots and traces are uploaded for 14 days. The audit
+itself asserts zero violations without exclusions or disabled rules. See
+[the current results](accessibility-results.html).
+
 The built-in Unicorn plugin adds explicitly selected correctness and allocation
 checks; [the full rule policy](unicorn-lint-policy.md) records every enabled,
 disabled and unavailable rule at the pinned versions. No ESLint engine or runtime
@@ -95,6 +107,12 @@ failures before starting the test stack. Browser checks run against the built im
 and the production Compose migration gate. `pnpm test:stack` publishes an allocated loopback port with a distinct
 per-checkout project, cookie and disposable SQLite volume; cleanup does not affect
 development stacks. Worktree identity coverage remains in the ordinary unit tests.
+
+The active [main protection policy](repository-protection.md) requires PRs,
+the GitHub Actions `foundation` check, an up-to-date branch and resolved review
+conversations. Force pushes/deletion are blocked, and there are no bypass actors.
+The recorded payload in `.github/rulesets/main.json` documents the live GitHub
+setting; committing that file does not apply settings automatically.
 
 ## Layout and dependency direction
 
@@ -248,7 +266,9 @@ appear in game snapshots.
 
 Drochsign is vendored as an unmodified snapshot in `shared/src/styles/drochsign.css`;
 its revision and update process are recorded in `UPSTREAM.md`. Integration overrides
-are separate in `index.css`. Use its semantic styles and two-color theme variables. Each app has its own
+are separate in `index.css`. Use its semantic styles and two-color theme variables. Readable text stays at full
+opacity; size, weight and spacing provide hierarchy. Integration overrides also
+keep placeholder and disabled-control labels readable. Each app has its own
 light and dark defaults in appDefinition.themes and may add theme definitions and
 styles for specialized UI. A shared AppAppearance provider wraps each app before its
 screens, applies the stored per-app choice, and follows prefers-color-scheme while
