@@ -219,3 +219,11 @@ landmark and heading issues; these markup fixes were not included. See the
 [follow-up report](accessibility-contrast-update.html).
 Type checking, lint, formatting, 245 unit tests, all 45 functional browser checks
 and the production build passed.
+
+## Axe CI reporting — 2026-11-22
+
+The Check workflow now runs the complete axe suite in explicit local-auth mode
+on PRs and pushes to main. Its separate step is non-blocking while the remaining
+button-name, landmark and heading findings are unresolved. Failures produce a
+warning/job summary; report artifacts retain the HTML report, raw results,
+screenshots and traces for 14 days. Promotion to a blocking gate remains pending.

@@ -381,3 +381,14 @@ Disabled controls retain full-opacity labels with dashed outlines and their
 existing disabled behavior/cursor. Remove app-specific text-opacity overrides;
 retain motion and visibility transitions. This does not redesign app palettes or
 decorative borders, overlays and illustrations.
+
+## Axe in CI — 2026-11-22
+
+The user requested running the accessibility checks in CI. Run `pnpm test:a11y`
+after the functional browser suite against the existing production test stack;
+set `TEST_AUTH_MODE=local` explicitly so authenticated scans are exercised. Run
+axe even if a functional browser test fails, provided stack startup succeeded.
+For the current markup backlog, keep this audit non-blocking with an explicit
+warning and job summary on failure, and upload the Playwright report and raw
+results for 14 days. Do not suppress any rule or finding. Making the audit
+blocking remains a follow-up after the known findings are fixed.
