@@ -159,6 +159,10 @@ coverage. See the contributor instructions in `AGENTS.md`.
 
 ### Browser coverage
 
+Functional and accessibility suites inherit explicit `retries: 0` and
+`failOnFlakyTests: true`. A failed attempt fails the run; do not enable reruns to
+mask flaky tests. Fix the underlying product or synchronization issue.
+
 The test image (`pnpm test:image`) includes Istanbul counters and frontend source
 maps. Ordinary production image builds do not enable instrumentation. Start the
 test stack as usual, then run the browser coverage command against its URL:

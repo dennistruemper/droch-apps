@@ -129,6 +129,10 @@ add an app-local `AGENTS.md` and link it here; keep shared policy in the root do
 - Use the project's pinned tools and documented scripts once they exist.
 - Run meaningful checks for the change; prioritize domain, concurrency, auth, boundary,
   and multiplayer behavior. Do not add tests that merely duplicate implementation.
+- Playwright retries are explicitly disabled (`retries: 0`) for functional and
+  accessibility tests, with `failOnFlakyTests: true`. Keep both suites inheriting
+  this policy; do not add retry overrides in projects, CLI commands or CI to hide
+  intermittent failures. Reproduce and fix the underlying test or product race.
 - Do not claim commands or checks exist or passed unless verified.
 
 ## Changed-line coverage gate

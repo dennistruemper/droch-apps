@@ -79,3 +79,16 @@ The team-wide regression first failed against per-player batching, then passed.
 
 See the [worked example and delivery limitations](email-notifications.md).
 Hosted Mailtrap delivery remains a deployment verification task.
+
+## Background revisions during imports — 2026-11-23
+
+Regression tests reproduce private-account revision changes disabling a current
+import draft, and an already-reviewed draft becoming stale on a later unchanged
+snapshot. The model advances the revision only for a previously current editor
+with identical visible teams/games, preserving real-conflict review and removal
+guards. A two-account browser regression waits for the real SSE revision from an
+unrelated private-team change, then imports the preserved selection and checks
+team privacy. It passes locally against the production build. Type checking,
+lint, formatting and all 285 unit/integration tests pass; two new model regressions
+were demonstrated failing before the fix. Keep the original calendar flow and
+concurrent axe against the shared stack for CI validation.

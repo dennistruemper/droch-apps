@@ -193,3 +193,18 @@ planner's main content on every viewport; do not add a repeated account name or
 introductory copy. The standalone sign-in screen uses main instead of section,
 with its existing layout preserved. Shared menu headings are neutral containers,
 not additional page banners.
+
+## Unrelated revisions during editing — 2026-11-23
+
+Parallel browser/a11y testing exposed a production interaction: Kunludo has one
+app revision, so another account's private team creation could invalidate an open
+calendar import even though none of its visible data changed. The user requested
+fixing the product issue rather than isolating the tests to hide it.
+
+Automatically advance an editor's expected revision only when it was current at
+the previous snapshot and both visible teams and games remain identical. Preserve
+the draft, selections and async-file generation. Keep explicit review for actual
+visible changes, including permission/membership changes; a subsequent unrelated
+revision must not silently accept an earlier real conflict. Server revision checks,
+receipt-based retries and stale PIN protection remain unchanged. Run both suites
+against the same stack to retain exposure to this multi-user interaction.

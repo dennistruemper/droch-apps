@@ -68,8 +68,13 @@ Request IDs, editor generations and snapshot versions reject stale completions a
 file reads. Each file selection clears the preceding preview and advances its generation,
 including invalid selections. Admin PIN responses carry the app revision and are rejected
 when older than the current snapshot. Uncertain network writes retry the same command UUID; request disposal
-aborts HTTP and closes SSE. Drafts survive live updates; stale editors require an
-explicit review before resubmitting. Settings/theme data stays app-prefixed.
+aborts HTTP and closes SSE. Drafts survive live updates. If a current draft receives
+an otherwise identical viewer-visible snapshot, advance its expected revision while
+preserving all fields, calendar selections and async-read generation. Another account's
+private changes must not disable an unchanged editor. Visible team/game changes
+still make the draft stale and require explicit review before resubmitting; later
+identical snapshots do not clear that stale state. Server-side optimistic revision
+checks and idempotent command identities remain in place. Settings/theme data stays app-prefixed.
 
 Kunludo roster responses can also be set by a team admin for an existing member;
 server authorization and ordinary conflict handling apply. Match headings show

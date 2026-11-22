@@ -1,5 +1,13 @@
 # Decisions
 
+## No Playwright retry masking — 2026-11-23
+
+The owner requested disabling test reruns so intermittent failures remain visible.
+The pinned Playwright version already defaults to zero retries. Make `retries: 0`
+and `failOnFlakyTests: true` explicit in the shared base config inherited by both
+functional and axe suites. Keep project/CLI/CI overrides from weakening this policy;
+reproduce and fix the underlying problem rather than relying on reruns.
+
 ## Parallel browser and accessibility checks — 2026-11-23
 
 The owner requested overlapping functional browser coverage (H) and accessibility
@@ -11,7 +19,11 @@ own output without removing the other's artifacts. Axe has its own reporter and
 does not enable the functional suite's coverage hooks. Preserve failure reporting,
 the changed-line gate and artifact uploads. Compare real workflow/step durations
 with the preceding successful sequential run; account for overlap and runner noise
-rather than summing parallel durations.
+rather than summing parallel durations. The initial shared-stack run exposed a real
+Kunludo bug: unrelated private-account revisions disabled an open calendar import.
+Fix the production editor's revision handling and retain the shared stack; see
+[Kunludo's decision](../apps/kunludo/docs/decisions.md#unrelated-revisions-during-editing--2026-11-23).
+A timed-out failing run is not a valid performance comparison.
 
 ## Changed-line coverage gate — 2026-11-22
 

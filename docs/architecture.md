@@ -85,7 +85,8 @@ are siblings (`test-results/browser/` and `test-results/a11y/`), so startup clea
 cannot delete the other suite's traces or attachments. Only the functional suite
 collects browser coverage. The parallel group waits for both suites before publishing
 reports and running final stack cleanup. Accessibility violations or audit errors fail the Check
-workflow. Failures produce an error annotation and summary; the HTML
+workflow. Both suites inherit explicit `retries: 0` and `failOnFlakyTests: true`;
+intermittent failures require a fix rather than retry masking. Failures produce an error annotation and summary; the HTML
 report, raw results, screenshots and traces are uploaded for 14 days. The audit
 itself asserts zero violations without exclusions or disabled rules. See
 [the current results](accessibility-results.html).

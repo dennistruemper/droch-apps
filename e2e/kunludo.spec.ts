@@ -2,6 +2,7 @@ declare global {
   interface Window {
     releaseSlow?: () => void;
     slowFinished?: boolean;
+    kunludoSnapshotVersion?: number;
   }
 }
 
@@ -9,6 +10,7 @@ import { test, expect } from "./fixtures.ts";
 import type { Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
+import { snapshotSchema } from "../apps/kunludo/src/contracts/index.ts";
 
 test.use({
   video: { mode: "on", size: { width: 1280, height: 900 } },
@@ -642,4 +644,77 @@ test("a late calendar read cannot replace the newly selected file", async ({ pag
   await page.waitForFunction(() => window.slowFinished);
   await expect(page.locator(".zs-import-list")).toContainText("New Visitor");
   await expect(page.locator(".zs-import-list")).not.toContainText("Old Visitor");
+});
+
+test("another account's private team changes do not invalidate an open calendar import", async ({
+  page,
+  browser,
+}) => {
+  await page.addInitScript(() => {
+    class ObservedEventSource extends EventSource {
+      constructor(url: string | URL, options?: EventSourceInit) {
+        super(url, options);
+
+        if (new URL(url, location.href).pathname !== "/api/kunludo/events") return;
+        this.addEventListener("snapshot", (event) => {
+          if (!(event instanceof MessageEvent) || typeof event.data !== "string") return;
+          const data: unknown = JSON.parse(event.data);
+
+          if (
+            data &&
+            typeof data === "object" &&
+            "version" in data &&
+            typeof data.version === "number"
+          )
+            window.kunludoSnapshotVersion = data.version;
+        });
+      }
+    }
+
+    window.EventSource = ObservedEventSource;
+  });
+  await login(page, "Import owner");
+  await create(page, "Import team", "");
+  await teamCard(page, "Import team")
+    .getByRole("button", { name: "Kalender importieren", exact: true })
+    .click();
+  const form = page.getByRole("region", { name: "Kalender importieren", exact: true });
+  await form
+    .getByLabel("iCalendar-Datei (.ics)", { exact: true })
+    .setInputFiles(resolve("e2e/fixtures/rendsburger-tsv-3.ics"));
+  const boxes = form.getByRole("checkbox");
+  await expect(boxes).toHaveCount(20);
+
+  for (const box of await boxes.all()) await box.uncheck();
+  await boxes.first().check();
+  const outsider = await browser.newContext({ baseURL: new URL(page.url()).origin });
+
+  try {
+    const otherPage = await outsider.newPage();
+    await login(otherPage, "Other account");
+    await create(otherPage, "Private team", "Another club");
+    const response = await outsider.request.get("/api/kunludo/snapshot");
+    expect(response.ok()).toBe(true);
+    const snapshot = snapshotSchema.parse(await response.json());
+    await expect
+      .poll(() => page.evaluate(() => window.kunludoSnapshotVersion ?? -1), { timeout: 10000 })
+      .toBeGreaterThanOrEqual(snapshot.version);
+    await expect(boxes.first()).toBeChecked();
+    await expect(
+      form.getByText("Die Teamdaten wurden inzwischen geändert. Dein Entwurf ist erhalten.", {
+        exact: true,
+      }),
+    ).toHaveCount(0);
+    await form.getByRole("button", { name: "Ausgewählte Spiele importieren", exact: true }).click();
+    await expect(page.getByRole("status")).toContainText("1 Spiele hinzugefügt");
+
+    const own = snapshotSchema.parse(
+      await (await page.request.get("/api/kunludo/snapshot")).json(),
+    );
+
+    expect(own.teams.map((team) => team.name)).toEqual(["Import team"]);
+    expect(own.games).toHaveLength(1);
+  } finally {
+    await outsider.close();
+  }
 });

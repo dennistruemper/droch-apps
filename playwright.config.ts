@@ -18,6 +18,8 @@ export default defineConfig({
   testDir: "./e2e",
   testIgnore: "**/accessibility/**",
   fullyParallel: false,
+  retries: 0,
+  failOnFlakyTests: true,
   outputDir: "test-results/browser",
   ...(process.env.BROWSER_COVERAGE === "1"
     ? {
