@@ -43,6 +43,7 @@ jobs:
           json-final-path: coverage/full/coverage-final.json
           file-coverage-mode: all
           file-coverage-expanded: false
+          show-uncovered-lines: false
           sort-by: branches-asc
           comment-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' && 'pr' || 'none' }}
       - parallel:
@@ -72,6 +73,7 @@ jobs:
           json-final-path: coverage/browser/coverage-final.json
           file-coverage-mode: all
           file-coverage-expanded: false
+          show-uncovered-lines: false
           sort-by: branches-asc
           comment-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' && 'pr' || 'none' }}
       - if: always()

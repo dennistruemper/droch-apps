@@ -4,8 +4,9 @@
 
 The owner requested readable coverage results without downloading archives. Use the
 pinned `davelosert/vitest-coverage-report-action` for both existing report formats,
-with separately named Vitest/browser sections, totals for all four metrics and
-collapsed per-file details sorted by branch coverage. Publish Actions job summaries
+with separately named, updating Vitest/browser comments, totals for all four metrics and
+collapsed per-file details sorted by branch coverage. Omit long uncovered-line
+link lists from comments to keep their size manageable. Publish Actions job summaries
 on every run and update the PR comment when the token permits it. Keep HTML artifacts
 for detailed inspection; do not add a hosted coverage service or percentage gate.
 
