@@ -16,7 +16,7 @@ export default defineConfig({
         "tooling/**/*.{ts,mjs}",
       ],
       exclude: ["**/*.test.ts", "**/*.d.ts"],
-      reporter: ["text", "html", "lcovonly", "json-summary"],
+      reporter: ["text", "html", "lcovonly", "json", "json-summary"],
       reportsDirectory: "coverage/full",
       reportOnFailure: true,
     },

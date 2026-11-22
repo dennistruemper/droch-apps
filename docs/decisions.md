@@ -1,5 +1,14 @@
 # Decisions
 
+## Coverage in PR comments — 2026-11-22
+
+The owner requested readable coverage results without downloading archives. Use the
+pinned `davelosert/vitest-coverage-report-action` for both existing report formats,
+with separately named Vitest/browser sections, totals for all four metrics and
+collapsed per-file details sorted by branch coverage. Publish Actions job summaries
+on every run and update the PR comment when the token permits it. Keep HTML artifacts
+for detailed inspection; do not add a hosted coverage service or percentage gate.
+
 ## Browser coverage — 2026-11-22
 
 The owner requested coverage for the existing browser suite. Instrument frontend

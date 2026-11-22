@@ -80,7 +80,12 @@ runs the same suite with V8 coverage and writes an HTML report to
 `coverage/full/index.html`, LCOV to `coverage/full/lcov.info`, and totals to
 `coverage/full/coverage-summary.json`. `pnpm check` includes this coverage run;
 CI publishes the reports as the `vitest-coverage` artifact for 14 days, including
-reports produced when tests fail.
+reports produced when tests fail. CI also publishes readable coverage tables in the
+Actions job summary and updates the PR coverage comment, with separate Vitest and
+browser sections. File details are collapsed by default, sorted by lowest branch
+coverage first, with source links and uncovered lines. Fork and Dependabot PRs use
+job summaries without comments because their tokens are read-only. Full HTML
+artifacts remain available for deeper inspection.
 
 Coverage includes app, server, shared and tooling source files, including files
 never imported by tests. Test files and type declarations are excluded. These

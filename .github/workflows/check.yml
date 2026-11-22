@@ -15,6 +15,9 @@ jobs:
   foundation:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v7
         with:
@@ -31,6 +34,17 @@ jobs:
           path: coverage/full/
           retention-days: 14
           if-no-files-found: warn
+      - name: Summarize unit and integration coverage
+        if: ${{ !cancelled() && hashFiles('coverage/full/coverage-summary.json') != '' }}
+        uses: davelosert/vitest-coverage-report-action@74c2d9210b4fc44c84d8213f61d7ec99837b7aa0 # v2.13.2
+        with:
+          name: Vitest - unit and integration
+          json-summary-path: coverage/full/coverage-summary.json
+          json-final-path: coverage/full/coverage-final.json
+          file-coverage-mode: all
+          file-coverage-expanded: false
+          sort-by: branches-asc
+          comment-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' && 'pr' || 'none' }}
       - parallel:
           - name: Build instrumented test image
             run: pnpm test:image
@@ -49,5 +63,16 @@ jobs:
           path: coverage/browser/
           retention-days: 14
           if-no-files-found: warn
+      - name: Summarize browser coverage
+        if: ${{ !cancelled() && hashFiles('coverage/browser/coverage-summary.json') != '' }}
+        uses: davelosert/vitest-coverage-report-action@74c2d9210b4fc44c84d8213f61d7ec99837b7aa0 # v2.13.2
+        with:
+          name: Browser - loaded frontend modules
+          json-summary-path: coverage/browser/coverage-summary.json
+          json-final-path: coverage/browser/coverage-final.json
+          file-coverage-mode: all
+          file-coverage-expanded: false
+          sort-by: branches-asc
+          comment-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' && 'pr' || 'none' }}
       - if: always()
         run: pnpm test:stack:stop
