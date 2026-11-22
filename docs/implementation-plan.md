@@ -10,8 +10,8 @@ Account lifecycle operations and deployment recovery work remain pending. See [a
 - Create one package per app plus server composition and shared modules.
 - Configure strict TypeScript, Solid 2 compilation, Oxlint, Oxfmt, and Vitest.
 - Collect V8 unit/integration and Istanbul browser coverage, with separate CI artifacts
-  and a native changed-file report. Exact changed-line and historical test-gap analysis
-  remain optional follow-up tooling.
+  and a native changed-file report. Enforce 90% combined Vitest/browser changed-line
+  coverage on PRs with diff-cover; historical test-gap analysis remains optional.
 - Add explicit exports and resolved module-boundary enforcement.
 - Add root commands for development, checks, tests, builds, and migrations.
 - Integrate Drochsign after deciding how to consume and update it.

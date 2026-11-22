@@ -57,6 +57,17 @@ requests pull-request write permission; fork and Dependabot runs publish summari
 without comments. Per-file details are ordered by branch coverage;
 long uncovered-line lists are omitted from comments.
 
+PRs additionally run `pnpm test:coverage:gate <target-sha>` within the required
+`foundation` check. Pinned, hash-verified diff-cover combines line hits from the full
+Vitest and browser LCOV reports and requires 90% of added/modified executable lines
+against the target merge base. Full checkout history makes that comparison available.
+A line covered by either suite counts once; suite-specific statement/function/branch
+reports stay separate. Missing inputs and tool failures block CI. The unified patch
+result is published in the job summary and `coverage/patch/` artifact; main pushes
+skip this PR-only comparison. Python 3.11+ is a development/CI dependency only, with
+its isolated environment under `.local/coverage-gate/`. Agent obligations and the
+no-bypass policy are in `AGENTS.md`; local commands are in README.
+
 Exact versions are pinned in manifests and the lockfile. Node 24.21.0 and pnpm
 11.25.0 are pinned in mise and Docker. CI uses `jdx/mise-action` to install both
 tools from `mise.toml` and add them to PATH.

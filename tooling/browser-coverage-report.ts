@@ -6,11 +6,15 @@ import reports from "istanbul-reports";
 import sourceMapLibrary from "istanbul-lib-source-maps";
 
 export default async function report() {
+  await reportBrowserCoverage(process.cwd());
+}
+
+export async function reportBrowserCoverage(root: string) {
   const map = coverageLibrary.createCoverageMap({});
 
-  for (const file of await readdir(".local/browser-coverage")) {
+  for (const file of await readdir(resolve(root, ".local/browser-coverage"))) {
     const data: CoverageMapData = JSON.parse(
-      await readFile(`.local/browser-coverage/${file}`, "utf8"),
+      await readFile(resolve(root, ".local/browser-coverage", file), "utf8"),
     );
 
     map.merge(data);
@@ -32,25 +36,29 @@ export default async function report() {
 
     if (!source || /\.(test|spec)\.[cm]?[jt]sx?$/.test(source)) continue;
     const coverage = { ...mapped.fileCoverageFor(file).data };
-    coverage.path = resolve(source);
+    coverage.path = resolve(root, source);
     local.addFileCoverage(coverage);
   }
 
   if (!local.files().length)
     throw new Error("Browser coverage contains no mapped application sources");
-  await mkdir("coverage/browser", { recursive: true });
+  await mkdir(resolve(root, "coverage/browser"), { recursive: true });
   const observed = new Set(local.files());
   const unobserved = [];
 
-  for await (const file of glob([
-    "apps/*/src/{client,contracts,domain}/**/*.{ts,tsx}",
-    "shared/src/{settings,navigation,storage,contracts}/**/*.{ts,tsx}",
-  ])) {
-    if (!/\.(test|spec|d)\.tsx?$/.test(file) && !observed.has(resolve(file))) unobserved.push(file);
+  for await (const file of glob(
+    [
+      "apps/*/src/{client,contracts,domain}/**/*.{ts,tsx}",
+      "shared/src/{settings,navigation,storage,contracts}/**/*.{ts,tsx}",
+    ],
+    { cwd: root },
+  )) {
+    if (!/\.(test|spec|d)\.tsx?$/.test(file) && !observed.has(resolve(root, file)))
+      unobserved.push(file);
   }
 
   await writeFile(
-    "coverage/browser/unobserved-sources.json",
+    resolve(root, "coverage/browser/unobserved-sources.json"),
     JSON.stringify(unobserved.sort(), null, 2) + "\n",
   );
   console.log(
@@ -58,10 +66,10 @@ export default async function report() {
   );
 
   const context = reportLibrary.createContext({
-    dir: "coverage/browser",
+    dir: resolve(root, "coverage/browser"),
     coverageMap: local,
     sourceFinder: (file) => {
-      const original = mapped.files().find((path) => path.endsWith(relative(process.cwd(), file)));
+      const original = mapped.files().find((path) => path.endsWith(relative(root, file)));
 
       return sourceMaps.sourceFinder(original ?? file);
     },

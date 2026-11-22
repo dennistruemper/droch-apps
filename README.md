@@ -95,8 +95,8 @@ Coverage includes app, server, shared and tooling source files, including files
 never imported by tests. Test files and type declarations are excluded. These
 reports measure Vitest execution only; the separate Playwright reports do not
 contribute to these totals. Frontend views exercised only in Playwright therefore appear
-uncovered. There is initially no percentage gate: use the report to establish a
-baseline and identify meaningful missing behavior tests.
+uncovered. Overall percentages remain informational; the changed-line gate below
+combines execution from both suites.
 
 `pnpm test:coverage:changed` runs the full suite and limits its report to files
 with staged or unstaged changes, under `coverage/changed/`. To compare with a
@@ -110,15 +110,52 @@ pnpm test:coverage --coverage.changed=origin/main --coverage.reportsDirectory=co
 The reference must exist locally. For a PR, use its merge-base commit with the
 target branch to focus on the PR's changes. This is **whole-file coverage for
 changed files**, not a percentage for only added/modified lines. It also differs
-from `vitest --changed`, which selects related tests. Exact changed-line coverage
-needs a diff-aware consumer of LCOV. Two options are
-[diff-cover](https://github.com/Bachmann1234/diff_cover) (a local/CI tool that can
-produce HTML and enforce a changed-line percentage) and
-[Codecov patch coverage](https://docs.codecov.com/docs/coverage-percentages)
-(a hosted PR integration). Neither is configured here. Teamscale's historical
-test-gap analysis additionally tracks changes and test execution over time.
+from `vitest --changed`, which selects related tests. The gate below uses
+[diff-cover](https://github.com/Bachmann1234/diff_cover) for exact changed-line
+coverage. Teamscale's historical test-gap analysis additionally tracks changes and
+test execution over time; that history is not collected here.
 
 See [Vitest coverage options](https://vitest.dev/config/coverage#coverage-changed).
+
+### Changed-line gate
+
+PRs require **90% coverage of added or modified executable lines**. CI compares
+against the merge base with the PR target SHA using full Git history, inside the
+required `foundation` check. Main pushes still run tests and reports; the PR gate
+is skipped because there is no PR target. A PR with no changed executable lines passes.
+
+The gate reads both full LCOV files. It counts a source line once and treats it as
+covered if **either** Vitest or Playwright executes it. This is one unified changed-line
+result, without averaging suite percentages or adding their hit counts. It does not
+combine branch/function/statement totals: V8 and compiled Solid instrumentation have
+different locations and populations. Overall suite reports stay separate.
+
+Local verification (Python 3.11+ with venv/pip is required):
+
+```sh
+git fetch origin main
+pnpm check
+# Generate fresh browser coverage against the instrumented stack as shown below.
+pnpm test:coverage:gate origin/main
+```
+
+Pass the actual target branch/ref for other PR bases. The local command includes
+staged, unstaged and untracked changes; both coverage reports must match the current
+sources. Missing reports, an unavailable base or tool/report errors fail the command.
+The tool installs into `.local/coverage-gate/` using pinned versions and SHA-256 hashes
+in `tooling/coverage-gate-requirements.txt`; Python is development-only.
+
+`coverage/patch/summary.txt` lists uncovered changed lines. Markdown and JSON details
+are beside it. CI publishes the unified result in the Actions job summary and retains
+the `changed-line-coverage` artifact for 14 days, including on threshold failure.
+The existing PR comments continue to show suite-specific `all` and `changes` views;
+the latter are whole changed files, not the gate's changed-line percentage.
+
+Fix a failing gate with tests that assert behavior and relevant failure/recovery
+paths. Do not lower the threshold or add source exclusions to bypass it without an
+explicit owner-approved policy change. This is a minimum for changed lines, not a
+promise of branch coverage, assertion quality, or no decrease relative to historical
+coverage. See the contributor instructions in `AGENTS.md`.
 
 ### Browser coverage
 

@@ -1,5 +1,23 @@
 # Decisions
 
+## Changed-line coverage gate — 2026-11-22
+
+The owner requested the proposed 90% gate and instructions for agents. Require 90%
+of added/modified executable lines in each PR, using pinned, hash-verified diff-cover
+against the target merge base. Run within required `foundation` so failures block
+merging without adding a new branch-rule check name. Combine Vitest and browser
+LCOV by source path/line with covered-in-either semantics; do not average totals or
+merge incompatible statement/function/branch identities. Full Git history and the
+PR target SHA avoid dependence on checkout depth or a hardcoded main branch.
+
+Keep overall coverage informational. This supersedes the initial no-gate policy;
+it is a changed-line minimum, not a historical no-regression comparison or Teamscale
+test-gap history. Missing reports/tool errors fail; no executable diff passes.
+Require meaningful tests for failures, with no threshold reduction or source ignores
+without explicit owner agreement. Document agent duties in `AGENTS.md` and local
+commands/report locations in README. Python is isolated development tooling, not an
+application or production-image dependency.
+
 ## Coverage in PR comments — 2026-11-22
 
 The owner requested readable coverage results without downloading archives. Use the
@@ -10,7 +28,8 @@ table collapsed and expand changed files by default, sorting both by branch cove
 Reuse the same coverage data; the views filter file tables and do not change totals. Omit long uncovered-line
 link lists from comments to keep their size manageable. Publish Actions job summaries
 on every run and update the PR comment when the token permits it. Keep HTML artifacts
-for detailed inspection; do not add a hosted coverage service or percentage gate.
+for detailed inspection; do not add a hosted coverage service. The initial
+no-percentage-gate policy is superseded by the changed-line decision below.
 
 ## Browser coverage — 2026-11-22
 
