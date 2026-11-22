@@ -60,5 +60,11 @@
       "matchPackageNames": ["@solidjs/vite-plugin"],
       "allowedVersions": "/^3\\./"
     }
-  ]
+  ],
+  "minimumReleaseAge": "3 days",
+  "minimumReleaseAgeBehaviour": "timestamp-required",
+  "internalChecksFilter": "strict",
+  "vulnerabilityAlerts": {
+    "minimumReleaseAge": null
+  }
 }

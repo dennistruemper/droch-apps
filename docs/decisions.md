@@ -322,3 +322,13 @@ versions must be reviewed together. Keep the current toolchain and Solid major
 lines until deliberately changed; allow Solid prerelease updates. The
 [setup and policy](dependency-updates.md) documents activation, validation and the
 limits of grouping. App installation remains a one-time owner action after merge.
+
+### Release-age protection — 2026-11-22
+
+The user requested a release-age delay to reduce supply-chain risk. Require three
+full days for routine Renovate updates, trustworthy available timestamps and strict
+internal filtering. Configure pnpm with the matching 4,320-minute delay for newly
+resolved direct/transitive packages as well; keep the existing exact-version
+exclusion. Vulnerability-fix PRs bypass Renovate's delay, but the pnpm policy still
+requires a reviewed exact-version exception for fixes younger than three days.
+This is time for detection, not proof that a release is safe.

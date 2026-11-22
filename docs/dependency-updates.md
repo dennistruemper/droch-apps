@@ -26,6 +26,16 @@ GitHub Actions schedule, or Coolify change is required for the hosted service.
 - Routine PR creation is allowed on Sundays from 00:00 through 11:59 in
   `Europe/Berlin`. The hosted service chooses when it runs within that window;
   this is not a guaranteed execution time. Existing PRs can still be refreshed.
+- Routine updates must be at least **three days (72 hours)** old. Renovate uses
+  `minimumReleaseAge: "3 days"`, requires a release timestamp, and uses strict
+  internal filtering so updates wait before a PR is raised. Missing timestamps
+  hold an update for review rather than silently bypassing the delay.
+- pnpm separately uses `minimumReleaseAge: 4320` (minutes) for newly resolved
+  direct and transitive packages, including manual dependency updates. pnpm also
+  verifies the lockfile against its supply-chain policy during installation. The
+  existing exact-version exclusion for `@types/node@24.19.1` remains; do not add broad package exclusions.
+  The delay gives malicious releases time to be detected; it cannot guarantee
+  safety, and timestamp reliability depends on the registry/datasource.
 - At most three routine PRs are open, with at most two created per hour. The
   Dependency Dashboard shows pending updates. Nothing merges automatically.
 - Renovate's recommended presets supply standard monorepo grouping and supported
@@ -46,7 +56,11 @@ GitHub Actions schedule, or Coolify change is required for the hosted service.
   compatibility. Major changes require a policy edit.
 - Other major updates remain visible as manually reviewed PRs. Vulnerability-fix
   PRs use Renovate's default priority behavior, bypassing the routine schedule
-  and PR limits when GitHub supplies an actionable alert; they still need review.
+  and PR limits when GitHub supplies an actionable alert. An explicit
+  `vulnerabilityAlerts.minimumReleaseAge: null` also bypasses Renovate's cooldown.
+  pnpm's repository-level cooldown still applies during lockfile generation;
+  a fix released within 72 hours can require a reviewed, exact-version pnpm
+  exclusion. Security PRs still need review.
 
 Before merging an update, require the existing Check workflow: type checking,
 linting, formatting, unit/integration tests, the production image build and browser
@@ -60,7 +74,7 @@ versions change; Renovate does not rewrite prose.
 From a checkout with its pinned mise tools installed:
 
 ```sh
-mise exec -- pnpm --allow-build=re2 --package=renovate@44.257.9 dlx renovate-config-validator --strict --no-global renovate.json
+mise exec -- pnpm --allow-build=re2 --package=renovate@44.253.4 dlx renovate-config-validator --strict --no-global renovate.json
 ```
 
 The validator resolves inherited presets and checks the repository configuration.
@@ -68,7 +82,7 @@ For dependency discovery without branches or remote writes, first ensure the
 configuration is tracked by Git, then run:
 
 ```sh
-LOG_LEVEL=debug mise exec -- pnpm --allow-build=re2 --package=renovate@44.257.9 dlx renovate --platform=local --dry-run=extract
+LOG_LEVEL=debug mise exec -- pnpm --allow-build=re2 --package=renovate@44.253.4 dlx renovate --platform=local --dry-run=extract
 ```
 
 Extraction verifies recognized files and pins; it does not prove registry lookup,
