@@ -356,6 +356,15 @@ Use Renovate-driven merging (`platformAutomerge: false`), require passing checks
 not automate merges of other PRs or change repository settings. Keep the three-day
 routine cooldown and version constraints; respect reviews/branch rules added later.
 
+### Daily update window — 2026-11-23
+
+Allow routine Renovate PRs every day from 00:00 through 11:59 Europe/Berlin,
+superseding the Sunday-only window. Checks are inexpensive, and a daily window
+reduces the wait for eligible dependency fixes. The hosted app controls actual
+execution times. Keep the three-day release-age protection, PR limits and merge
+policy; actionable vulnerability alerts continue to bypass the routine window
+and Renovate cooldown.
+
 ## Playwright accessibility audit — 2026-11-22
 
 Use axe as a development-only dependency within Playwright, reusing actual browser

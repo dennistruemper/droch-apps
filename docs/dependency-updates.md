@@ -21,9 +21,9 @@ no service to deploy and no Renovate dependency in the application.
 Merging this configuration alone does not install the app. No repository secret,
 GitHub Actions schedule, or Coolify change is required for the hosted service.
 
-## Initial update policy
+## Update policy
 
-- Routine PR creation is allowed on Sundays from 00:00 through 11:59 in
+- Routine PR creation is allowed every day from 00:00 through 11:59 in
   `Europe/Berlin`. The hosted service chooses when it runs within that window;
   this is not a guaranteed execution time. Existing PRs can still be refreshed.
 - Routine updates must be at least **three days (72 hours)** old. Renovate uses
@@ -46,7 +46,7 @@ GitHub Actions schedule, or Coolify change is required for the hosted service.
   Pending, failing or missing checks prevent merging (`ignoreTests: false`).
   `platformAutomerge: false` makes Renovate wait for checks itself; it does not
   enable GitHub's repository-wide auto-merge setting or affect other PRs.
-  Eligible PRs can merge on a later Renovate run outside the Sunday creation
+  Eligible PRs can merge on a later Renovate run outside the daily creation
   window. Required reviews or other branch rules, if added later, still apply.
 - Renovate's recommended presets supply standard monorepo grouping and supported
   dependency handling. Native managers cover workspace npm dependencies and the
