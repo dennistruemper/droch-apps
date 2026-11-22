@@ -81,9 +81,12 @@ runs the same suite with V8 coverage and writes an HTML report to
 `coverage/full/coverage-summary.json`. `pnpm check` includes this coverage run;
 CI publishes the reports as the `vitest-coverage` artifact for 14 days, including
 reports produced when tests fail. CI also publishes readable coverage tables in the
-Actions job summary and updates two PR coverage comments: one for Vitest and one
-for browser execution. File details are collapsed by default, sorted by lowest
-branch coverage first, with source links. Long lists of uncovered line links stay
+Actions job summary and updates two named PR views for each suite (Vitest and
+browser): `all` lists every reported file in a collapsed table; `changes` shows
+only files changed in the PR, expanded by default. Both sort files by lowest
+branch coverage first and link to source. The overall totals are identical between
+views: `file-coverage-mode` filters the file table, not the measured code or totals.
+Changed-file coverage is not coverage of only changed lines. Long lists of uncovered line links stay
 in the downloadable HTML reports so comments remain compact. Fork and Dependabot PRs use
 job summaries without comments because their tokens are read-only. Full HTML
 artifacts remain available for deeper inspection.

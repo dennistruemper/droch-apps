@@ -50,9 +50,11 @@ multiplayer contexts. Source-mapped browser HTML, LCOV and JSON reports live und
 `coverage/browser/` and are published in the same CI job. Browser and Vitest reports
 remain separate: their instrumentation and measured source populations differ.
 The pinned Vitest coverage report action renders both Istanbul-format datasets as
-Actions summaries and updates one named PR comment per suite. The job
+Actions summaries and updates two named PR comments per suite: a collapsed `all`
+file table and an expanded `changes` file table. Both reuse the same reports and
+overall totals; filtering file details does not calculate changed-line coverage. The job
 requests pull-request write permission; fork and Dependabot runs publish summaries
-without comments. Per-file details are collapsed and ordered by branch coverage;
+without comments. Per-file details are ordered by branch coverage;
 long uncovered-line lists are omitted from comments.
 
 Exact versions are pinned in manifests and the lockfile. Node 24.21.0 and pnpm
