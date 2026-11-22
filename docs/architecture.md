@@ -79,8 +79,12 @@ Accessibility checks use pinned `@axe-core/playwright` through the dedicated
 rules through 2.2 plus separately identifiable best-practice rules, with light/dark
 desktop and light mobile profiles. Raw axe results and violation screenshots are
 attached to the Playwright HTML report. The ordinary browser suite excludes this
-folder; CI runs the axe suite separately against the same production test stack
-with explicit local auth. Accessibility violations or audit errors fail the Check
+folder; CI runs the axe and functional browser suites concurrently against the
+same production test stack, with explicit local auth for axe. Their output directories
+are siblings (`test-results/browser/` and `test-results/a11y/`), so startup cleanup
+cannot delete the other suite's traces or attachments. Only the functional suite
+collects browser coverage. The parallel group waits for both suites before publishing
+reports and running final stack cleanup. Accessibility violations or audit errors fail the Check
 workflow. Failures produce an error annotation and summary; the HTML
 report, raw results, screenshots and traces are uploaded for 14 days. The audit
 itself asserts zero violations without exclusions or disabled rules. See

@@ -69,7 +69,16 @@ jobs:
         run: |
           pnpm test:stack
           cat .local/test/browser.env >> "$GITHUB_ENV"
-      - run: pnpm test:e2e:coverage
+      - parallel:
+          - name: Browser tests and coverage
+            if: ${{ !cancelled() && steps.test_stack.outcome == 'success' }}
+            run: pnpm test:e2e:coverage
+          - name: Audit accessibility with axe
+            id: a11y
+            if: ${{ !cancelled() && steps.test_stack.outcome == 'success' }}
+            env:
+              TEST_AUTH_MODE: local
+            run: pnpm test:a11y
       - name: Upload browser coverage
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
@@ -115,12 +124,6 @@ jobs:
           path: coverage/patch/
           retention-days: 14
           if-no-files-found: warn
-      - name: Audit accessibility with axe
-        id: a11y
-        if: ${{ !cancelled() && steps.test_stack.outcome == 'success' }}
-        env:
-          TEST_AUTH_MODE: local
-        run: pnpm test:a11y
       - name: Upload accessibility report
         if: ${{ !cancelled() && steps.test_stack.outcome == 'success' && steps.a11y.outcome != 'skipped' }}
         uses: actions/upload-artifact@v7

@@ -248,3 +248,10 @@ Type checking, lint, formatting, 245 unit tests and the production build pass.
 All 45 distinct functional browser flows were verified: 44 passed in the final
 full run, followed by the corrected joker-tile locator's mobile flow passing a
 targeted rerun. No application changes were required for that locator correction.
+
+## Parallel browser validation — 2026-11-23
+
+Functional browser coverage and axe now run in one native parallel group after
+stack startup, with sibling output directories and cleanup after both complete.
+Compare measured CI timings with sequential run 45080676751 (4m 39s total);
+record the run links and results in PR #29.

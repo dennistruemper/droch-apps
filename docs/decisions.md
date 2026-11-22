@@ -1,5 +1,18 @@
 # Decisions
 
+## Parallel browser and accessibility checks — 2026-11-23
+
+The owner requested overlapping functional browser coverage (H) and accessibility
+(L) and measuring the result in CI. Use a native parallel step group after stack
+startup, retaining both blocking outcomes and waiting for both before cleanup.
+Reuse the same isolated production stack; tests create independent accounts and
+rooms. Put Playwright outputs in sibling directories so either suite can clear its
+own output without removing the other's artifacts. Axe has its own reporter and
+does not enable the functional suite's coverage hooks. Preserve failure reporting,
+the changed-line gate and artifact uploads. Compare real workflow/step durations
+with the preceding successful sequential run; account for overlap and runner noise
+rather than summing parallel durations.
+
 ## Changed-line coverage gate — 2026-11-22
 
 The owner requested the proposed 90% gate and instructions for agents. Require 90%
