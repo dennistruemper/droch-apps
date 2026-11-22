@@ -39,6 +39,38 @@ squash-merges stable patch/minor updates after passing checks and rebasing onto
 current `main`; major, prerelease/pre-1.0 and vulnerability updates stay manual.
 It does not enable GitHub-wide auto-merge.
 
+Vitest uses the matching V8 coverage provider. `pnpm check` collects unit/integration
+coverage for all app, server, shared and tooling sources, including unimported
+files; tests and declarations are excluded. HTML, LCOV and JSON totals are generated
+under ignored `coverage/full/` and retained as a CI artifact. A separate changed-file report is available under `coverage/changed/`;
+it does not measure only the changed lines or track historical test gaps.
+
+The test image enables Istanbul instrumentation and frontend source maps through
+the `BROWSER_COVERAGE=1` build argument. Ordinary production builds leave this off.
+Playwright's shared fixture collects counters before navigation/reload and closure,
+and on pagehide for page-initiated navigation. It includes explicitly created
+multiplayer contexts. Source-mapped browser HTML, LCOV and JSON reports live under
+`coverage/browser/` and are published in the same CI job. Browser and Vitest reports
+remain separate: their instrumentation and measured source populations differ.
+The pinned Vitest coverage report action renders both Istanbul-format datasets as
+Actions summaries and updates two named PR comments per suite: a collapsed `all`
+file table and an expanded `changes` file table. Both reuse the same reports and
+overall totals; filtering file details does not calculate changed-line coverage. The job
+requests pull-request write permission; fork and Dependabot runs publish summaries
+without comments. Per-file details are ordered by branch coverage;
+long uncovered-line lists are omitted from comments.
+
+PRs additionally run `pnpm test:coverage:gate <target-sha>` within the required
+`foundation` check. Pinned, hash-verified diff-cover combines line hits from the full
+Vitest and browser LCOV reports and requires 90% of added/modified executable lines
+against the target merge base. Full checkout history makes that comparison available.
+A line covered by either suite counts once; suite-specific statement/function/branch
+reports stay separate. Missing inputs and tool failures block CI. The unified patch
+result is published in the job summary and `coverage/patch/` artifact; main pushes
+skip this PR-only comparison. Python 3.11+ is a development/CI dependency only, with
+its isolated environment under `.local/coverage-gate/`. Agent obligations and the
+no-bypass policy are in `AGENTS.md`; local commands are in README.
+
 Exact versions are pinned in manifests and the lockfile. Node 24.21.0 and pnpm
 11.25.0 are pinned in mise and Docker. CI uses `jdx/mise-action` to install both
 tools from `mise.toml` and add them to PATH.
@@ -50,9 +82,14 @@ Accessibility checks use pinned `@axe-core/playwright` through the dedicated
 rules through 2.2 plus separately identifiable best-practice rules, with light/dark
 desktop and light mobile profiles. Raw axe results and violation screenshots are
 attached to the Playwright HTML report. The ordinary browser suite excludes this
-folder; CI runs the axe suite separately against the same production test stack
-with explicit local auth. Accessibility violations or audit errors fail the Check
-workflow. Failures produce an error annotation and summary; the HTML
+folder; CI runs the axe and functional browser suites concurrently against the
+same production test stack, with explicit local auth for axe. Their output directories
+are siblings (`test-results/browser/` and `test-results/a11y/`), so startup cleanup
+cannot delete the other suite's traces or attachments. Only the functional suite
+collects browser coverage. The parallel group waits for both suites before publishing
+reports and running final stack cleanup. Accessibility violations or audit errors fail the Check
+workflow. Both suites inherit explicit `retries: 0` and `failOnFlakyTests: true`;
+intermittent failures require a fix rather than retry masking. Failures produce an error annotation and summary; the HTML
 report, raw results, screenshots and traces are uploaded for 14 days. The audit
 itself asserts zero violations without exclusions or disabled rules. See
 [the current results](accessibility-results.html).

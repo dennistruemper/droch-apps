@@ -28,6 +28,7 @@ import {
   memberships,
   commitments,
   revision,
+  conflictRevisions,
   receipts,
   attempts,
 } from "./schema.ts";
@@ -116,6 +117,39 @@ export function createTeamService(
 
   const version = () => db.select().from(revision).get()!.value;
 
+  // A team's changes can affect generic conflict states in its members' other teams.
+  // Include those viewers without loading or exposing their private schedules.
+  function affectedViewers(userId: string, teamId?: string): Set<string> {
+    const participants = new Set([userId]);
+
+    if (teamId) {
+      for (const m of db.select().from(memberships).where(eq(memberships.teamId, teamId)).all())
+        participants.add(m.userId);
+    }
+
+    const relatedTeams = db
+      .select({ id: memberships.teamId })
+      .from(memberships)
+      .where(inArray(memberships.userId, [...participants]));
+
+    const viewers = db
+      .select({ id: memberships.userId })
+      .from(memberships)
+      .where(inArray(memberships.teamId, relatedTeams))
+      .all();
+
+    return new Set([...participants, ...viewers.map((viewer) => viewer.id)]);
+  }
+
+  function invalidate(viewers: Set<string>, value: number) {
+    for (const userId of viewers) {
+      db.insert(conflictRevisions)
+        .values({ userId, value })
+        .onConflictDoUpdate({ target: conflictRevisions.userId, set: { value } })
+        .run();
+    }
+  }
+
   function code(teamId: string, user: User) {
     const t = team(teamId, user, true),
       box = Buffer.from(t.pinBox, "base64"),
@@ -137,9 +171,9 @@ export function createTeamService(
 
       if (cached && cached.name !== user.name) {
         profile(user);
-        db.update(revision)
-          .set({ value: version() + 1 })
-          .run();
+        const nextVersion = version() + 1;
+        db.update(revision).set({ value: nextVersion }).run();
+        invalidate(affectedViewers(user.id), nextVersion);
       }
     });
 
@@ -400,13 +434,18 @@ export function createTeamService(
     if (c.action.kind === "join") throttle(user, c.action.teamId);
 
     return db.transaction(() => {
-      if (c.version !== version())
+      const lastConflict =
+        db.select().from(conflictRevisions).where(eq(conflictRevisions.userId, user.id)).get()
+          ?.value ?? 0;
+
+      if (c.version > version() || c.version < lastConflict)
         throw new TeamError(
           "Der Spielplan wurde geändert. Bitte prüfe den aktuellen Stand und versuche es erneut.",
           409,
         );
       profile(user);
       const a = c.action;
+      const viewers = affectedViewers(user.id, a.kind === "create-team" ? undefined : a.teamId);
 
       let teamId: string | undefined,
         message = "Gespeichert.";
@@ -706,10 +745,11 @@ export function createTeamService(
         }
       }
 
-      db.update(revision)
-        .set({ value: version() + 1 })
-        .where(eq(revision.id, 1))
-        .run();
+      const nextVersion = version() + 1;
+      db.update(revision).set({ value: nextVersion }).where(eq(revision.id, 1)).run();
+
+      for (const viewer of affectedViewers(user.id, teamId)) viewers.add(viewer);
+      invalidate(viewers, nextVersion);
       db.delete(receipts)
         .where(lt(receipts.createdAt, now() - 7 * 86400000))
         .run();

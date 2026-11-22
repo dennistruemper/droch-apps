@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 
 test("both app shells load and keep their themes separate", async ({ page }) => {
   const errors: string[] = [];

@@ -131,18 +131,24 @@ export function update(m: Model, msg: Message): { model: Model; effects: Effect[
     if (m.data && data.version < m.data.version) return m;
     const ids = new Set(data.teams.map((t) => t.id));
 
+    const editor =
+      m.editor.kind !== "none" &&
+      m.data &&
+      m.editor.version === m.data.version &&
+      JSON.stringify(m.data.teams) === JSON.stringify(data.teams) &&
+      JSON.stringify(m.data.games) === JSON.stringify(data.games)
+        ? { ...m.editor, version: data.version }
+        : m.editor;
+
     return {
       ...m,
       data,
       screen: "ready",
       filter: m.filter.filter((id) => ids.has(id)),
       editor:
-        m.editor.kind !== "none" &&
-        m.editor.teamId &&
-        !ids.has(m.editor.teamId) &&
-        m.editor.kind !== "join"
+        editor.kind !== "none" && editor.teamId && !ids.has(editor.teamId) && editor.kind !== "join"
           ? { kind: "none" }
-          : m.editor,
+          : editor,
       code:
         m.code &&
         ids.has(m.code.teamId) &&

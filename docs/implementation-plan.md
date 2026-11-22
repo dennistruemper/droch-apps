@@ -9,6 +9,9 @@ Account lifecycle operations and deployment recovery work remain pending. See [a
 - Add mise pins for Node and pnpm, workspace manifests, and the lockfile.
 - Create one package per app plus server composition and shared modules.
 - Configure strict TypeScript, Solid 2 compilation, Oxlint, Oxfmt, and Vitest.
+- Collect V8 unit/integration and Istanbul browser coverage, with separate CI artifacts
+  and a native changed-file report. Enforce 90% combined Vitest/browser changed-line
+  coverage on PRs with diff-cover; historical test-gap analysis remains optional.
 - Add explicit exports and resolved module-boundary enforcement.
 - Add root commands for development, checks, tests, builds, and migrations.
 - Integrate Drochsign after deciding how to consume and update it.
@@ -245,3 +248,10 @@ Type checking, lint, formatting, 245 unit tests and the production build pass.
 All 45 distinct functional browser flows were verified: 44 passed in the final
 full run, followed by the corrected joker-tile locator's mobile flow passing a
 targeted rerun. No application changes were required for that locator correction.
+
+## Parallel browser validation — 2026-11-23
+
+Functional browser coverage and axe now run in one native parallel group after
+stack startup, with sibling output directories and cleanup after both complete.
+Compare measured CI timings with sequential run 45080676751 (4m 39s total);
+record the run links and results in PR #29.

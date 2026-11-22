@@ -1,5 +1,82 @@
 # Decisions
 
+## No Playwright retry masking — 2026-11-23
+
+The owner requested disabling test reruns so intermittent failures remain visible.
+The pinned Playwright version already defaults to zero retries. Make `retries: 0`
+and `failOnFlakyTests: true` explicit in the shared base config inherited by both
+functional and axe suites. Keep project/CLI/CI overrides from weakening this policy;
+reproduce and fix the underlying problem rather than relying on reruns.
+
+## Parallel browser and accessibility checks — 2026-11-23
+
+The owner requested overlapping functional browser coverage (H) and accessibility
+(L) and measuring the result in CI. Use a native parallel step group after stack
+startup, retaining both blocking outcomes and waiting for both before cleanup.
+Reuse the same isolated production stack; tests create independent accounts and
+rooms. Put Playwright outputs in sibling directories so either suite can clear its
+own output without removing the other's artifacts. Axe has its own reporter and
+does not enable the functional suite's coverage hooks. Preserve failure reporting,
+the changed-line gate and artifact uploads. Compare real workflow/step durations
+with the preceding successful sequential run; account for overlap and runner noise
+rather than summing parallel durations. The initial shared-stack run exposed a real
+Kunludo bug: unrelated private-account revisions disabled an open calendar import.
+Fix the production editor's revision handling and retain the shared stack; see
+[Kunludo's decision](../apps/kunludo/docs/decisions.md#unrelated-revisions-during-editing--2026-11-23).
+A timed-out failing run is not a valid performance comparison.
+
+## Changed-line coverage gate — 2026-11-22
+
+The owner requested the proposed 90% gate and instructions for agents. Require 90%
+of added/modified executable lines in each PR, using pinned, hash-verified diff-cover
+against the target merge base. Run within required `foundation` so failures block
+merging without adding a new branch-rule check name. Combine Vitest and browser
+LCOV by source path/line with covered-in-either semantics; do not average totals or
+merge incompatible statement/function/branch identities. Full Git history and the
+PR target SHA avoid dependence on checkout depth or a hardcoded main branch.
+
+Keep overall coverage informational. This supersedes the initial no-gate policy;
+it is a changed-line minimum, not a historical no-regression comparison or Teamscale
+test-gap history. Missing reports/tool errors fail; no executable diff passes.
+Require meaningful tests for failures, with no threshold reduction or source ignores
+without explicit owner agreement. Document agent duties in `AGENTS.md` and local
+commands/report locations in README. Python is isolated development tooling, not an
+application or production-image dependency.
+
+## Coverage in PR comments — 2026-11-22
+
+The owner requested readable coverage results without downloading archives. Use the
+pinned `davelosert/vitest-coverage-report-action` for both existing report formats,
+with separately named, updating Vitest/browser comments and totals for all four metrics.
+The owner also requested `all` and `changes` views for each suite: keep the all-files
+table collapsed and expand changed files by default, sorting both by branch coverage.
+Reuse the same coverage data; the views filter file tables and do not change totals. Omit long uncovered-line
+link lists from comments to keep their size manageable. Publish Actions job summaries
+on every run and update the PR comment when the token permits it. Keep HTML artifacts
+for detailed inspection; do not add a hosted coverage service. The initial
+no-percentage-gate policy is superseded by the changed-line decision below.
+
+## Browser coverage — 2026-11-22
+
+The owner requested coverage for the existing browser suite. Instrument frontend
+modules with Istanbul only in a coverage-enabled test build, then collect counters
+through a shared Playwright fixture, including independent player contexts and
+document lifecycle transitions. Remap through source maps to TS/TSX and publish
+lines, statements, functions and branches as a separate CI artifact. Avoid relying
+on Chromium's coverage retention across document navigation. Keep the ordinary
+production build uninstrumented. Coverage reports describe execution, not assertion
+quality; no new percentage gate is introduced.
+
+## Vitest coverage — 2026-11-22
+
+The owner requested Vitest coverage and asked about coverage for the current code
+delta. Use Vitest's matching V8 provider and native changed-file reporting, with
+HTML for inspection and LCOV/JSON for further analysis. Run coverage once within
+the existing quality checks and publish the report in the same CI job. Include
+unimported source files to avoid overstating coverage. Establish a visible baseline
+without an arbitrary percentage gate. Exact changed-line or historical test-gap
+analysis would need additional tooling; it is not provided by this setup.
+
 Recorded on 2026-10-02. These capture agreed constraints and implementation choices; milestone status lives
 in the implementation plan.
 

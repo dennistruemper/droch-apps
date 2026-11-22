@@ -73,6 +73,144 @@ bug](https://github.com/oxc-project/oxc/issues/20331) on small Docker VMs. Run
 `pnpm check` on the host or a suitably provisioned CI runner; image builds run type
 checking and compilation separately. The rule is enforced by host/CI checks.
 
+## Test coverage
+
+`pnpm test` runs unit/integration tests without coverage. `pnpm test:coverage`
+runs the same suite with V8 coverage and writes an HTML report to
+`coverage/full/index.html`, LCOV to `coverage/full/lcov.info`, and totals to
+`coverage/full/coverage-summary.json`. `pnpm check` includes this coverage run;
+CI publishes the reports as the `vitest-coverage` artifact for 14 days, including
+reports produced when tests fail. CI also publishes readable coverage tables in the
+Actions job summary and updates two named PR views for each suite (Vitest and
+browser): `all` lists every reported file in a collapsed table; `changes` shows
+only files changed in the PR, expanded by default. Both sort files by lowest
+branch coverage first and link to source. The overall totals are identical between
+views: `file-coverage-mode` filters the file table, not the measured code or totals.
+Changed-file coverage is not coverage of only changed lines. Long lists of uncovered line links stay
+in the downloadable HTML reports so comments remain compact. Fork and Dependabot PRs use
+job summaries without comments because their tokens are read-only. Full HTML
+artifacts remain available for deeper inspection.
+
+Coverage includes app, server, shared and tooling source files, including files
+never imported by tests. Test files and type declarations are excluded. These
+reports measure Vitest execution only; the separate Playwright reports do not
+contribute to these totals. Frontend views exercised only in Playwright therefore appear
+uncovered. Overall percentages remain informational; the changed-line gate below
+combines execution from both suites.
+
+`pnpm test:coverage:changed` runs the full suite and limits its report to files
+with staged or unstaged changes, under `coverage/changed/`. To compare with a
+branch or commit instead:
+
+```sh
+git fetch origin main
+pnpm test:coverage --coverage.changed=origin/main --coverage.reportsDirectory=coverage/changed
+```
+
+The reference must exist locally. For a PR, use its merge-base commit with the
+target branch to focus on the PR's changes. This is **whole-file coverage for
+changed files**, not a percentage for only added/modified lines. It also differs
+from `vitest --changed`, which selects related tests. The gate below uses
+[diff-cover](https://github.com/Bachmann1234/diff_cover) for exact changed-line
+coverage. Teamscale's historical test-gap analysis additionally tracks changes and
+test execution over time; that history is not collected here.
+
+See [Vitest coverage options](https://vitest.dev/config/coverage#coverage-changed).
+
+### Changed-line gate
+
+PRs require **90% coverage of added or modified executable lines**. CI compares
+against the merge base with the PR target SHA using full Git history, inside the
+required `foundation` check. Main pushes still run tests and reports; the PR gate
+is skipped because there is no PR target. A PR with no changed executable lines passes.
+
+The gate reads both full LCOV files. It counts a source line once and treats it as
+covered if **either** Vitest or Playwright executes it. This is one unified changed-line
+result, without averaging suite percentages or adding their hit counts. It does not
+combine branch/function/statement totals: V8 and compiled Solid instrumentation have
+different locations and populations. Overall suite reports stay separate.
+
+Local verification (Python 3.11+ with venv/pip is required):
+
+```sh
+git fetch origin main
+pnpm check
+# Generate fresh browser coverage against the instrumented stack as shown below.
+pnpm test:coverage:gate origin/main
+```
+
+Pass the actual target branch/ref for other PR bases. The local command includes
+staged, unstaged and untracked changes; both coverage reports must match the current
+sources. Missing reports, an unavailable base or tool/report errors fail the command.
+The tool installs into `.local/coverage-gate/` using pinned versions and SHA-256 hashes
+in `tooling/coverage-gate-requirements.txt`; Python is development-only.
+
+`coverage/patch/summary.txt` lists uncovered changed lines. Markdown and JSON details
+are beside it. CI publishes the unified result in the Actions job summary and retains
+the `changed-line-coverage` artifact for 14 days, including on threshold failure.
+The existing PR comments continue to show suite-specific `all` and `changes` views;
+the latter are whole changed files, not the gate's changed-line percentage.
+
+Fix a failing gate with tests that assert behavior and relevant failure/recovery
+paths. Do not lower the threshold or add source exclusions to bypass it without an
+explicit owner-approved policy change. This is a minimum for changed lines, not a
+promise of branch coverage, assertion quality, or no decrease relative to historical
+coverage. See the contributor instructions in `AGENTS.md`.
+
+### Browser coverage
+
+Functional and accessibility suites inherit explicit `retries: 0` and
+`failOnFlakyTests: true`. A failed attempt fails the run; do not enable reruns to
+mask flaky tests. Fix the underlying product or synchronization issue.
+
+The test image (`pnpm test:image`) includes Istanbul counters and frontend source
+maps. Ordinary production image builds do not enable instrumentation. Start the
+test stack as usual, then run the browser coverage command against its URL:
+
+```sh
+pnpm test:image
+pnpm test:stack
+set -a
+. .local/test/browser.env
+set +a
+pnpm test:e2e:coverage
+pnpm test:stack:stop
+```
+
+The report is `coverage/browser/index.html`, with `lcov.info`,
+`coverage-final.json` and `coverage-summary.json` alongside it. CI uploads the
+`browser-coverage` artifact for 14 days, including reports from failed tests.
+Raw snapshots are isolated under ignored `.local/browser-coverage/` and cleared
+before each coverage run. Collect only one browser coverage run per checkout at a time.
+For a local host build, use `BROWSER_COVERAGE=1 pnpm build` before starting the
+bundled server. Coverage against a development server requires starting that server
+with `BROWSER_COVERAGE=1` too. Missing instrumentation causes report generation to fail.
+
+All browser specs import `test` and `expect` from `e2e/fixtures.ts`. The fixture
+captures explicitly created multiplayer contexts as well as the default page;
+it saves counters before explicit navigation/reload/close and on pagehide. Keep
+using the fixture for new specs. Counters are cumulative snapshots: hit counts are
+not a performance or invocation-frequency measurement.
+Per-tab session storage carries pagehide snapshots across same-origin document
+navigation; the fixture captures the native storage methods before tests simulate
+storage failures.
+
+Browser percentages cover instrumented modules loaded by the suite. They do not
+include backend code or frontend modules never loaded by a page. Keep the broad
+Vitest report alongside this report to see source files without Vitest coverage;
+do not average the two percentages or compare their totals directly. Istanbul
+instruments Solid's compiled output and remaps locations to TS/TSX; compiler-generated
+branches/functions can affect the reported counts.
+`unobserved-sources.json` lists candidate frontend source files absent from the browser
+report, including modules eliminated from frontend bundles or used only on the server.
+
+Both reports expose line, statement, function and branch coverage. Prioritize
+branches for error handling and state transitions, functions for adapters never
+called, and lines/statements for locating missing execution. None measures every
+combination of boolean conditions, meaningful assertions, or all asynchronous
+interleavings; those need targeted behavior and concurrency tests. Mutation testing
+is a separate way to evaluate whether assertions detect incorrect behavior.
+
 ## Production deployment
 
 `compose.yaml` builds one application image and runs a one-shot migration service

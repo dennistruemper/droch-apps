@@ -1,4 +1,5 @@
-import { expect, test, devices, type Page } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
+import { devices, type Page } from "@playwright/test";
 import { readFileSync, existsSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";

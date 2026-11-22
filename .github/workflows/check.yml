@@ -15,16 +15,52 @@ jobs:
   foundation:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          fetch-depth: 0
       - name: Install project tools
         uses: jdx/mise-action@v4
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
+      - name: Upload unit and integration coverage
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: vitest-coverage
+          path: coverage/full/
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Summarize unit and integration coverage
+        if: ${{ !cancelled() && hashFiles('coverage/full/coverage-summary.json') != '' }}
+        uses: davelosert/vitest-coverage-report-action@74c2d9210b4fc44c84d8213f61d7ec99837b7aa0 # v2.13.2
+        with:
+          name: Vitest - unit and integration
+          json-summary-path: coverage/full/coverage-summary.json
+          json-final-path: coverage/full/coverage-final.json
+          file-coverage-mode: all
+          file-coverage-expanded: false
+          show-uncovered-lines: false
+          sort-by: branches-asc
+          comment-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' && 'pr' || 'none' }}
+      - name: Summarize changed unit and integration files
+        if: ${{ !cancelled() && hashFiles('coverage/full/coverage-summary.json') != '' }}
+        uses: davelosert/vitest-coverage-report-action@74c2d9210b4fc44c84d8213f61d7ec99837b7aa0 # v2.13.2
+        with:
+          name: Vitest - changed files
+          json-summary-path: coverage/full/coverage-summary.json
+          json-final-path: coverage/full/coverage-final.json
+          file-coverage-mode: changes
+          file-coverage-expanded: true
+          show-uncovered-lines: false
+          sort-by: branches-asc
+          comment-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' && 'pr' || 'none' }}
       - parallel:
-          - name: Build production image
+          - name: Build instrumented test image
             run: pnpm test:image
           - name: Install browser and system dependencies
             run: pnpm exec playwright install --with-deps chromium
@@ -33,13 +69,61 @@ jobs:
         run: |
           pnpm test:stack
           cat .local/test/browser.env >> "$GITHUB_ENV"
-      - run: pnpm test:e2e
-      - name: Audit accessibility with axe
-        id: a11y
-        if: ${{ !cancelled() && steps.test_stack.outcome == 'success' }}
+      - parallel:
+          - name: Browser tests and coverage
+            if: ${{ !cancelled() && steps.test_stack.outcome == 'success' }}
+            run: pnpm test:e2e:coverage
+          - name: Audit accessibility with axe
+            id: a11y
+            if: ${{ !cancelled() && steps.test_stack.outcome == 'success' }}
+            env:
+              TEST_AUTH_MODE: local
+            run: pnpm test:a11y
+      - name: Upload browser coverage
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-coverage
+          path: coverage/browser/
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Summarize browser coverage
+        if: ${{ !cancelled() && hashFiles('coverage/browser/coverage-summary.json') != '' }}
+        uses: davelosert/vitest-coverage-report-action@74c2d9210b4fc44c84d8213f61d7ec99837b7aa0 # v2.13.2
+        with:
+          name: Browser - loaded frontend modules
+          json-summary-path: coverage/browser/coverage-summary.json
+          json-final-path: coverage/browser/coverage-final.json
+          file-coverage-mode: all
+          file-coverage-expanded: false
+          show-uncovered-lines: false
+          sort-by: branches-asc
+          comment-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' && 'pr' || 'none' }}
+      - name: Summarize changed browser files
+        if: ${{ !cancelled() && hashFiles('coverage/browser/coverage-summary.json') != '' }}
+        uses: davelosert/vitest-coverage-report-action@74c2d9210b4fc44c84d8213f61d7ec99837b7aa0 # v2.13.2
+        with:
+          name: Browser - changed files
+          json-summary-path: coverage/browser/coverage-summary.json
+          json-final-path: coverage/browser/coverage-final.json
+          file-coverage-mode: changes
+          file-coverage-expanded: true
+          show-uncovered-lines: false
+          sort-by: branches-asc
+          comment-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' && 'pr' || 'none' }}
+      - name: Enforce changed-line coverage
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
         env:
-          TEST_AUTH_MODE: local
-        run: pnpm test:a11y
+          COVERAGE_BASE: ${{ github.event.pull_request.base.sha }}
+        run: pnpm test:coverage:gate "$COVERAGE_BASE"
+      - name: Upload changed-line coverage
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: changed-line-coverage
+          path: coverage/patch/
+          retention-days: 14
+          if-no-files-found: warn
       - name: Upload accessibility report
         if: ${{ !cancelled() && steps.test_stack.outcome == 'success' && steps.a11y.outcome != 'skipped' }}
         uses: actions/upload-artifact@v7

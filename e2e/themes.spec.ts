@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 
 test("custom colors and fonts preview, persist per app, and leave presets intact", async ({
   page,

@@ -129,7 +129,35 @@ add an app-local `AGENTS.md` and link it here; keep shared policy in the root do
 - Use the project's pinned tools and documented scripts once they exist.
 - Run meaningful checks for the change; prioritize domain, concurrency, auth, boundary,
   and multiplayer behavior. Do not add tests that merely duplicate implementation.
+- Playwright retries are explicitly disabled (`retries: 0`) for functional and
+  accessibility tests, with `failOnFlakyTests: true`. Keep both suites inheriting
+  this policy; do not add retry overrides in projects, CLI commands or CI to hide
+  intermittent failures. Reproduce and fix the underlying test or product race.
 - Do not claim commands or checks exist or passed unless verified.
+
+## Changed-line coverage gate
+
+- Every PR must cover at least **90% of added or modified executable lines** compared
+  with its target branch's merge base. The gate runs inside the required `foundation`
+  CI check. It does not enforce a repository-wide percentage or a historical no-drop rule.
+- A line counts as covered when either the Vitest or Playwright LCOV report records
+  execution. Keep using `e2e/fixtures.ts` for functional browser tests so their execution
+  is collected. Branch, function and statement reports remain separate diagnostics.
+- Before pushing, run `pnpm check`, generate fresh browser coverage with the instrumented
+  test stack, then `pnpm test:coverage:gate origin/main` (or the PR's actual target ref).
+  Fetch that ref first. The gate requires Python 3.11+ with venv/pip and installs pinned,
+  hash-verified development tools under this checkout's ignored `.local/coverage-gate/`.
+  Full commands and report locations are in [README coverage](README.md#changed-line-gate).
+- When the gate fails, add meaningful tests for the missing behavior, including affected
+  failure paths and races. Inspect `coverage/patch/summary.txt` for file/line gaps.
+  Do not lower the threshold, add coverage ignores, remove sources from reports, or
+  insert execution-only tests to make it pass. Any policy exception needs explicit
+  owner agreement and a documented reason.
+- Generate both reports from the same checkout revision; do not reuse stale reports,
+  another worktree's outputs, or the changed-file-only Vitest report. Do not average
+  percentages. Lines outside the diff do not count toward the gate; tests and type
+  declarations retain their existing exclusions. Coverage does not replace assertions,
+  branch/recovery tests, or review of behavior.
 
 ## Documentation maintenance
 

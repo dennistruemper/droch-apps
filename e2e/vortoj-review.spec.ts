@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
+
 import { randomUUID } from "node:crypto";
 import { newGame, decideGame, projectGame } from "../apps/vortoj/src/domain/index.ts";
 import { commandSchema } from "../apps/vortoj/src/contracts/index.ts";

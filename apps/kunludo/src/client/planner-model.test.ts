@@ -22,7 +22,7 @@ it("ignores stale results, preserves drafts on live updates and clears removed-t
   m = update(m, { kind: "snapshot", data: { ...empty, version: 4 } }).model;
   expect(m.editor.kind).toBe("join");
 
-  expect(m.editor).toMatchObject({ kind: "join", version: 2 });
+  expect(m.editor).toMatchObject({ kind: "join", version: 4 });
   m = update(m, {
     kind: "save",
     commandId: "test-command",
@@ -153,4 +153,165 @@ it("rejects a delayed PIN response after a newer snapshot and allows reopening",
   }).model;
   m = update(m, { kind: "snapshot", data: { ...snapshot, version: 4 } }).model;
   expect(m.code?.pin).toBe("NEW123");
+});
+
+it("keeps an import draft usable when only the global revision changes for another account", () => {
+  const team = {
+    id: "ours",
+    name: "Our team",
+    club: "",
+    needed: 4,
+    timezone: "Europe/Berlin",
+    role: "admin" as const,
+    members: [],
+  };
+
+  const data: Snapshot = { version: 2, teams: [team], games: [] };
+  let m = update(init(0), { kind: "loaded", id: 1, data }).model;
+  m = update(m, {
+    kind: "open",
+    editor: {
+      kind: "import",
+      teamId: team.id,
+      gameId: "",
+      version: 2,
+      fields: { ...emptyFields, ownName: "Our team" },
+      calendar: "calendar draft",
+      events: [],
+      selected: ["game-uid"],
+    },
+  }).model;
+  const draft = m.editor;
+  const generation = m.editorId;
+  m = update(m, { kind: "snapshot", data: { ...data, version: 5 } }).model;
+  expect(m.editor).toEqual({ ...draft, version: 5 });
+  expect(m.editorId).toBe(generation);
+
+  const saved = update(m, {
+    kind: "save",
+    commandId: "import-after-private-update",
+    action: {
+      kind: "import",
+      teamId: team.id,
+      calendar: "calendar draft",
+      ownName: "Our team",
+      selected: ["game-uid"],
+    },
+  });
+
+  expect(saved.effects).toEqual([
+    {
+      kind: "save",
+      id: m.next,
+      version: 5,
+      commandId: "import-after-private-update",
+      action: {
+        kind: "import",
+        teamId: team.id,
+        calendar: "calendar draft",
+        ownName: "Our team",
+        selected: ["game-uid"],
+      },
+    },
+  ]);
+});
+
+it("real visible changes stay stale through later unrelated snapshots until explicit review", () => {
+  const team = {
+    id: "ours",
+    name: "Our team",
+    club: "",
+    needed: 4,
+    timezone: "Europe/Berlin",
+    role: "admin" as const,
+    members: [],
+  };
+
+  const data: Snapshot = { version: 2, teams: [team], games: [] };
+  let m = update(init(0), { kind: "loaded", id: 1, data }).model;
+  m = update(m, {
+    kind: "open",
+    editor: {
+      kind: "settings",
+      teamId: team.id,
+      gameId: "",
+      version: 2,
+      fields: { ...emptyFields, name: "My unsaved name" },
+      calendar: "",
+      events: [],
+      selected: [],
+    },
+  }).model;
+
+  const changed: Snapshot = {
+    ...data,
+    version: 3,
+    teams: [{ ...team, name: "Another admin's name" }],
+  };
+
+  m = update(m, { kind: "snapshot", data: changed }).model;
+  expect(m.editor).toMatchObject({ version: 2, fields: { name: "My unsaved name" } });
+  m = update(m, { kind: "snapshot", data: { ...changed, version: 4 } }).model;
+  expect(m.editor).toMatchObject({ version: 2 });
+  m = update(m, { kind: "snapshot", data: { ...data, version: 1 } }).model;
+  expect(m.data?.version).toBe(4);
+  expect(m.editor).toMatchObject({ version: 2 });
+  m = update(m, { kind: "rebase" }).model;
+  expect(m.editor).toMatchObject({ version: 4, fields: { name: "My unsaved name" } });
+  m = update(m, { kind: "snapshot", data: { ...changed, version: 5 } }).model;
+  expect(m.editor).toMatchObject({ version: 5 });
+  m = update(m, { kind: "snapshot", data: { version: 6, teams: [], games: [] } }).model;
+  expect(m.editor.kind).toBe("none");
+});
+
+it("a changed game still requires review even when team metadata is identical", () => {
+  const data: Snapshot = { version: 2, teams: [], games: [] };
+  let m = update(init(0), { kind: "loaded", id: 1, data }).model;
+  m = update(m, {
+    kind: "open",
+    editor: {
+      kind: "create-team",
+      teamId: "",
+      gameId: "",
+      version: 2,
+      fields: { ...emptyFields, name: "Draft" },
+      calendar: "",
+      events: [],
+      selected: [],
+    },
+  }).model;
+
+  const changed: Snapshot = {
+    ...data,
+    version: 3,
+    games: [
+      {
+        id: "game",
+        teamId: "team",
+        opponent: "Visitors",
+        venue: "Hall",
+        home: true,
+        window: { start: 0, end: 1000, buffer: 0 },
+        revision: 1,
+        cancelled: false,
+        notice: "",
+        imported: false,
+        calendarUid: null,
+        mine: "unanswered",
+        conflicts: [],
+        sameDay: [],
+        committed: false,
+        ready: 0,
+        uncertain: 0,
+        needed: 4,
+        members: [],
+        proposals: [],
+      },
+    ],
+  };
+
+  m = update(m, { kind: "snapshot", data: changed }).model;
+  expect(m.editor).toMatchObject({ version: 2, fields: { name: "Draft" } });
+  m = update(m, { kind: "snapshot", data: { ...changed, version: 4 } }).model;
+  expect(m.editor).toMatchObject({ version: 2 });
 });
