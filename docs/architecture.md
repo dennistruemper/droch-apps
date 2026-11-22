@@ -42,6 +42,15 @@ tools from `mise.toml` and add them to PATH.
 Solid 2.0.0-rc.13, its official plugin, and Router 2 compile and run together.
 Compilation and type checking are separate; deployment verification requires both.
 
+Accessibility checks use pinned `@axe-core/playwright` through the dedicated
+`pnpm test:a11y` command and `playwright.a11y.config.ts`. Scans cover WCAG A/AA
+rules through 2.2 plus separately identifiable best-practice rules, with light/dark
+desktop and light mobile profiles. Raw axe results and violation screenshots are
+attached to the Playwright HTML report. The ordinary browser suite excludes this
+folder while the initial accessibility backlog is reviewed; the audit itself
+asserts zero violations without exclusions or disabled rules. See
+[the initial findings](accessibility-report.html).
+
 The built-in Unicorn plugin adds explicitly selected correctness and allocation
 checks; [the full rule policy](unicorn-lint-policy.md) records every enabled,
 disabled and unavailable rule at the pinned versions. No ESLint engine or runtime

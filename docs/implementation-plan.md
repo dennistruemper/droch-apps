@@ -190,3 +190,20 @@ npm/pnpm, mise, Docker and GitHub Actions, including the pnpm installation insid
 the Dockerfile. Remaining owner setup: merge the PR, enable the hosted Renovate
 GitHub app for this repository, inspect its dashboard and verify the first update
 PR's lockfile and full Check workflow. No hosted run is claimed yet.
+
+## Initial axe accessibility audit — 2026-11-22
+
+Added `pnpm test:a11y` with a separate Playwright configuration. All 69 scans
+completed across 33 tests and three profiles: 19 tests passed and 14 failed on
+unsuppressed accessibility assertions. There were 38 scans with findings and
+seven distinct axe rule IDs, including repeated manifestations of shared issues.
+See [the report](accessibility-report.html) for evidence and reproduction steps.
+
+Remaining: fix contrast in Vortoj, Enigmo and Kunludo; align Vortoj control names
+with visible labels; repair shared desktop banner semantics, Kunludo account
+landmarks and mobile headings. Review axe incomplete results manually, extend
+keyboard/screen-reader coverage and decide when to add the accessibility suite
+to the required CI gate. No UI fixes or compliance claim are included in this audit.
+
+The existing functional test discovery remains 45 tests. Type checking, lint,
+formatting, 245 unit tests and the production build passed for the tooling change.

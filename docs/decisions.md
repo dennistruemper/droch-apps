@@ -355,3 +355,18 @@ Use Renovate-driven merging (`platformAutomerge: false`), require passing checks
 (`ignoreTests: false`), and rebase branches when behind the base branch. This does
 not automate merges of other PRs or change repository settings. Keep the three-day
 routine cooldown and version constraints; respect reviews/branch rules added later.
+
+## Playwright accessibility audit — 2026-11-22
+
+Use axe as a development-only dependency within Playwright, reusing actual browser
+flows and the existing isolated local-auth stack. A separate command keeps the
+initial findings visible as failing accessibility checks without silently changing
+the existing functional CI gate. Do not suppress known elements or rules to make
+this audit green. Best-practice findings are reported separately from WCAG-tagged
+violations. Automated checks supplement keyboard, screen-reader and other manual
+assessment; they do not establish accessibility compliance.
+
+Run against a fresh local stack with `AUTH_MODE=local` and no real mail delivery:
+`TEST_AUTH_MODE=local TEST_BASE_URL=<local-origin> pnpm test:a11y`.
+Account flows skip unless the caller explicitly declares local auth; public scans
+still run. Playwright writes `playwright-report/a11y/` and `test-results/a11y/`.
