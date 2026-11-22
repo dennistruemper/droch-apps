@@ -32,6 +32,11 @@ tools from `mise.toml` and add them to PATH.
 Solid 2.0.0-rc.13, its official plugin, and Router 2 compile and run together.
 Compilation and type checking are separate; deployment verification requires both.
 
+The built-in Unicorn plugin adds explicitly selected correctness and allocation
+checks; [the full rule policy](unicorn-lint-policy.md) records every enabled,
+disabled and unavailable rule at the pinned versions. No ESLint engine or runtime
+dependency is added.
+
 Host/CI `pnpm check` enforces the custom Oxlint boundary rule and its rejection
 fixtures. Oxlint also loads the vendored anti-slop plugin from
 `tools/oxlint/anti-slop/`, with nine selected generic rules enabled as errors. The selection preserves
