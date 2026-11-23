@@ -120,8 +120,8 @@ importers:
         specifier: 0.45.4
         version: 0.45.4(@types/better-sqlite3@9.6.0)(@types/pg@8.23.1)(better-sqlite3@13.0.3)(pg@8.23.1)
       hono:
-        specifier: 4.13.12
-        version: 4.13.12
+        specifier: 4.13.19
+        version: 4.13.19
       solid-js:
         specifier: 2.0.0-rc.13
         version: 2.0.0-rc.13
@@ -144,8 +144,8 @@ importers:
         specifier: 0.45.4
         version: 0.45.4(@types/better-sqlite3@9.6.0)(@types/pg@8.23.1)(better-sqlite3@13.0.3)(pg@8.23.1)
       hono:
-        specifier: 4.13.12
-        version: 4.13.12
+        specifier: 4.13.19
+        version: 4.13.19
       solid-js:
         specifier: 2.0.0-rc.13
         version: 2.0.0-rc.13
@@ -180,8 +180,8 @@ importers:
         specifier: 0.45.4
         version: 0.45.4(@types/better-sqlite3@9.6.0)(@types/pg@8.23.1)(better-sqlite3@13.0.3)(pg@8.23.1)
       hono:
-        specifier: 4.13.12
-        version: 4.13.12
+        specifier: 4.13.19
+        version: 4.13.19
       solid-js:
         specifier: 2.0.0-rc.13
         version: 2.0.0-rc.13
@@ -193,7 +193,7 @@ importers:
     dependencies:
       '@hono/node-server':
         specifier: 2.1.9
-        version: 2.1.9(hono@4.13.12)
+        version: 2.1.9(hono@4.13.19)
       '@repo/enigmo':
         specifier: workspace:*
         version: link:../apps/enigmo
@@ -213,8 +213,8 @@ importers:
         specifier: workspace:*
         version: link:../apps/vortoj
       hono:
-        specifier: 4.13.12
-        version: 4.13.12
+        specifier: 4.13.19
+        version: 4.13.19
       zod:
         specifier: 4.6.5
         version: 4.6.5
@@ -231,8 +231,8 @@ importers:
         specifier: 0.45.4
         version: 0.45.4(@types/better-sqlite3@9.6.0)(@types/pg@8.23.1)(better-sqlite3@13.0.3)(pg@8.23.1)
       hono:
-        specifier: 4.13.12
-        version: 4.13.12
+        specifier: 4.13.19
+        version: 4.13.19
       solid-js:
         specifier: 2.0.0-rc.13
         version: 2.0.0-rc.13
@@ -1782,8 +1782,8 @@ packages:
     resolution: {integrity: sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==}
     engines: {node: '>=8'}
 
-  hono@4.13.12:
-    resolution: {integrity: sha512-6E2QDAc9Ick9Sq77ZrGS/dk2WUYni91aufTw6LJKpV7w8kW5/GxVUc650FOADOmlwg3K+f7Pun6XlV+pYmW6gw==}
+  hono@4.13.19:
+    resolution: {integrity: sha512-KmXvQAXwcAHV+muzbIwoJ23niEB5nMoDVr9WcRkU8mvjUECm/1+7v4Jgp7P7a+H6MLFrh+vXrGonGrGS+RQfkA==}
     engines: {node: '>=16.9.0'}
 
   html-entities@2.3.3:
@@ -2700,9 +2700,9 @@ snapshots:
   '@esbuild/win32-x64@0.28.2':
     optional: true
 
-  '@hono/node-server@2.1.9(hono@4.13.12)':
+  '@hono/node-server@2.1.9(hono@4.13.19)':
     dependencies:
-      hono: 4.13.12
+      hono: 4.13.19
 
   '@istanbuljs/load-nyc-config@1.1.0':
     dependencies:
@@ -3373,7 +3373,7 @@ snapshots:
 
   has-flag@4.0.0: {}
 
-  hono@4.13.12: {}
+  hono@4.13.19: {}
 
   html-entities@2.3.3: {}
 
