@@ -105,7 +105,7 @@ fixtures. Oxlint also loads the vendored anti-slop plugin from
 discriminated unions, immutable object construction, and explicit parsing
 boundaries; see the anti-slop decision for the enabled rules. Its source, licenses, and revision
 are recorded there; lint and formatting exclude the upstream snapshot and agent
-assets. `oxlint` and `@oxlint/plugins` share the exact version 1.86.0. Type-aware linting
+assets. `oxlint` and `@oxlint/plugins` share the exact version 1.94.0. Type-aware linting
 is enabled in the root Oxlint configuration using pinned
 `oxlint-tsgolint` 7.0.2007. Selected equality, binding, type-import, TypeScript
 suppression, union-exhaustiveness, and promise rules extend the correctness
