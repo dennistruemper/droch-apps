@@ -20,7 +20,7 @@
     "@solidjs/web": "2.0.0-rc.13",
     "better-sqlite3": "13.0.3",
     "drizzle-orm": "0.45.4",
-    "hono": "4.13.12",
+    "hono": "4.13.19",
     "solid-js": "2.0.0-rc.13",
     "zod": "4.6.5"
   }
