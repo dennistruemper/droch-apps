@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM node:24.21.0-bookworm-slim AS development
+FROM node:24.22.3-bookworm-slim AS development
 WORKDIR /workspace
 RUN npm install --global pnpm@11.25.0
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/*
@@ -18,7 +18,7 @@ ARG BROWSER_COVERAGE=0
 # of Oxlint's JS-plugin allocator (upstream issue oxc-project/oxc#20331).
 RUN pnpm typecheck && BROWSER_COVERAGE=$BROWSER_COVERAGE pnpm build
 
-FROM node:24.21.0-bookworm-slim AS production
+FROM node:24.22.3-bookworm-slim AS production
 ENV NODE_ENV=production
 WORKDIR /workspace
 COPY --from=build --chown=node:node /workspace/dist ./dist
