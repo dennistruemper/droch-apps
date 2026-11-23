@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 FROM node:24.22.3-bookworm-slim AS development
 WORKDIR /workspace
-RUN npm install --global pnpm@11.25.0
+RUN npm install --global pnpm@11.28.13
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/*
 RUN mkdir -p /data /pnpm/store && chown node:node /workspace /data /pnpm /pnpm/store
 USER node
