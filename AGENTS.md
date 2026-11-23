@@ -159,6 +159,15 @@ add an app-local `AGENTS.md` and link it here; keep shared policy in the root do
   declarations retain their existing exclusions. Coverage does not replace assertions,
   branch/recovery tests, or review of behavior.
 
+## Commit messages and pull requests
+
+- Use Conventional Commits for PR titles: `<type>(optional scope): <description>`.
+  For example, `docs: document PR and bug-fix writing conventions`.
+- For `fix:` commit messages, PR titles and bug-fix comments, describe the bug:
+  the triggering condition and incorrect behavior. Keep implementation details
+  in the body when needed. For example, use `fix: room stays loading after a
+failed reconnect`, rather than `fix: reset the loading flag`.
+
 ## Documentation maintenance
 
 Update the relevant documents when an agreed decision changes. Keep shared rationale,
