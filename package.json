@@ -31,7 +31,7 @@
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
     "@oxlint/plugins": "1.86.0",
-    "@playwright/test": "1.63.0",
+    "@playwright/test": "1.65.1",
     "@repo/server": "workspace:*",
     "@repo/shared": "workspace:*",
     "@solidjs/vite-plugin": "3.0.1",
