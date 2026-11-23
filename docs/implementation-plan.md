@@ -272,3 +272,12 @@ The disposable test stack was cleaned up.
 Remaining: verify the hosted graph, image transfer, coverage comments and aggregate
 status on a PR; compare total timings before claiming a performance improvement.
 This supersedes the shared-stack parallel step arrangement above.
+
+## CI setup overhead — 2026-11-23
+
+Measured the initial split at 5m09s versus a neighboring PR's 4m00s. Removed the
+image job's host Node/pnpm setup and install (10s measured) and the coverage job's
+Node/pnpm setup and install (11s measured). The Docker build installs its own tools;
+the coverage gate uses shell/Python directly. Browser installation and image
+download now overlap. Retain all named jobs and gates. Remaining: measure the
+updated hosted run, accounting for functional-suite runtime variation.

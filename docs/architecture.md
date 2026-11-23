@@ -125,15 +125,17 @@ image building, functional browser coverage, accessibility and changed-line cove
 as named jobs in the workflow graph. Quality checks, unit tests and the image build
 start independently; matrices disable fail-fast so sibling failures remain visible.
 The instrumented production image is built once and transferred as a one-day artifact
-to both browser jobs. Each runner installs Chromium and starts its own Compose
-migration gate and disposable stack, retagging the image for its checkout identity.
+to both browser jobs. The image job uses Docker directly; its build stage installs
+the pinned project tools and dependencies. Each browser runner installs Chromium
+while downloading the image, then starts its own Compose migration gate and disposable stack, retagging the image for its checkout identity.
 `pnpm test:stack` publishes an allocated loopback port with a distinct per-checkout
 project, cookie and disposable SQLite volume; cleanup does not affect development
 stacks. Worktree identity coverage remains in the ordinary unit tests.
 
 The PR-only changed-line job downloads the Vitest and browser artifacts from the
-same workflow run, including after test failures when reports exist. Missing inputs
-fail the gate. The final `foundation` job always runs, writes a compact result table,
+same workflow run, including after test failures when reports exist. It runs the
+shell/Python gate directly without installing Node or workspace dependencies.
+Missing inputs fail the gate. The final `foundation` job always runs, writes a compact result table,
 and fails on any failed, cancelled or unexpectedly skipped dependency. Only the
 changed-line job may skip on main pushes. This keeps branch protection tied to the
 complete workflow while exposing individual failures directly.

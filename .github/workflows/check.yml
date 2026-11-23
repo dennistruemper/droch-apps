@@ -98,17 +98,10 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
-      - name: Install project tools
-        uses: jdx/mise-action@v4
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
       - name: Build instrumented test image
-        run: pnpm test:image
+        run: docker build --target production --build-arg BROWSER_COVERAGE=1 --tag droch-apps:ci .
       - name: Export image for browser jobs
-        run: |
-          image=$(node --input-type=module -e 'import { worktreeIdentity } from "./tooling/worktree.ts"; console.log(`droch-apps:check-${worktreeIdentity(process.cwd()).id}`)')
-          docker tag "$image" droch-apps:ci
-          docker image save --output "$RUNNER_TEMP/test-image.tar" droch-apps:ci
+        run: docker image save --output "$RUNNER_TEMP/test-image.tar" droch-apps:ci
       - name: Upload test image
         uses: actions/upload-artifact@v7
         with:
@@ -143,13 +136,14 @@ jobs:
         uses: jdx/mise-action@v4
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Install browser and system dependencies
-        run: pnpm exec playwright install --with-deps chromium
-      - name: Download production test image
-        uses: actions/download-artifact@v8
-        with:
-          name: production-test-image
-          path: ${{ runner.temp }}
+      - parallel:
+          - name: Install browser and system dependencies
+            run: pnpm exec playwright install --with-deps chromium
+          - name: Download production test image
+            uses: actions/download-artifact@v8
+            with:
+              name: production-test-image
+              path: ${{ runner.temp }}
       - name: Load image for this checkout
         run: |
           docker image load --input "$RUNNER_TEMP/test-image.tar"
@@ -245,10 +239,6 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
-      - name: Install project tools
-        uses: jdx/mise-action@v4
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
       - name: Download unit and integration coverage
         uses: actions/download-artifact@v8
         with:
@@ -262,7 +252,7 @@ jobs:
       - name: Enforce changed-line coverage
         env:
           COVERAGE_BASE: ${{ github.event.pull_request.base.sha }}
-        run: pnpm test:coverage:gate "$COVERAGE_BASE"
+        run: sh tooling/coverage-gate.sh "$COVERAGE_BASE"
       - name: Upload changed-line coverage
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
