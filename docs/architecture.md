@@ -116,7 +116,9 @@ hit [a Linux allocator bug](https://github.com/oxc-project/oxc/issues/20331) on 
 small local Docker VM; do not remove boundary enforcement to work around it.
 
 Docker fetches dependencies in a lockfile/workspace-configuration layer before copying
-source files, then installs offline. Files are created as the non-root user instead
+source files, then installs with `--prefer-offline --frozen-lockfile`. Cached packages
+are reused, while missing registry metadata can be fetched for supply-chain policy
+verification. Files are created as the non-root user instead
 of recursively changing ownership after installation. The fetched store stays in
 build/development layers and is excluded from the production image.
 

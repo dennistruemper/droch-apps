@@ -539,3 +539,12 @@ button uses its visible text as its accessible name and describes its game-detai
 action separately. Tile names include the visible letter/points with matching
 spacing; the submit button's accessible name includes its visible singular label.
 These fixes preserve auth, gameplay, focus handling and the two-color styling.
+
+## Container install metadata — 2026-11-23
+
+With pnpm 11.29.0, a clean Docker build passes the fetch step but the later offline
+install fails with `ERR_PNPM_NO_OFFLINE_META` during supply-chain verification. Use
+`--prefer-offline --frozen-lockfile` for that install so missing registry metadata
+can be retrieved. Keep the dependency fetch layer and copy imports, exact locked
+versions, release cooldown and all supply-chain checks. This supersedes the fully
+offline install in the earlier build-efficiency decision.

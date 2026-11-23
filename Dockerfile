@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 FROM node:24.22.3-bookworm-slim AS development
 WORKDIR /workspace
-RUN npm install --global pnpm@11.28.13
+RUN npm install --global pnpm@11.29.0
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/*
 RUN mkdir -p /data /pnpm/store && chown node:node /workspace /data /pnpm /pnpm/store
 USER node
@@ -10,7 +10,8 @@ COPY --chown=node:node pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm fetch --frozen-lockfile --store-dir /pnpm/store
 COPY --chown=node:node . .
 # Copy avoids overlayfs hardlink copy-up from the fetched store's image layer.
-RUN pnpm install --offline --frozen-lockfile --store-dir /pnpm/store --package-import-method=copy
+# pnpm may need additional registry metadata to revalidate supply-chain policies.
+RUN pnpm install --prefer-offline --frozen-lockfile --store-dir /pnpm/store --package-import-method=copy
 
 FROM development AS build
 ARG BROWSER_COVERAGE=0
