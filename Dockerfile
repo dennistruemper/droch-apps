@@ -10,7 +10,8 @@ COPY --chown=node:node pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm fetch --frozen-lockfile --store-dir /pnpm/store
 COPY --chown=node:node . .
 # Copy avoids overlayfs hardlink copy-up from the fetched store's image layer.
-RUN pnpm install --offline --frozen-lockfile --store-dir /pnpm/store --package-import-method=copy
+# pnpm may need additional registry metadata to revalidate supply-chain policies.
+RUN pnpm install --prefer-offline --frozen-lockfile --store-dir /pnpm/store --package-import-method=copy
 
 FROM development AS build
 ARG BROWSER_COVERAGE=0
