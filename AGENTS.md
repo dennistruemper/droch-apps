@@ -138,8 +138,9 @@ add an app-local `AGENTS.md` and link it here; keep shared policy in the root do
 ## Changed-line coverage gate
 
 - Every PR must cover at least **90% of added or modified executable lines** compared
-  with its target branch's merge base. The gate runs inside the required `foundation`
-  CI check. It does not enforce a repository-wide percentage or a historical no-drop rule.
+  with its target branch's merge base. The gate runs as a separate job enforced by
+  the required `foundation` CI check. It does not enforce a repository-wide
+  percentage or a historical no-drop rule.
 - A line counts as covered when either the Vitest or Playwright LCOV report records
   execution. Keep using `e2e/fixtures.ts` for functional browser tests so their execution
   is collected. Branch, function and statement reports remain separate diagnostics.

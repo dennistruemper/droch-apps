@@ -1,5 +1,27 @@
 # Decisions
 
+## Visible CI jobs — 2026-11-23
+
+The owner requested a workflow graph that shows running and failed layers directly.
+Split quality checks, unit/integration tests and the production image build into
+independent jobs. Disable matrix fail-fast so one failure does not cancel sibling
+checks. Build the instrumented image once, transfer it as a one-day artifact, and
+run functional browser coverage and axe concurrently on separate runners with their
+own disposable production Compose stacks. Retag the image using each checkout's
+existing worktree identity; do not transfer databases or generated runtime secrets.
+This supersedes the single-job/shared-stack CI arrangement below. Local commands
+and the no-retry policy remain unchanged.
+
+Download both coverage reports into a separate PR-only changed-line gate. Attempt
+that gate even after suite failures so available reports still provide diagnostics;
+missing artifacts or reports fail it. Preserve coverage summaries, PR comments,
+failure artifacts and cleanup. Keep `foundation` as an always-running final gate
+requiring every job to succeed; only the PR-only coverage job may skip on main
+pushes. This preserves the active required-check name without changing GitHub rules.
+The graph and final result table expose failures without opening combined logs.
+Artifact transfer and repeated runner setup add overhead; measure hosted timings
+before claiming a speed improvement.
+
 ## No Playwright retry masking — 2026-11-23
 
 The owner requested disabling test reruns so intermittent failures remain visible.

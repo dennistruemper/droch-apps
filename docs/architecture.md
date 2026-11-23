@@ -50,19 +50,19 @@ the `BROWSER_COVERAGE=1` build argument. Ordinary production builds leave this o
 Playwright's shared fixture collects counters before navigation/reload and closure,
 and on pagehide for page-initiated navigation. It includes explicitly created
 multiplayer contexts. Source-mapped browser HTML, LCOV and JSON reports live under
-`coverage/browser/` and are published in the same CI job. Browser and Vitest reports
+`coverage/browser/` and are published by the browser test job. Browser and Vitest reports
 remain separate: their instrumentation and measured source populations differ.
 The pinned Vitest coverage report action renders both Istanbul-format datasets as
 Actions summaries and updates two named PR comments per suite: a collapsed `all`
 file table and an expanded `changes` file table. Both reuse the same reports and
-overall totals; filtering file details does not calculate changed-line coverage. The job
-requests pull-request write permission; fork and Dependabot runs publish summaries
+overall totals; filtering file details does not calculate changed-line coverage.
+The report-producing jobs request pull-request write permission; fork and Dependabot runs publish summaries
 without comments. Per-file details are ordered by branch coverage;
 long uncovered-line lists are omitted from comments.
 
 PRs additionally run `pnpm test:coverage:gate <target-sha>` within the required
-`foundation` check. Pinned, hash-verified diff-cover combines line hits from the full
-Vitest and browser LCOV reports and requires 90% of added/modified executable lines
+`foundation` gate, through a separate changed-line coverage job. Pinned,
+hash-verified diff-cover combines line hits from the full Vitest and browser LCOV reports and requires 90% of added/modified executable lines
 against the target merge base. Full checkout history makes that comparison available.
 A line covered by either suite counts once; suite-specific statement/function/branch
 reports stay separate. Missing inputs and tool failures block CI. The unified patch
@@ -82,12 +82,12 @@ Accessibility checks use pinned `@axe-core/playwright` through the dedicated
 rules through 2.2 plus separately identifiable best-practice rules, with light/dark
 desktop and light mobile profiles. Raw axe results and violation screenshots are
 attached to the Playwright HTML report. The ordinary browser suite excludes this
-folder; CI runs the axe and functional browser suites concurrently against the
-same production test stack, with explicit local auth for axe. Their output directories
-are siblings (`test-results/browser/` and `test-results/a11y/`), so startup cleanup
+folder; CI runs the axe and functional browser suites concurrently on separate
+runners against isolated production test stacks from the same image, with explicit
+local auth for axe. Their output directories are siblings (`test-results/browser/` and `test-results/a11y/`), so startup cleanup
 cannot delete the other suite's traces or attachments. Only the functional suite
-collects browser coverage. The parallel group waits for both suites before publishing
-reports and running final stack cleanup. Accessibility violations or audit errors fail the Check
+collects browser coverage. Each job publishes its own reports and cleans up its
+stack after its suite completes. Accessibility violations or audit errors fail the Check
 workflow. Both suites inherit explicit `retries: 0` and `failOnFlakyTests: true`;
 intermittent failures require a fix rather than retry masking. Failures produce an error annotation and summary; the HTML
 report, raw results, screenshots and traces are uploaded for 14 days. The audit
@@ -120,12 +120,23 @@ source files, then installs offline. Files are created as the non-root user inst
 of recursively changing ownership after installation. The fetched store stays in
 build/development layers and is excluded from the production image.
 
-CI builds the production image and installs the Playwright browser in a native
-parallel step group within one job. The group waits for both steps and propagates
-failures before starting the test stack. Browser checks run against the built image
-and the production Compose migration gate. `pnpm test:stack` publishes an allocated loopback port with a distinct
-per-checkout project, cookie and disposable SQLite volume; cleanup does not affect
-development stacks. Worktree identity coverage remains in the ordinary unit tests.
+CI exposes type checking, lint/boundaries, formatting, unit/integration coverage,
+image building, functional browser coverage, accessibility and changed-line coverage
+as named jobs in the workflow graph. Quality checks, unit tests and the image build
+start independently; matrices disable fail-fast so sibling failures remain visible.
+The instrumented production image is built once and transferred as a one-day artifact
+to both browser jobs. Each runner installs Chromium and starts its own Compose
+migration gate and disposable stack, retagging the image for its checkout identity.
+`pnpm test:stack` publishes an allocated loopback port with a distinct per-checkout
+project, cookie and disposable SQLite volume; cleanup does not affect development
+stacks. Worktree identity coverage remains in the ordinary unit tests.
+
+The PR-only changed-line job downloads the Vitest and browser artifacts from the
+same workflow run, including after test failures when reports exist. Missing inputs
+fail the gate. The final `foundation` job always runs, writes a compact result table,
+and fails on any failed, cancelled or unexpectedly skipped dependency. Only the
+changed-line job may skip on main pushes. This keeps branch protection tied to the
+complete workflow while exposing individual failures directly.
 
 The active [main protection policy](repository-protection.md) requires PRs,
 the GitHub Actions `foundation` check, an up-to-date branch and resolved review

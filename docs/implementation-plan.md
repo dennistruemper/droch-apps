@@ -255,3 +255,20 @@ Functional browser coverage and axe now run in one native parallel group after
 stack startup, with sibling output directories and cleanup after both complete.
 Compare measured CI timings with sequential run 45080676751 (4m 39s total);
 record the run links and results in PR #29.
+
+## Visible CI jobs — 2026-11-23
+
+Split checks into named jobs with independent quality/unit/image work, parallel
+functional and axe runners sharing one image artifact, a separate changed-line
+coverage job and a final required `foundation` gate. Preserve reports and cleanup.
+
+Local verification: actionlint and `pnpm check` pass (293 tests); the instrumented
+production image builds and the workflow export/load/retag commands pass. All 48
+functional browser tests and 33 accessibility tests pass without retries. The final
+gate passes exhaustive checks of 2,048 combinations of PR/push dependency results.
+The changed-line gate passes with fresh reports and no measured executable diff.
+The disposable test stack was cleaned up.
+
+Remaining: verify the hosted graph, image transfer, coverage comments and aggregate
+status on a PR; compare total timings before claiming a performance improvement.
+This supersedes the shared-stack parallel step arrangement above.

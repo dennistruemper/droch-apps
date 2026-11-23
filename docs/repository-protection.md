@@ -21,11 +21,13 @@ read back from GitHub on 2026-11-22.
 | Branch deletion               | Blocked                                       |
 | Bypass actors                 | None, including repository roles and Renovate |
 
-The `foundation` job in [Check](../.github/workflows/check.yml) covers dependency
-installation, type checking, linting, formatting, unit/integration tests, the
-production image build and browser flows. Requiring the job gates merging on the
-complete workflow, rather than on an early successful step. Preserve its unique
-name; if it changes, update the live required check and this payload together.
+The `foundation` job in [Check](../.github/workflows/check.yml) is the final gate
+for the named quality, unit/integration, production image, browser/accessibility
+and changed-line coverage jobs. It always runs and fails if any dependency fails,
+is cancelled or unexpectedly skips. The changed-line job may skip only on main
+pushes. Matrix jobs disable fail-fast. Requiring `foundation` therefore gates
+merging on the complete workflow. Preserve its unique name; if it changes, update
+the live required check and this payload together.
 
 Zero required approvals fits a solo-maintained repository and permits
 CI-gated Renovate updates without requiring a second person. Conversations still
