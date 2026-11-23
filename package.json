@@ -41,7 +41,7 @@
     "@types/istanbul-lib-source-maps": "4.0.4",
     "@types/istanbul-reports": "3.0.4",
     "@types/node": "24.19.2",
-    "@vitest/coverage-v8": "5.0.3",
+    "@vitest/coverage-v8": "5.1.1",
     "drizzle-kit": "0.31.11",
     "esbuild": "0.28.2",
     "istanbul-lib-coverage": "3.2.2",
@@ -55,7 +55,7 @@
     "typescript": "7.0.2",
     "vite": "8.3.8",
     "vite-plugin-istanbul": "9.0.1",
-    "vitest": "5.0.3"
+    "vitest": "5.1.1"
   },
   "engines": {
     "node": ">=24.21.0 <25"
