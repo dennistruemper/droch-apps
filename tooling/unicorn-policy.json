@@ -1,5 +1,5 @@
 {
-  "oxlint": "1.86.0",
+  "oxlint": "1.94.0",
   "rules": {
     "catch-error-name": {
       "status": "off",
