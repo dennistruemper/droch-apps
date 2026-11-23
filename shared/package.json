@@ -17,11 +17,11 @@
     "./events": "./src/events/index.ts"
   },
   "dependencies": {
-    "@solidjs/web": "2.0.0-rc.13",
+    "@solidjs/web": "2.0.3",
     "better-sqlite3": "13.0.3",
     "drizzle-orm": "0.45.4",
     "hono": "4.13.19",
-    "solid-js": "2.0.0-rc.13",
+    "solid-js": "2.0.3",
     "zod": "4.6.5"
   }
 }

@@ -9,11 +9,11 @@
   },
   "dependencies": {
     "@repo/shared": "workspace:*",
-    "@solidjs/router": "2.0.0-next.34",
-    "@solidjs/web": "2.0.0-rc.13",
+    "@solidjs/router": "2.0.1",
+    "@solidjs/web": "2.0.3",
     "drizzle-orm": "0.45.4",
     "hono": "4.13.19",
-    "solid-js": "2.0.0-rc.13",
+    "solid-js": "2.0.3",
     "zod": "4.6.5"
   }
 }
