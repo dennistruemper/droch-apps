@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@solidjs/web": "2.0.3",
-    "better-sqlite3": "13.0.3",
+    "better-sqlite3": "13.2.0",
     "drizzle-orm": "0.45.4",
     "hono": "4.13.19",
     "solid-js": "2.0.3",
