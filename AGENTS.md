@@ -166,7 +166,7 @@ add an app-local `AGENTS.md` and link it here; keep shared policy in the root do
 - For `fix:` commit messages, PR titles and bug-fix comments, describe the bug:
   the triggering condition and incorrect behavior. Keep implementation details
   in the body when needed. For example, use `fix: room stays loading after a
-  failed reconnect`, rather than `fix: reset the loading flag`.
+failed reconnect`, rather than `fix: reset the loading flag`.
 
 ## Documentation maintenance
 
