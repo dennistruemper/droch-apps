@@ -1,5 +1,45 @@
 # Decisions
 
+## Remove redundant CI setup — 2026-11-23
+
+The owner observed that PR #35 took roughly a minute longer than neighboring
+single-job runs. Run [45129994109](https://github.com/dennistruemper/droch-apps/actions/runs/45129994109)
+took 5m09s; neighboring PR run
+[45130064583](https://github.com/dennistruemper/droch-apps/actions/runs/45130064583)
+took 4m00s. Functional tests themselves took 157s versus 136s, so the full delta
+cannot be attributed to the job graph alone. The image job spent 10s installing
+host tools/dependencies already installed inside Docker; the late coverage job
+spent another 11s installing Node and packages for a shell/Python gate.
+
+Build the image directly with the same production target and coverage build
+argument, then export its CI tag. Run the coverage shell script directly on the
+runner's Python environment. Overlap Chromium installation with the image download
+using a native parallel step group. Keep the named jobs, single image build,
+independent stacks, all validation and the required final gate. Compare subsequent
+hosted runs before attributing a precise speed improvement to these changes.
+
+## Visible CI jobs — 2026-11-23
+
+The owner requested a workflow graph that shows running and failed layers directly.
+Split quality checks, unit/integration tests and the production image build into
+independent jobs. Disable matrix fail-fast so one failure does not cancel sibling
+checks. Build the instrumented image once, transfer it as a one-day artifact, and
+run functional browser coverage and axe concurrently on separate runners with their
+own disposable production Compose stacks. Retag the image using each checkout's
+existing worktree identity; do not transfer databases or generated runtime secrets.
+This supersedes the single-job/shared-stack CI arrangement below. Local commands
+and the no-retry policy remain unchanged.
+
+Download both coverage reports into a separate PR-only changed-line gate. Attempt
+that gate even after suite failures so available reports still provide diagnostics;
+missing artifacts or reports fail it. Preserve coverage summaries, PR comments,
+failure artifacts and cleanup. Keep `foundation` as an always-running final gate
+requiring every job to succeed; only the PR-only coverage job may skip on main
+pushes. This preserves the active required-check name without changing GitHub rules.
+The graph and final result table expose failures without opening combined logs.
+Artifact transfer and repeated runner setup add overhead; measure hosted timings
+before claiming a speed improvement.
+
 ## No Playwright retry masking — 2026-11-23
 
 The owner requested disabling test reruns so intermittent failures remain visible.

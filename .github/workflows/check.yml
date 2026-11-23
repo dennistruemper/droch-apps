@@ -12,9 +12,36 @@ permissions:
   contents: read
 
 jobs:
-  foundation:
+  quality:
+    name: ${{ matrix.name }}
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Type checking
+            command: typecheck
+          - name: Lint and boundaries
+            command: lint
+          - name: Formatting
+            command: format:check
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Install project tools
+        uses: jdx/mise-action@v4
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run check
+        run: pnpm ${{ matrix.command }}
+
+  unit:
+    name: Unit and integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
       pull-requests: write
@@ -25,8 +52,10 @@ jobs:
           fetch-depth: 0
       - name: Install project tools
         uses: jdx/mise-action@v4
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm check
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run tests with coverage
+        run: pnpm test:coverage
       - name: Upload unit and integration coverage
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
@@ -59,28 +88,83 @@ jobs:
           show-uncovered-lines: false
           sort-by: branches-asc
           comment-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' && 'pr' || 'none' }}
+
+  image:
+    name: Build production test image
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Build instrumented test image
+        run: docker build --target production --build-arg BROWSER_COVERAGE=1 --tag droch-apps:ci .
+      - name: Export image for browser jobs
+        run: docker image save --output "$RUNNER_TEMP/test-image.tar" droch-apps:ci
+      - name: Upload test image
+        uses: actions/upload-artifact@v7
+        with:
+          name: production-test-image
+          path: ${{ runner.temp }}/test-image.tar
+          retention-days: 1
+          compression-level: 0
+          if-no-files-found: error
+
+  browser:
+    name: ${{ matrix.name }}
+    needs: image
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suite: browser
+            name: Browser tests and coverage
+          - suite: a11y
+            name: Accessibility (axe)
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Install project tools
+        uses: jdx/mise-action@v4
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
       - parallel:
-          - name: Build instrumented test image
-            run: pnpm test:image
           - name: Install browser and system dependencies
             run: pnpm exec playwright install --with-deps chromium
+          - name: Download production test image
+            uses: actions/download-artifact@v8
+            with:
+              name: production-test-image
+              path: ${{ runner.temp }}
+      - name: Load image for this checkout
+        run: |
+          docker image load --input "$RUNNER_TEMP/test-image.tar"
+          image=$(node --input-type=module -e 'import { worktreeIdentity } from "./tooling/worktree.ts"; console.log(`droch-apps:check-${worktreeIdentity(process.cwd()).id}`)')
+          docker tag droch-apps:ci "$image"
       - name: Start production test stack
         id: test_stack
         run: |
           pnpm test:stack
           cat .local/test/browser.env >> "$GITHUB_ENV"
-      - parallel:
-          - name: Browser tests and coverage
-            if: ${{ !cancelled() && steps.test_stack.outcome == 'success' }}
-            run: pnpm test:e2e:coverage
-          - name: Audit accessibility with axe
-            id: a11y
-            if: ${{ !cancelled() && steps.test_stack.outcome == 'success' }}
-            env:
-              TEST_AUTH_MODE: local
-            run: pnpm test:a11y
+      - name: Browser tests and coverage
+        if: ${{ matrix.suite == 'browser' }}
+        run: pnpm test:e2e:coverage
+      - name: Audit accessibility with axe
+        id: a11y
+        if: ${{ matrix.suite == 'a11y' }}
+        env:
+          TEST_AUTH_MODE: local
+        run: pnpm test:a11y
       - name: Upload browser coverage
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && matrix.suite == 'browser' }}
         uses: actions/upload-artifact@v7
         with:
           name: browser-coverage
@@ -88,7 +172,7 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
       - name: Summarize browser coverage
-        if: ${{ !cancelled() && hashFiles('coverage/browser/coverage-summary.json') != '' }}
+        if: ${{ !cancelled() && matrix.suite == 'browser' && hashFiles('coverage/browser/coverage-summary.json') != '' }}
         uses: davelosert/vitest-coverage-report-action@74c2d9210b4fc44c84d8213f61d7ec99837b7aa0 # v2.13.2
         with:
           name: Browser - loaded frontend modules
@@ -100,7 +184,7 @@ jobs:
           sort-by: branches-asc
           comment-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' && 'pr' || 'none' }}
       - name: Summarize changed browser files
-        if: ${{ !cancelled() && hashFiles('coverage/browser/coverage-summary.json') != '' }}
+        if: ${{ !cancelled() && matrix.suite == 'browser' && hashFiles('coverage/browser/coverage-summary.json') != '' }}
         uses: davelosert/vitest-coverage-report-action@74c2d9210b4fc44c84d8213f61d7ec99837b7aa0 # v2.13.2
         with:
           name: Browser - changed files
@@ -111,21 +195,8 @@ jobs:
           show-uncovered-lines: false
           sort-by: branches-asc
           comment-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' && 'pr' || 'none' }}
-      - name: Enforce changed-line coverage
-        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
-        env:
-          COVERAGE_BASE: ${{ github.event.pull_request.base.sha }}
-        run: pnpm test:coverage:gate "$COVERAGE_BASE"
-      - name: Upload changed-line coverage
-        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: changed-line-coverage
-          path: coverage/patch/
-          retention-days: 14
-          if-no-files-found: warn
       - name: Upload accessibility report
-        if: ${{ !cancelled() && steps.test_stack.outcome == 'success' && steps.a11y.outcome != 'skipped' }}
+        if: ${{ !cancelled() && matrix.suite == 'a11y' && steps.test_stack.outcome == 'success' && steps.a11y.outcome != 'skipped' }}
         uses: actions/upload-artifact@v7
         with:
           name: axe-accessibility-report
@@ -134,7 +205,7 @@ jobs:
             test-results/a11y/
           retention-days: 14
       - name: Summarize accessibility audit
-        if: ${{ !cancelled() && steps.test_stack.outcome == 'success' && steps.a11y.outcome != 'skipped' }}
+        if: ${{ !cancelled() && matrix.suite == 'a11y' && steps.test_stack.outcome == 'success' && steps.a11y.outcome != 'skipped' }}
         env:
           AXE_OUTCOME: ${{ steps.a11y.outcome }}
         run: |
@@ -142,5 +213,83 @@ jobs:
             echo "::error::Axe accessibility audit failed. Download axe-accessibility-report for details."
           fi
           printf '### Axe accessibility audit\n\nOutcome: %s. Accessibility failures fail the Check workflow.\n\nDownload the axe-accessibility-report artifact for the HTML report, raw results, screenshots and traces.\n' "$AXE_OUTCOME" >> "$GITHUB_STEP_SUMMARY"
-      - if: always()
+      - name: Upload browser failure traces
+        if: ${{ !cancelled() && matrix.suite == 'browser' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-test-results
+          path: test-results/browser/
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Show stack logs on failure
+        if: failure()
+        run: pnpm test:stack:logs
+      - name: Stop disposable test stack
+        if: always()
         run: pnpm test:stack:stop
+
+  coverage:
+    name: Changed-line coverage (90%)
+    needs: [unit, browser]
+    if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Download unit and integration coverage
+        uses: actions/download-artifact@v8
+        with:
+          name: vitest-coverage
+          path: coverage/full/
+      - name: Download browser coverage
+        uses: actions/download-artifact@v8
+        with:
+          name: browser-coverage
+          path: coverage/browser/
+      - name: Enforce changed-line coverage
+        env:
+          COVERAGE_BASE: ${{ github.event.pull_request.base.sha }}
+        run: sh tooling/coverage-gate.sh "$COVERAGE_BASE"
+      - name: Upload changed-line coverage
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: changed-line-coverage
+          path: coverage/patch/
+          retention-days: 14
+          if-no-files-found: warn
+
+  # Preserve the required check name in the active main branch ruleset.
+  foundation:
+    needs: [quality, unit, image, browser, coverage]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Summarize and enforce all job results
+        env:
+          JOB_RESULTS: ${{ toJSON(needs) }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          python3 - <<'PYTHON'
+          import json
+          import os
+          import sys
+
+          results = json.loads(os.environ["JOB_RESULTS"])
+          failed = []
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
+              summary.write("## Check results\n\n| Job | Result |\n| --- | --- |\n")
+              for job, details in results.items():
+                  result = details["result"]
+                  summary.write(f"| {job} | {result} |\n")
+                  expected = "skipped" if job == "coverage" and os.environ["EVENT_NAME"] != "pull_request" else "success"
+                  if result != expected:
+                      failed.append(f"{job}: {result}")
+          if failed:
+              print("::error::Required checks did not succeed: " + ", ".join(failed))
+              sys.exit(1)
+          PYTHON

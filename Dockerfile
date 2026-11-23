@@ -14,7 +14,7 @@ RUN pnpm install --offline --frozen-lockfile --store-dir /pnpm/store --package-i
 
 FROM development AS build
 ARG BROWSER_COVERAGE=0
-# Quality checks run before image builds in CI. Keep the runtime build independent
+# Quality checks run as separate jobs in CI. Keep the runtime build independent
 # of Oxlint's JS-plugin allocator (upstream issue oxc-project/oxc#20331).
 RUN pnpm typecheck && BROWSER_COVERAGE=$BROWSER_COVERAGE pnpm build
 
