@@ -16,7 +16,6 @@ commands. The adapter validates `version: 1` saves under
 `droch:avantago:calculator`; failed loads start an empty draft with a warning,
 failed saves retain current calculations. The component dispatches against a
 synchronous current model and guards disposal. Fixed row identities preserve focus.
-Native print renders the schedule with team order and per-set handicaps.
 
 The supplied rules are recorded in [decisions](decisions.md).
 Shared infrastructure remains in the [root architecture](../../../docs/architecture.md).

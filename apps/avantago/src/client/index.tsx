@@ -288,11 +288,6 @@ function App() {
                 <ol class="games">
                   <For each={gameIndices}>{(index) => <Game draft={value()} index={index} />}</For>
                 </ol>
-                <div class="schedule-footer">
-                  <button type="button" class="quiet" onClick={() => window.print()}>
-                    Spielplan drucken
-                  </button>
-                </div>
               </section>
             </>
           )}

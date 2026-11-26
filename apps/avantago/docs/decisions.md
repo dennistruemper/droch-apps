@@ -6,6 +6,7 @@ The user requested a table-tennis Vorgabe tool for two teams of three. They chos
 calculation and playing order only, excluding match-result tracking.
 They requested fixed Heim/Gast labels and a compact interface that starts with
 the inputs, without an introductory hero, slogans or repeated explanations.
+They also requested removing the print button; there is no app-specific print UI or layout.
 
 Rules come from the supplied Kreispokal excerpt dated June 2014:
 
@@ -27,5 +28,5 @@ Implementation defaults, adjustable rather than additional user decisions:
   name rather than a claim of an official Esperanto sports term for Vorgabe.
 - Empty player names use their position.
 - Manual whole-number ratings from 0 to 10000, chosen as a practical input bound.
-- Browser-local versioned saves, reset confirmation and print support; no server
+- Browser-local versioned saves and reset confirmation; no server
   persistence or new infrastructure is needed for a personal calculator.

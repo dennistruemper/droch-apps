@@ -77,10 +77,6 @@ test("calculates the supplied order and doubles maximum, preserves focus and rel
   await expect(page.getByRole("table")).toBeVisible();
   await expect(page.getByRole("row")).toHaveCount(10);
   await expect(page.getByText("Der Aufschlag wird ausgelost.")).toBeVisible();
-  await page.emulateMedia({ media: "print" });
-  await expect(page.locator(".lineup")).toBeHidden();
-  await expect(games.nth(0)).toBeVisible();
-  await page.emulateMedia({ media: "screen" });
 
   expect(errors).toEqual([]);
 });

@@ -205,16 +205,6 @@ input::placeholder {
   color: var(--color-bg);
   border-color: var(--color-fg);
 }
-.schedule-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 1rem;
-  padding-top: 1rem;
-}
-.schedule-footer p {
-  margin: 0;
-}
 .rules {
   border-block: 1px solid;
   padding: 1rem 0;
@@ -288,10 +278,6 @@ input::placeholder {
   .versus {
     font-size: 0.875rem;
   }
-  .schedule-footer {
-    align-items: flex-start;
-    flex-direction: column;
-  }
 }
 @media (max-width: 380px) {
   .team {
@@ -307,33 +293,5 @@ input::placeholder {
   .section-heading h1,
   .section-heading h2 {
     font-size: 1.35rem;
-  }
-}
-@media print {
-  [data-theme="avantago"] {
-    --color-bg: #fff;
-    --color-fg: #111;
-    color-scheme: light;
-  }
-  #app > header,
-  .lineup,
-  .rules,
-  button,
-  .storage-warning {
-    display: none !important;
-  }
-  #app > main {
-    display: block;
-    padding: 0;
-  }
-  .game {
-    break-inside: avoid;
-    padding-block: 0.7rem;
-  }
-  .games {
-    margin-top: 1rem;
-  }
-  .game-handicap small {
-    font-size: 0.75rem;
   }
 }

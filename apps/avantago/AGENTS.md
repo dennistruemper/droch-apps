@@ -6,6 +6,7 @@ The [root instructions](../../AGENTS.md) also apply, including to `e2e/avantago.
 - Two teams of three, labelled A/B/C and X/Y/Z, with manually entered Live-PZ.
 - Heim/Gast are fixed labels. Begin with the six inputs; no hero, slogan, format
   badge, editable team names or repeated instructions. Put explanations under rules.
+- Do not add a print button or app-specific print layout.
 - Use the supplied June 2014 table, including both ends of every band. The weaker
   side receives the starting points in every set; cap the Vorgabe at eight.
 - Doubles use each selected pair's highest Live-PZ. Do not average ratings or use
