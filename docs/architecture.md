@@ -310,6 +310,8 @@ System is selected (also the fallback for absent or invalid choices). It owns th
 media listener and its cleanup; the shared Settings picker consumes this app-local
 provider. Use app default restores System. Explicit saved presets/custom themes
 remain fixed when the operating-system appearance changes.
+Unavailable browser storage falls back to System at startup; theme changes still
+apply for the current page when their preferences cannot be persisted.
 
 Adapt direct-body layout selectors to the Solid mount structure, scope field-specific
 alert visibility rules, and extend reduced-motion handling to all animations. Preserve
@@ -387,6 +389,12 @@ prints its URL. Local runtime settings are ignored, never committed.
 
 Use the same migrations and database conventions locally and in production. The
 development Compose override adds source mounts and hot reload.
+
+## Avantaĝo
+
+[Avantaĝo](../apps/avantago/docs/architecture.md) is a browser-only table-tennis
+Vorgabe calculator at `/avantago/`. Its registry entry adds common hosting and
+builds without API routes, a database or deployment configuration changes.
 
 ## Retired apps
 

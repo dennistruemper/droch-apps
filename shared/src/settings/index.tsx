@@ -101,9 +101,24 @@ export function AppAppearance(props: {
   defaults: ThemeDefaults;
   children?: Element;
 }) {
-  const storage = createAppStorage(props.appId, localStorage);
-  const saved = storage.get("theme");
-  let savedCustomTheme = readCustomTheme(storage.get("custom-theme"));
+  function readPreference(key: string) {
+    try {
+      return createAppStorage(props.appId, localStorage).get(key);
+    } catch {
+      return null;
+    }
+  }
+
+  function writePreference(key: string, value: string) {
+    try {
+      createAppStorage(props.appId, localStorage).set(key, value);
+    } catch {
+      // Keep appearance changes usable for this page when browser storage is unavailable.
+    }
+  }
+
+  const saved = readPreference("theme");
+  let savedCustomTheme = readCustomTheme(readPreference("custom-theme"));
   const [customTheme, setCustomTheme] = createSignal(savedCustomTheme ?? defaultCustomTheme);
   const media = window.matchMedia("(prefers-color-scheme: dark)");
 
@@ -142,7 +157,7 @@ export function AppAppearance(props: {
   function saveCustomTheme(next: CustomTheme) {
     savedCustomTheme = next;
     setCustomTheme(next);
-    storage.set("custom-theme", JSON.stringify(next));
+    writePreference("custom-theme", JSON.stringify(next));
     applyTheme("custom", next);
   }
 
@@ -176,7 +191,7 @@ export function AppAppearance(props: {
 
     selected = next;
     setTheme(next);
-    storage.set("theme", next);
+    writePreference("theme", next);
     applyTheme(next);
   }
 

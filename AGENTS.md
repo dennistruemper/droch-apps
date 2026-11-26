@@ -46,6 +46,15 @@ acceptance criteria, not optional polish.
 - Keep such details in developer documentation. Prefer clear interface labels to
   explanatory paragraphs and omit redundant footers or instructions.
 
+- For tools and calculators, start with the working controls. Do not add a hero,
+  eyebrow, slogan, format badge or introductory action narration above the inputs.
+  A compact purpose heading is enough. Keep rules and longer help behind a disclosure.
+- Do not add editable defaults or customization controls without a task-specific
+  need. Fixed roles such as Heim/Gast remain labels unless the user asks to rename them.
+- Before browser handoff or a PR, inspect the first viewport and visible copy
+  against these rules. Remove content that delays the primary task without helping
+  an actual decision. Check the rendered result, not only the source text.
+
 ## Concept previews
 
 - Prefer fast, lightweight previews when the user is choosing between concepts.
@@ -65,6 +74,7 @@ migrations, external tests, or shared integrations:
 - [Schlezaz](apps/schlezaz/AGENTS.md)
 - [Enigmo](apps/enigmo/AGENTS.md)
 - [Kunludo](apps/kunludo/AGENTS.md)
+- [Avantaĝo](apps/avantago/AGENTS.md)
 
 App product rules, implementation details, decisions and verification history live
 in each app directory. Do not load every app's docs for unrelated work. For new apps,

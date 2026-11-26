@@ -4,6 +4,7 @@ import {
   type KunludoOptions,
 } from "@repo/kunludo/server";
 import { appDefinition as enigmo } from "@repo/enigmo/contracts";
+import { appDefinition as avantago } from "@repo/avantago/contracts";
 import { appDefinition as schlezaz } from "@repo/schlezaz/contracts";
 import { appDefinition as poker, createRoutes as createPokerRoutes } from "@repo/poker/server";
 import { appDefinition as words, createRoutes as createWordsRoutes } from "@repo/vortoj/server";
@@ -15,6 +16,7 @@ export const applications = [
   { ...words, createRoutes: createWordsRoutes },
   schlezaz,
   enigmo,
+  avantago,
 ] as const;
 
 export function validateApplications(apps: readonly { id: string }[]) {
