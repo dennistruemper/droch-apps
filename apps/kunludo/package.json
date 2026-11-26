@@ -12,7 +12,7 @@
     "@solidjs/router": "2.0.1",
     "@solidjs/web": "2.0.3",
     "drizzle-orm": "0.45.4",
-    "hono": "4.13.19",
+    "hono": "4.13.21",
     "solid-js": "2.0.3",
     "zod": "4.6.7"
   }
