@@ -1,5 +1,8 @@
 # Decisions
 
+App-specific calculator scope and source rules are recorded in
+[Avantaĝo's decisions](../apps/avantago/docs/decisions.md).
+
 ## Remove redundant CI setup — 2026-11-23
 
 The owner observed that PR #35 took roughly a minute longer than neighboring

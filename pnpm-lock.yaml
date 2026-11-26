@@ -90,6 +90,21 @@ importers:
         specifier: 5.1.1
         version: 5.1.1(@types/node@24.19.2)(@vitest/coverage-v8@5.1.1)(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(tsx@4.23.15))
 
+  apps/avantago:
+    dependencies:
+      '@repo/shared':
+        specifier: workspace:*
+        version: link:../../shared
+      '@solidjs/web':
+        specifier: 2.0.3
+        version: 2.0.3(solid-js@2.0.3)
+      solid-js:
+        specifier: 2.0.3
+        version: 2.0.3
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+
   apps/enigmo:
     dependencies:
       '@repo/shared':
@@ -194,6 +209,9 @@ importers:
       '@hono/node-server':
         specifier: 2.1.11
         version: 2.1.11(hono@4.13.19)
+      '@repo/avantago':
+        specifier: workspace:*
+        version: link:../apps/avantago
       '@repo/enigmo':
         specifier: workspace:*
         version: link:../apps/enigmo

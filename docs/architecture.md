@@ -388,6 +388,12 @@ prints its URL. Local runtime settings are ignored, never committed.
 Use the same migrations and database conventions locally and in production. The
 development Compose override adds source mounts and hot reload.
 
+## Avantaĝo
+
+[Avantaĝo](../apps/avantago/docs/architecture.md) is a browser-only table-tennis
+Vorgabe calculator at `/avantago/`. Its registry entry adds common hosting and
+builds without API routes, a database or deployment configuration changes.
+
 ## Retired apps
 
 Observo is removed from hosting, APIs, database registration and migration runs.

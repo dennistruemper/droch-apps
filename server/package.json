@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@hono/node-server": "2.1.11",
+    "@repo/avantago": "workspace:*",
     "@repo/enigmo": "workspace:*",
     "@repo/kunludo": "workspace:*",
     "@repo/poker": "workspace:*",

@@ -95,6 +95,8 @@ settings and repository documentation.
 
 ## Other app implementation status
 
+- [Avantaĝo](../apps/avantago/docs/implementation-plan.md)
+
 - [Schlezaz](../apps/schlezaz/docs/implementation-plan.md)
 - [Enigmo](../apps/enigmo/docs/implementation-plan.md)
 

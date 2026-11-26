@@ -34,13 +34,31 @@ async function scan(page: Page, info: TestInfo, state: string) {
     .toEqual([]);
 }
 
-for (const route of ["/", "/poker/", "/vortoj/", "/kunludo/", "/schlezaz/", "/enigmo/"]) {
+for (const route of [
+  "/",
+  "/poker/",
+  "/vortoj/",
+  "/kunludo/",
+  "/schlezaz/",
+  "/enigmo/",
+  "/avantago/",
+]) {
   test(`entry ${route}`, async ({ page }, info) => {
     await page.goto(route);
     await expect(page.locator("h1")).toBeVisible();
     await scan(page, info, "entry");
   });
 }
+
+test("Avantaĝo calculated plan, invalid rating and expanded rules", async ({ page }, info) => {
+  await page.goto("/avantago/");
+  await page.getByLabel("Live-PZ A", { exact: true }).fill("1200");
+  await page.getByLabel("Live-PZ X", { exact: true }).fill("1500");
+  await expect(page.locator(".game").first()).toContainText("3 : 0");
+  await page.getByLabel("Live-PZ B", { exact: true }).fill("abc");
+  await page.getByText("Vorgabetabelle & Spielregeln", { exact: true }).click();
+  await scan(page, info, "calculated-plan-and-rules");
+});
 
 test("Poker room and shared settings", async ({ page }, info) => {
   await page.goto("/poker/");

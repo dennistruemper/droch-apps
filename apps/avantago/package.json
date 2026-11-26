@@ -1,0 +1,15 @@
+{
+  "name": "@repo/avantago",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./contracts": "./src/contracts/index.ts",
+    "./domain": "./src/domain/index.ts"
+  },
+  "dependencies": {
+    "@repo/shared": "workspace:*",
+    "@solidjs/web": "2.0.3",
+    "solid-js": "2.0.3",
+    "zod": "4.6.7"
+  }
+}

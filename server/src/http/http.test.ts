@@ -93,4 +93,11 @@ describe("HTTP composition", () => {
     expect((await unready.request("/health/live")).status).toBe(200);
     expect((await unready.request("/health/ready")).status).toBe(503);
   });
+  it("mounts the browser-only calculator without an API or database", async () => {
+    expect((await app.request("/avantago")).headers.get("location")).toBe("/avantago/");
+    expect((await app.request("/avantago/")).status).toBe(200);
+    expect((await app.request("/api/avantago/status")).status).toBe(404);
+    expect(databaseDefinitions.map((database) => database.id)).not.toContain("avantago");
+    expect(await (await app.request("/")).text()).toContain('href="/avantago/"');
+  });
 });
