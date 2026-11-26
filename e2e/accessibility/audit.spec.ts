@@ -58,6 +58,9 @@ test("Avantaĝo calculated plan, invalid rating and expanded rules", async ({ pa
   await page.getByLabel("Live-PZ B", { exact: true }).fill("abc");
   await page.getByText("Vorgabetabelle & Spielregeln", { exact: true }).click();
   await scan(page, info, "calculated-plan-and-rules");
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Settings", exact: true })).toBeVisible();
+  await scan(page, info, "calculator-settings");
 });
 
 test("Poker room and shared settings", async ({ page }, info) => {

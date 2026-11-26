@@ -109,4 +109,53 @@ test("recovers corrupt or blocked storage and resets only after confirmation", a
   await page.getByLabel("Live-PZ X", { exact: true }).fill("1400");
   await expect(page.locator(".game").first()).toContainText("2 : 0");
   await expect(page.getByRole("alert")).toContainText("Speichern ist nicht möglich");
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await page.getByLabel("Your theme", { exact: true }).selectOption("ink");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "ink");
+  await page.getByRole("button", { name: "Close settings", exact: true }).click();
+  await expect(page.locator(".game").first()).toContainText("2 : 0");
+});
+
+test("uses Paper and Ink system defaults with app-scoped saved theme choices", async ({
+  page,
+}, info) => {
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.goto("/avantago/");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "paper");
+  await page.getByLabel("Name A", { exact: true }).fill("Anna");
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "ink");
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Settings", exact: true })).toBeVisible();
+  await expect(page.getByLabel("Your theme", { exact: true })).toHaveValue("system");
+  await page.getByLabel("Your theme", { exact: true }).selectOption("paper");
+  await page.getByRole("button", { name: "Close settings", exact: true }).click();
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "paper");
+  await expect(page.getByLabel("Name A", { exact: true })).toHaveValue("Anna");
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await page.getByLabel("Your theme", { exact: true }).selectOption("custom");
+  await page.getByLabel("Background color", { exact: true }).fill("#223344");
+  await page.getByLabel("Text and border color", { exact: true }).fill("#ffffff");
+  await page.getByLabel("Font", { exact: true }).selectOption("serif");
+  await page.getByRole("button", { name: "Close settings", exact: true }).click();
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "custom");
+  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(34, 51, 68)");
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await expect(page.getByLabel("Font", { exact: true })).toHaveValue("serif");
+  await page.getByRole("button", { name: "Use app default", exact: true }).click();
+  await expect(page.getByLabel("Your theme", { exact: true })).toHaveValue("system");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "ink");
+  await page.screenshot({ path: info.outputPath("settings-ink.png") });
+  await page.getByRole("button", { name: "Close settings", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Settings", exact: true })).toBeHidden();
+  await page.emulateMedia({ colorScheme: "light" });
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "paper");
+  await page.screenshot({ path: info.outputPath("calculator-paper.png"), animations: "disabled" });
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Zurücksetzen", exact: true }).click();
+  await expect(page.getByLabel("Name A", { exact: true })).toHaveValue("");
+  expect(await page.evaluate(() => localStorage.getItem("droch:avantago:theme"))).toBe("system");
+  expect(await page.evaluate(() => localStorage.getItem("droch:poker:theme"))).toBeNull();
 });

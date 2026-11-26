@@ -7,6 +7,8 @@ calculation and playing order only, excluding match-result tracking.
 They requested fixed Heim/Gast labels and a compact interface that starts with
 the inputs, without an introductory hero, slogans or repeated explanations.
 They also requested removing the print button; there is no app-specific print UI or layout.
+They requested the shared theme picker, with Paper for light system appearance
+and Ink for dark. This replaces the initial fixed green palette.
 
 Rules come from the supplied Kreispokal excerpt dated June 2014:
 

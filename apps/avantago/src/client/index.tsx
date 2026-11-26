@@ -1,5 +1,7 @@
 import { render } from "@solidjs/web";
 import { createSignal, For, Show, onSettled } from "solid-js";
+import { AppAppearance, AppSettings } from "@repo/shared/settings";
+import { appDefinition } from "../contracts/index.ts";
 import {
   slots,
   schedule,
@@ -251,7 +253,10 @@ function App() {
         <a class="brand" href="/avantago/">
           Avantaĝo
         </a>
-        <a href="/">Alle Apps</a>
+        <nav aria-label="App navigation">
+          <a href="/">Alle Apps</a>
+          <AppSettings appId={appDefinition.id} />
+        </nav>
       </header>
       <main>
         <Show when={model().warning}>
@@ -356,4 +361,11 @@ const element = document.getElementById("app");
 
 if (!element) throw new Error("Missing app mount element");
 
-render(() => <App />, element);
+render(
+  () => (
+    <AppAppearance appId={appDefinition.id} defaults={appDefinition.themes}>
+      <App />
+    </AppAppearance>
+  ),
+  element,
+);

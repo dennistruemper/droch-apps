@@ -310,6 +310,8 @@ System is selected (also the fallback for absent or invalid choices). It owns th
 media listener and its cleanup; the shared Settings picker consumes this app-local
 provider. Use app default restores System. Explicit saved presets/custom themes
 remain fixed when the operating-system appearance changes.
+Unavailable browser storage falls back to System at startup; theme changes still
+apply for the current page when their preferences cannot be persisted.
 
 Adapt direct-body layout selectors to the Solid mount structure, scope field-specific
 alert visibility rules, and extend reduced-motion handling to all animations. Preserve

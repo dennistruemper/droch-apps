@@ -1,7 +1,9 @@
 # Avantaĝo architecture
 
 Avantaĝo is a German browser-only calculator registered at `/avantago/`, using
-Solid 2 and Drochsign with an independent dark green theme. It joins the shared
+Solid 2 and Drochsign with the shared AppAppearance/AppSettings theme picker.
+System appearance defaults to Paper in light mode and Ink in dark mode; explicit
+app-scoped preferences take priority. It joins the shared
 landing page, frontend build and static hosting through the existing registry.
 It has no server routes, authentication, database or migrations.
 
