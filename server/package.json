@@ -15,7 +15,7 @@
     "@repo/schlezaz": "workspace:*",
     "@repo/shared": "workspace:*",
     "@repo/vortoj": "workspace:*",
-    "hono": "4.13.19",
+    "hono": "4.13.21",
     "zod": "4.6.7"
   }
 }
