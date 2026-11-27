@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
-    "@oxlint/plugins": "1.94.0",
+    "@oxlint/plugins": "1.95.0",
     "@playwright/test": "1.65.1",
     "@repo/server": "workspace:*",
     "@repo/shared": "workspace:*",
@@ -49,7 +49,7 @@
     "istanbul-lib-source-maps": "5.0.6",
     "istanbul-reports": "3.2.0",
     "oxfmt": "0.79.0",
-    "oxlint": "1.94.0",
+    "oxlint": "1.95.0",
     "oxlint-tsgolint": "7.0.2007",
     "tsx": "4.23.15",
     "typescript": "7.0.2",
