@@ -29,7 +29,7 @@
     "test:coverage:gate": "sh tooling/coverage-gate.sh"
   },
   "devDependencies": {
-    "@axe-core/playwright": "4.14.0",
+    "@axe-core/playwright": "4.14.1",
     "@oxlint/plugins": "1.95.0",
     "@playwright/test": "1.65.1",
     "@repo/server": "workspace:*",
